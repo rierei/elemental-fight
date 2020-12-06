@@ -27,10 +27,19 @@ function SoldiersAppearances:RegisterVars()
 
     self.m_waitingGuids = {
         CharacterSocketListAsset = {'1F5CC239-BE4F-4D03-B0B5-A0FF89976036', '8F1A9F10-6BF8-442A-909F-AF0D9F8E1608'},
+
+        --
+        -- Gameplay Kits
+        --
+
         MP_US_Assault_Appearance01 = {'6252040E-A16A-11E0-AAC3-854900935C42', 'F2ECBAB2-F00A-47CA-66DC-0F89C6A138D4'},
         MP_US_Engi_Appearance_Wood01 = {'FA825024-20C0-4207-9037-CE25CC5FBA38', 'F2ADB1BC-466F-4B51-90D1-E8F8670C7BE7'},
         MP_US_Recon_Appearance_Wood01 = {'E3BE172B-C32F-4ECF-A85C-E9F9796610FF', '4BE86DA1-0229-448D-A5E2-934E5490E11C'},
         MP_US_Support_Appearance_Wood01 = {'9D8C49AB-0E01-4FA6-9127-5FCCDB110B2C', '23CFF61F-F1E2-4306-AECE-2819E35484D2'},
+
+        --
+        -- Object Variations
+        --
 
         _US_Helmet09_Desert02 = {'5A980D3E-19B7-4E1F-95D8-8F6E8D0D5139', 'C9FA0036-B75C-4D70-8CBB-736627C93D77'},
         _US_Upperbody04_Desert = {'CDEF869B-959A-11E0-86C2-B30910735269', 'C9F07E77-DA10-1781-CA13-715928514D59'},
@@ -50,6 +59,20 @@ function SoldiersAppearances:RegisterVars()
 
         _Arms1P_BareGlove03_Afro = {'2871BA93-D577-11E0-A7F0-894741C432F0', '67A32FD0-AEE3-61D0-7041-D6B811C9BFE6'},
         _Arms1P_BareGlove03_Wood01 = {'EDEAC49D-D498-11E0-B43C-843E507B97C8', 'A0B1B8BF-7A51-003D-C299-9D06B4394C12'},
+
+        --
+        -- Link UnlockAssets
+        --
+
+        _MP_US_Assault_Helmet01 = {'45B47A2D-9F0E-4A20-B37F-FF9066A3C8E4', 'CB7204EC-D4FA-4722-A540-9D4643D0BDBF'},
+        _MP_US_Assault_Head01 = {'9B54E4CA-6207-4DA4-9E4D-A09F11893844', 'B5C8DFEC-7503-4771-8BCB-5F75DE529D89'},
+        _MP_US_Assault_UpperBody01 = {'CBEBACDB-6158-416D-8D1C-665539F65CDD', '9E49E623-0F88-4D50-88ED-AE9EA0139156'},
+        _MP_US_Assault_LowerBody01 = {'C4FBCFC7-416F-42D2-99B3-2DCF1840FCFD', '98187809-F0CD-4F9B-8D9C-23729FC366C7'},
+
+        _MP_US_Engi_Cap01_Wood01 = {'99212B4D-6FE0-404A-81EF-595C25AC7A31', '15F330AE-322A-41A1-892F-4D2902B8E2F9'},
+        _MP_US_Engi_Head01 = {'CCC88822-E9E8-42FE-8FAB-ED92E797DD18', 'A2B386A1-710F-4B0A-B2DE-B059A8E20D12'},
+        _MP_US_Engi_UpperBody01_Wood01 = {'756B6776-B14E-463D-BC2C-DC3A5AA6C16F', 'B4A1F1F1-A4DF-492B-8C1A-3C98836A7E99'},
+        _MP_US_Engi_LowerBody01_Wood01 = {'67BDFCC5-79BA-4125-99D5-6FE943BC947C', 'B19E00A9-F888-444E-805C-59737AD3FE96'},
 
         _RU_Helmet05_Navy = {'706BF6C9-0EAD-4382-A986-39D571DBFA77', '53828D27-7C4A-415A-892D-8D410136E1B6'}
     }
@@ -210,11 +233,12 @@ end
 function SoldiersAppearances:ReadLinkUnlockAssets(p_class)
     for _, l_value in pairs(self.m_waitingInstances.appearanceUnlockAssets[p_class].linkedTo) do
         if l_value.isLazyLoaded then
-            print(l_value.instanceGuid)
+            print('Lazy LinkUnlockAsset ' .. l_value.instanceGuid:ToString('D'))
+        else
+            local s_linkUnlockAsset = UnlockAsset(l_value)
+            table.insert(self.m_waitingInstances.linkUnlockAssets[p_class], s_linkUnlockAsset)
         end
 
-        local s_linkUnlockAsset = UnlockAsset(l_value)
-        table.insert(self.m_waitingInstances.linkUnlockAssets[p_class], s_linkUnlockAsset)
     end
 end
 

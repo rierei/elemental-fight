@@ -100,7 +100,7 @@ function WeaponsAppearances:ReloadInstances()
         print('Reloading Instances')
     end
 
-    self.m_waitingInstances.weaponEntities = nil -- SoldierWeaponData
+    self.m_waitingInstances.weaponEntities = {} -- SoldierWeaponData
     self.m_unlockAssets = {} -- UnlockAsset
 
     self:RegisterWait()
@@ -374,9 +374,13 @@ function WeaponsAppearances:GetUnlockAssets(p_player, p_element)
     local s_unlocks = {}
 
     for l_key, l_value in pairs(p_player.weapons) do
-        local s_weaponUnlockAsset = SoldierWeaponUnlockAsset(l_value)
-        local s_weaponEntity = s_weaponUnlockAsset.weapon.object
-        local s_unlockAsset = self.m_unlockAssets[s_weaponEntity.instanceGuid:ToString('D')][p_element]
+        local s_unlockAsset = nil
+
+        if l_value ~= nil then
+            local s_weaponUnlockAsset = SoldierWeaponUnlockAsset(l_value)
+            local s_weaponEntity = s_weaponUnlockAsset.weapon.object
+            s_unlockAsset = self.m_unlockAssets[s_weaponEntity.instanceGuid:ToString('D')][p_element]
+        end
 
         s_unlocks[l_key] = s_unlockAsset
     end

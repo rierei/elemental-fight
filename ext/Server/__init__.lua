@@ -16,27 +16,27 @@ function ElementalFight:RegisterVars()
     self.m_elementDamages = {
         neutral = {
             neutral = 1,
-            water = 0.5,
-            fire = 0.5,
-            grass = 0.5
+            water = 0.85,
+            fire = 0.85,
+            grass = 0.85
         },
         water = {
-            neutral = 0.5,
-            water = 0.5,
+            neutral = 0.85,
+            water = 0.85,
             fire = 1,
-            grass = 0.25
+            grass = 0.75
         },
         fire = {
-            neutral = 0.5,
-            water = 0.25,
-            fire = 0.5,
+            neutral = 0.85,
+            water = 0.75,
+            fire = 0.85,
             grass = 1
         },
         grass = {
-            neutral = 0.5,
+            neutral = 0.85,
             water = 1,
-            fire = 0.25,
-            grass = 0.5
+            fire = 0.75,
+            grass = 0.85
         }
     }
 
@@ -116,7 +116,7 @@ function ElementalFight:RegisterEvents()
         local s_weaponEntity = SoldierWeaponData(s_weaponBlueprint.object)
 
         -- knife
-        if s_weaponUnlockAsset.name:match('Knife') then
+        if s_weaponUnlockAsset.name:match('Knife') and p_info.boneIndex == 4294967295 then
             return
         end
 
@@ -135,10 +135,12 @@ function ElementalFight:RegisterEvents()
         local s_elementDamage = self.m_elementDamages[s_weaponElement]
         local s_damageMultiplier = s_elementDamage[s_soldierElement]
 
-        print(s_soldierElement .. ' x ' .. s_weaponElement .. ' = ' .. s_damageMultiplier)
+        if self.m_verbose >= 1 then
+            print(s_weaponElement .. ' x ' .. s_soldierElement .. ' = ' .. s_damageMultiplier)
+        end
 
         if p_info.boneIndex == 1 then
-            s_damageMultiplier = s_damageMultiplier * 1.25
+            s_damageMultiplier = s_damageMultiplier * 1.50
         end
 
         p_info.damage = p_info.damage * s_damageMultiplier
@@ -158,13 +160,19 @@ function ElementalFight:CustomizePlayer(p_player, p_element)
     p_player:SelectUnlockAssets(p_player.customization, { s_soldierVisualUnlockAsset })
 
     for i = #p_player.weapons, 1, -1 do
-        local s_weaponUnlockAsset = s_weaponVisualUnlockAssets[i]
-        local s_weaponVisualUnlockAsset = s_weaponUnlockAssets[i]
+        local s_weaponUnlockAsset = s_weaponUnlockAssets[i]
+        local s_weaponVisualUnlockAsset = s_weaponVisualUnlockAssets[i]
 
         if s_weaponUnlockAsset ~= nil then
             local s_weaponUnlockAssets = p_player.weaponUnlocks[i]
             if s_weaponUnlockAssets == nil then
                 s_weaponUnlockAssets = {}
+            end
+
+            for l_key, l_value in pairs(s_weaponUnlockAssets) do
+                if Asset(l_value).name:lower():match('Camo') then
+                    s_weaponUnlockAssets[l_key] = nil
+                end
             end
 
             table.insert(s_weaponUnlockAssets, s_weaponVisualUnlockAsset)

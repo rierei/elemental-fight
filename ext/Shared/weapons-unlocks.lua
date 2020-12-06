@@ -560,8 +560,11 @@ function WeaponsUnlocks:CreateProjectileEntities(p_entity)
         end
 
         local s_materialContainerPairIndex = MaterialPairs[88]
+        local s_physicsPropertyIndex = nil
+
         if s_newProjectileEntity.materialPair ~= nil then
-            s_materialContainerPairIndex = MaterialPairs[MaterialContainerPair(s_newProjectileEntity.materialPair).physicsPropertyIndex]
+            s_physicsPropertyIndex = MaterialContainerPair(s_newProjectileEntity.materialPair).physicsPropertyIndex
+            s_materialContainerPairIndex = MaterialPairs[s_physicsPropertyIndex]
         end
 
         if s_projectileExplosionEntity == nil and s_missileExplosionEntity == nil then
@@ -581,7 +584,10 @@ function WeaponsUnlocks:CreateProjectileEntities(p_entity)
             s_newProjectileEntity.dudExplosion = s_missileExplosionEntity[l_element]
         end
 
-        s_newProjectileEntity.materialPair = MaterialContainerAsset(self.m_gameMaterialContainerAsset).materialPairs[s_materialContainerPairIndex]
+        -- melee material pair
+        if s_physicsPropertyIndex ~= 113 then
+            s_newProjectileEntity.materialPair = MaterialContainerAsset(self.m_gameMaterialContainerAsset).materialPairs[s_materialContainerPairIndex]
+        end
 
         self.m_registryContainer.entityRegistry:add(s_newProjectileEntity)
 
@@ -825,12 +831,16 @@ function WeaponsUnlocks:UpdateWeaponUnlockAssets(p_entity)
 end
 
 -- getting custom unlocks
-function WeaponsUnlocks:GetUnlocks(p_player, p_element)
+function WeaponsUnlocks:GetUnlockAssets(p_player, p_element)
     local s_unlocks = {}
 
     for l_key, l_value in pairs(p_player.weapons) do
-        local s_weaponUnlockAsset = SoldierWeaponUnlockAsset(l_value)
-        local s_unlockAsset = self.m_weaponUnlockAssets[s_weaponUnlockAsset.instanceGuid:ToString('D')][p_element]
+        local s_unlockAsset = nil
+
+        if l_value ~= nil then
+            local s_weaponUnlockAsset = SoldierWeaponUnlockAsset(l_value)
+            s_unlockAsset = self.m_weaponUnlockAssets[s_weaponUnlockAsset.instanceGuid:ToString('D')][p_element]
+        end
 
         s_unlocks[l_key] = s_unlockAsset
     end
