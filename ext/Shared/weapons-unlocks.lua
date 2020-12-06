@@ -38,31 +38,30 @@ function WeaponsUnlocks:RegisterVars()
         FX_Impact_Metal_01_S = {'29C86406-1ED5-11DE-A58E-D687F51B0F2D', '29C86407-1ED5-11DE-A58E-D687F51B0F2D'}
     }
 
-    self.m_waitingExplodeEffectBlueprintGuids = {
-        FX_Impact_Metal_01_M = {'67CBADED-34D0-11DE-A494-8B723B09CADF', '67CBADEE-34D0-11DE-A494-8B723B09CADF'}
-    }
-
-    self.m_waitingSmokeEffectBlueprintGuids = {
-        FX_40mm_Smoke = {' 6A2C27D9-D455-458D-A542-C212C6F8F69C', '00C3D2F9-1346-47B8-956D-10CC23AD8B4D'}
-    }
-
     self.m_waitingCommonGuids = {
-        MaterialContainer = {'B50615C2-4743-4919-9A40-A738150DEBE9', '89492CD4-F004-42B9-97FB-07FD3D436205'},
-        FX_Impact_Concrete_01_S = {'CE89593E-1D2F-11DE-A872-CA8439DC4744', 'CE89593F-1D2F-11DE-A872-CA8439DC4744'},
-        FX_Grenade_Frag_01 = {'A6C980C2-1578-4169-81CB-C62AC369590E', 'FAFA506C-816A-4339-B108-3E957F48AE2D'},
-        Em_Impact_Generic_S_Sparks_01 = {'1F6B1EB2-86E3-473C-8E25-A24989538600', '1A0C5373-3DC4-4967-89A3-A6D53AD8A58F'},
-        M224_Projectile_Smoke = {'7C592ADA-6915-4969-BFF2-A875027A9962', 'A7E5A920-FA8C-4511-AA6C-CAF00C967C3E'},
-        FX_Grenade_Frag_01_Sound = {'A6C980C2-1578-4169-81CB-C62AC369590E', '41A352A8-783E-41E6-9B3E-989D473DB953'},
+        MaterialContainer = {'B50615C2-4743-4919-9A40-A738150DEBE9', '89492CD4-F004-42B9-97FB-07FD3D436205'}, -- materialContainerAsset
+
+        FX_Impact_Concrete_01_S = {'CE89593E-1D2F-11DE-A872-CA8439DC4744', 'CE89593F-1D2F-11DE-A872-CA8439DC4744'}, -- genericImpactEffectBlueprint
+        FX_Grenade_Frag_01 = {'A6C980C2-1578-4169-81CB-C62AC369590E', 'FAFA506C-816A-4339-B108-3E957F48AE2D'}, -- genericExplodeEffectBlueprint
+
+        Em_Impact_Generic_S_Sparks_01 = {'1F6B1EB2-86E3-473C-8E25-A24989538600', '1A0C5373-3DC4-4967-89A3-A6D53AD8A58F'}, -- dummyExplosionEntity
+        M224_Projectile_Smoke = {'7C592ADA-6915-4969-BFF2-A875027A9962', 'A7E5A920-FA8C-4511-AA6C-CAF00C967C3E'}, -- dummyPolynomialColor
+
+        FX_Grenade_Frag_01_Sound = {'A6C980C2-1578-4169-81CB-C62AC369590E', '41A352A8-783E-41E6-9B3E-989D473DB953'}, -- explodeSoundEffectEntity
+        FX_40mm_Smoke = {' 6A2C27D9-D455-458D-A542-C212C6F8F69C', '00C3D2F9-1346-47B8-956D-10CC23AD8B4D'}, -- smokeEffectBlueprint
+        FX_Impact_Metal_01_M = {'67CBADED-34D0-11DE-A494-8B723B09CADF', '67CBADEE-34D0-11DE-A494-8B723B09CADF'} -- explodeEffectBlueprint
     }
 
     self.m_waitingInstances = {
         impactEffectBlueprints = {}, -- EffectBlueprint
-        explodeEffectBlueprints = {}, -- EffectBlueprint
-        smokeEffectBlueprints = {}, -- EffectBlueprint
-        genericImpactEffectBlueprint = {}, -- EffectBlueprint
-        genericExplodeEffectBlueprint = {}, -- EffectBlueprint
+        explodeEffectBlueprint = nil, -- EffectBlueprint
+        smokeEffectBlueprint = nil, -- EffectBlueprint
+
+        genericImpactEffectBlueprint = nil, -- EffectBlueprint
+
         dummyPolynomialColor = nil, -- PolynomialColorInterpData
         dummyExplosionEntity = nil, -- VeniceExplosionEntityData
+
         materialGridAsset = nil, -- MaterialGridData
         weaponUnlockAssets = {} -- SoldierWeaponUnlockAsset
     }
@@ -71,14 +70,18 @@ function WeaponsUnlocks:RegisterVars()
     self.m_materialContainerAsset = nil -- MaterialContainerAsset
     self.m_materialGridAsset = nil -- MaterialGridData
     self.m_explodeSoundEffect = nil -- SoundEffectEntityData
+
     self.m_polynomialColorInterps = {} -- PolynomialColorInterpData
     self.m_emitterDocumentAssets = {} -- EmitterDocument
     self.m_emitterEntities = {} -- EmitterEntityData
+
     self.m_impactEffectBlueprints = {} -- EffectBlueprint
     self.m_explodeEffectBlueprints = {} -- EffectBlueprint
     self.m_smokeEffectBlueprints = {} -- EffectBlueprint
+
     self.m_impactExplosionEntities = {} -- VeniceExplosionEntityData
     self.m_explodeExplosionEntities = {} -- VeniceExplosionEntityData
+
     self.m_projectileEntities = {} -- MeshProjectileEntityData
     self.m_projectileBlueprints = {} -- ProjectileBlueprint
     self.m_weaponProjectileModifiers = {} -- WeaponProjectileModifier
@@ -160,20 +163,6 @@ function WeaponsUnlocks:RegisterWait()
         self.m_waitingInstances.impactEffectBlueprints['fire'] = p_instances['FX_Impact_Metal_01_S']
     end)
 
-    -- waiting explode effects
-    InstanceWait(self.m_waitingExplodeEffectBlueprintGuids, function(p_instances)
-        self.m_waitingInstances.explodeEffectBlueprints['water'] = p_instances['FX_Impact_Metal_01_M']
-        self.m_waitingInstances.explodeEffectBlueprints['grass'] = p_instances['FX_Impact_Metal_01_M']
-        self.m_waitingInstances.explodeEffectBlueprints['fire'] = p_instances['FX_Impact_Metal_01_M']
-    end)
-
-    -- waiting smoke effects
-    InstanceWait(self.m_waitingSmokeEffectBlueprintGuids, function(p_instances)
-        self.m_waitingInstances.smokeEffectBlueprints['water'] = p_instances['FX_40mm_Smoke']
-        self.m_waitingInstances.smokeEffectBlueprints['grass'] = p_instances['FX_40mm_Smoke']
-        self.m_waitingInstances.smokeEffectBlueprints['fire'] = p_instances['FX_40mm_Smoke']
-    end)
-
     -- waiting common instances
     InstanceWait(self.m_waitingCommonGuids, function(p_instances)
         self:ReadInstances(p_instances)
@@ -220,11 +209,16 @@ function WeaponsUnlocks:ReadInstances(p_instances)
     }
 
     self.m_materialContainerAsset = p_instances['MaterialContainer']
+
     self.m_waitingInstances.genericImpactEffectBlueprint = p_instances['FX_Impact_Concrete_01_S']
-    self.m_waitingInstances.genericExplodeEffectBlueprints = p_instances['FX_Grenade_Frag_01']
-    self.m_explodeSoundEffectEntity = p_instances['FX_Grenade_Frag_01_Sound']
+
+    self.m_waitingInstances.explodeEffectBlueprint = p_instances['FX_Impact_Metal_01_M']
+    self.m_waitingInstances.smokeEffectBlueprint = p_instances['FX_40mm_Smoke']
+
     self.m_waitingInstances.dummyExplosionEntity = p_instances['M224_Projectile_Smoke']
     self.m_waitingInstances.dummyPolynomialColor = p_instances['Em_Impact_Generic_S_Sparks_01']
+
+    self.m_explodeSoundEffectEntity = p_instances['FX_Grenade_Frag_01_Sound']
 
     for _, l_element in pairs(self.m_elementNames) do
         if self.m_waitingInstances.impactEffectBlueprints[l_element] == nil then
@@ -234,14 +228,6 @@ function WeaponsUnlocks:ReadInstances(p_instances)
 
             self.m_waitingInstances.impactEffectBlueprints[l_element] = self.m_waitingInstances.genericImpactEffectBlueprint
         end
-
-        if self.m_waitingInstances.explodeEffectBlueprints[l_element] == nil then
-            if self.m_verbose >= 1 then
-                print('Apply GenericExplodeEffectBlueprint')
-            end
-
-            self.m_waitingInstances.explodeEffectBlueprints[l_element] = self.m_waitingInstances.genericExplodeEffectBlueprint
-        end
     end
 
     self:CreateInstances()
@@ -249,12 +235,15 @@ function WeaponsUnlocks:ReadInstances(p_instances)
     -- removing hanging references
     self.m_waitingInstances = {
         impactEffectBlueprints = {}, -- EffectBlueprint
-        explodeEffectBlueprints = {}, -- EffectBlueprint
-        smokeEffectBlueprints = {}, -- EffectBlueprint
-        genericImpactEffectBlueprint = {}, -- EffectBlueprint
-        genericExplodeEffectBlueprint = {}, -- EffectBlueprint
+        explodeEffectBlueprint = nil, -- EffectBlueprint
+        smokeEffectBlueprint = nil, -- EffectBlueprint
+
+        genericImpactEffectBlueprint = nil, -- EffectBlueprint
+
         dummyPolynomialColor = nil, -- PolynomialColorInterpData
         dummyExplosionEntity = nil, -- VeniceExplosionEntityData
+
+        materialGridAsset = nil, -- MaterialGridData
         weaponUnlockAssets = {} -- SoldierWeaponUnlockAsset
     }
 
@@ -290,8 +279,8 @@ function WeaponsUnlocks:CreateInstances()
     self:CreatePolynomialColorInterps(self.m_waitingInstances.dummyPolynomialColor)
 
     self:CreateImpactEffectBlueprints(self.m_waitingInstances.impactEffectBlueprints)
-    self:CreateExplodeEffectBlueprints(self.m_waitingInstances.explodeEffectBlueprints)
-    self:CreateSmokeEffectBlueprints(self.m_waitingInstances.smokeEffectBlueprints)
+    self:CreateExplodeEffectBlueprints(self.m_waitingInstances.explodeEffectBlueprint)
+    self:CreateSmokeEffectBlueprints(self.m_waitingInstances.smokeEffectBlueprint)
 
     self:CreateImpactExplosionEntities(self.m_waitingInstances.dummyExplosionEntity)
     self:CreateSmokeExplosionEntities(self.m_waitingInstances.dummyExplosionEntity)
@@ -528,13 +517,13 @@ function WeaponsUnlocks:CreateImpactEffectBlueprints(p_blueprints)
 end
 
 -- creating EffectEntity for VeniceExplosionEntityData
-function WeaponsUnlocks:CreateExplodeEffectBlueprints(p_blueprints)
+function WeaponsUnlocks:CreateExplodeEffectBlueprints(p_blueprint)
     if self.m_verbose >= 2 then
         print('Create ExplodeEffectBlueprints')
     end
 
-    for l_element, l_blueprint in pairs(p_blueprints) do
-        local s_newEffectBlueprint = self:_CreateEffectBlueprint(l_blueprint, l_element)
+    for _, l_element in pairs(self.m_elementNames) do
+        local s_newEffectBlueprint = self:_CreateEffectBlueprint(p_blueprint, l_element)
 
         local soundEffectEntity = SoundEffectEntityData(self.m_explodeSoundEffectEntity)
         EffectEntityData(s_newEffectBlueprint.object).components:add(soundEffectEntity)
@@ -544,13 +533,13 @@ function WeaponsUnlocks:CreateExplodeEffectBlueprints(p_blueprints)
 end
 
 -- creating EffectEntity for VeniceExplosionEntityData
-function WeaponsUnlocks:CreateSmokeEffectBlueprints(p_blueprints)
+function WeaponsUnlocks:CreateSmokeEffectBlueprints(p_blueprint)
     if self.m_verbose >= 2 then
         print('Create SmokeEffectBlueprints')
     end
 
-    for l_element, l_blueprint in pairs(p_blueprints) do
-        local s_newEffectBlueprint = self:_CreateEffectBlueprint(l_blueprint, l_element)
+    for _, l_element in pairs(self.m_elementNames) do
+        local s_newEffectBlueprint = self:_CreateEffectBlueprint(p_blueprint, l_element)
 
         self.m_smokeEffectBlueprints[l_element] = s_newEffectBlueprint
     end
