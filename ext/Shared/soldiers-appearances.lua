@@ -91,7 +91,8 @@ function SoldiersAppearances:RegisterVars()
         meshVariationDatabaseEntrys = {}
     }
 
-    self.m_isInstancesLoaded = false
+    self.m_currentLevel = nil
+    self.m_currentMode = nil
 
     self.m_registryContainer = nil -- RegistryContainer
     self.m_meshVariationDatabase = nil -- MeshVariationDatabase
@@ -108,26 +109,24 @@ function SoldiersAppearances:RegisterVars()
 end
 
 function SoldiersAppearances:RegisterEvents()
-    self:RegisterWait()
-
     -- waiting variation database
     Events:Subscribe('Partition:Loaded', function(p_partition)
-        if not self.m_isInstancesLoaded then
-            for _, l_instance in pairs(p_partition.instances) do
-                if l_instance:Is('MeshVariationDatabase') and Asset(l_instance).name:match('Levels') then
-                    if self.m_verbose >= 1 then
-                        print('Found MeshVariationDatabase')
-                    end
-
-                    self.m_waitingInstances.meshVariationDatabase = l_instance
+        for _, l_instance in pairs(p_partition.instances) do
+            if l_instance:Is('MeshVariationDatabase') and Asset(l_instance).name:match('Levels') then
+                if self.m_verbose >= 1 then
+                    print('Found MeshVariationDatabase')
                 end
+
+                self.m_waitingInstances.meshVariationDatabase = l_instance
             end
         end
     end)
 
-    -- reloading instances
+    -- reading instances before level loads
     Events:Subscribe('Level:LoadResources', function(p_level, p_mode, p_dedicated)
-        if self.m_isInstancesLoaded then
+        if self.m_currentMap == nil then
+            self:RegisterWait()
+        else
             self:ReloadInstances()
         end
     end)
@@ -147,7 +146,6 @@ function SoldiersAppearances:ReloadInstances()
     end
 
     self.m_appearanceUnlockAssets = {} -- UnlockAsset
-    self.m_isInstancesLoaded = false
 
     self:RegisterWait()
 end
@@ -157,8 +155,6 @@ function SoldiersAppearances:ReadInstances(p_instances)
     if self.m_verbose >= 1 then
         print('Reading Instances')
     end
-
-    self.m_isInstancesLoaded = true
 
     self.m_meshVariationDatabase = MeshVariationDatabase(self.m_waitingInstances.meshVariationDatabase)
     self.m_meshVariationDatabase:MakeWritable()

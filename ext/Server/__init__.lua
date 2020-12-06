@@ -63,24 +63,28 @@ function ElementalFight:RegisterEvents()
 
         local s_element = self.m_elementNames[self.counter]
 
+        self.m_weaponAppearances:ReplacePlayerWeapons(s_soldier1.player, s_element)
         -- self.m_soldierAppearances:ReplacePlayerAppearance(s_soldier1.player, s_element)
         -- self.m_weaponUnlocks:ReplacePlayerWeapons(s_soldier1.player, s_element)
 
         self.counter = self.counter % #self.m_elementNames + 1
         s_element = self.m_elementNames[self.counter]
 
+        self.m_weaponAppearances:ReplacePlayerWeapons(s_soldier2.player, s_element)
         -- self.m_soldierAppearances:ReplacePlayerAppearance(s_soldier2.player, s_element)
         -- self.m_weaponUnlocks:ReplacePlayerWeapons(s_soldier2.player, s_element)
 
         self.counter = self.counter % #self.m_elementNames + 1
         s_element = self.m_elementNames[self.counter]
 
+        self.m_weaponAppearances:ReplacePlayerWeapons(s_soldier3.player, s_element)
         -- self.m_soldierAppearances:ReplacePlayerAppearance(s_soldier3.player, s_element)
         -- self.m_weaponUnlocks:ReplacePlayerWeapons(s_soldier3.player, s_element)
 
         self.counter = self.counter % #self.m_elementNames + 1
         s_element = self.m_elementNames[self.counter]
 
+        self.m_weaponAppearances:ReplacePlayerWeapons(s_soldier4.player, s_element)
         -- self.m_soldierAppearances:ReplacePlayerAppearance(s_soldier4.player, s_element)
         -- self.m_weaponUnlocks:ReplacePlayerWeapons(s_soldier4.player, s_element)
 
@@ -124,28 +128,26 @@ function ElementalFight:RegisterEvents()
 
         local s_appearanceUnlock = UnlockAsset(p_soldier.player.visualUnlocks[1])
 
-        local s_soldierElement = s_appearanceUnlock.debugUnlockId
         local s_weaponElement = s_weaponEntity.damageGiverName
-
-        local s_elementDamage = self.m_elementDamages[s_weaponElement]
-        if s_elementDamage == nil then
-            s_elementDamage = self.m_elementDamages['neutral']
+        if self.m_elementDamages[s_weaponElement] == nil then
+            s_weaponElement = 'neutral'
         end
 
+        local s_soldierElement = s_appearanceUnlock.debugUnlockId
+        if self.m_elementDamages[s_soldierElement] == nil then
+            s_soldierElement = 'neutral'
+        end
+
+        local s_elementDamage = self.m_elementDamages[s_weaponElement]
         local s_damageMultiplier = s_elementDamage[s_soldierElement]
-        if s_damageMultiplier == nil then
-            s_damageMultiplier = s_elementDamage['neutral']
+
+        print(s_soldierElement .. ' x ' .. s_weaponElement .. ' = ' .. s_damageMultiplier)
+
+        if p_info.boneIndex == 1 then
+            s_damageMultiplier = s_damageMultiplier * 1.25
         end
 
         p_info.damage = p_info.damage * s_damageMultiplier
-
-        local s_isHeadshot = p_info.boneIndex == 1
-        if s_isHeadshot then
-            p_info.damage = p_info.damage * 1.25
-        end
-
-        print(s_soldierElement .. 'x' .. s_weaponElement .. '=' .. tostring(p_info.damage))
-
         p_hook:Pass(p_soldier, p_info)
     end)
 end

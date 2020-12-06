@@ -71,7 +71,6 @@ function WeaponsUnlocks:RegisterVars()
     self.m_weaponBlueprints = {} -- SoldierWeaponBlueprint
     self.m_weaponUnlockAssets = {} -- SoldierWeaponUnlockAsset
 
-    self.m_isInstancesLoaded = false
     self.m_currentLevel = nil
     self.m_currentMode = nil
 
@@ -91,31 +90,18 @@ end
 function WeaponsUnlocks:RegisterEvents()
     -- waiting weapon unlocks
     Events:Subscribe('Partition:Loaded', function(p_partition)
-        if not self.m_isInstancesLoaded then
-            for _, l_instance in pairs(p_partition.instances) do
-                if l_instance:Is('SoldierWeaponUnlockAsset') then
-                    if self.m_verbose >= 2 then
-                        print('Found WeaponUnlockAsset')
-                    end
-
-                    table.insert(self.m_waitingInstances.weaponUnlockAssets, l_instance)
+        for _, l_instance in pairs(p_partition.instances) do
+            if l_instance:Is('SoldierWeaponUnlockAsset') then
+                if self.m_verbose >= 2 then
+                    print('Found WeaponUnlockAsset')
                 end
+
+                table.insert(self.m_waitingInstances.weaponUnlockAssets, l_instance)
             end
         end
     end)
 
-    -- reloading instances
-    Events:Subscribe('Level:LoadResources', function(p_level, p_mode, p_dedicated)
-        if self.m_verbose >= 1 then
-            print('Level:LoadResources')
-        end
-
-        if self.m_currentLevel ~= nil then
-            self.m_isInstancesLoaded = false
-        end
-    end)
-
-    -- reloading instances
+    -- reading instances after level load
     Events:Subscribe('Level:Loaded', function(p_level, p_mode)
         if self.m_verbose >= 1 then
             print('Level:Loaded')
@@ -186,8 +172,6 @@ function WeaponsUnlocks:ReadInstances()
     if self.m_verbose >= 1 then
         print('Reading Instances')
     end
-
-    self.m_isInstancesLoaded = true
 
     for _, l_element in pairs(self.m_elementNames) do
         if self.m_waitingInstances.impactEffectBlueprints[l_element] == nil then
