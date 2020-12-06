@@ -57,7 +57,7 @@ local function spawn(appearance, pos)
 
 	local weapon = ResourceManager:SearchForInstanceByGuid(Guid('0D6330BA-D9C4-4644-C605-0351694D1ADC'))
 
-    return spawnCustom('Bots:Spawn', 'Bot1', TeamId.Team2, SquadId.SquadNone, pos, appearance, weapon)
+    return spawnCustom('Bots:Spawn', 'Bot1', TeamId.Team2, SquadId.SquadNone, pos, { appearance }, weapon)
     -- spawnCustom('Bots:Spawn', 'Bot2', TeamId.Team2, SquadId.SquadNone, Vec3(-306.493164, 70.434372, 272.194336), engiAppearance, weapon)
     -- spawnCustom('Bots:Spawn', 'Bot3', TeamId.Team2, SquadId.SquadNone, Vec3(-306.493164, 70.434372, 274.194336), supportAppearance, weapon )
     -- spawnCustom('Bots:Spawn', 'Bot4', TeamId.Team2, SquadId.SquadNone, Vec3(-306.493164, 70.434372, 276.194336), reconAppearance, weapon)
