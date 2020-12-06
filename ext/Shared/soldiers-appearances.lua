@@ -17,16 +17,28 @@ function SoldiersAppearances:RegisterVars()
         fire = Vec3(1, 0.3, 0)
     }
 
+    self.m_classNames = {
+        'USAssault',
+        'USEngineer',
+        'USRecon',
+        'USSupport',
+
+        'RUAssault',
+        'RUEngineer',
+        'RURecon',
+        'RUSupport'
+    }
+
     self.m_kitAppearanceGuids = {
         USAssault = 'F2ECBAB2-F00A-47CA-66DC-0F89C6A138D4',
         USEngineer = 'F2ADB1BC-466F-4B51-90D1-E8F8670C7BE7',
-        USSupport = '4BE86DA1-0229-448D-A5E2-934E5490E11C',
-        USRecon = '23CFF61F-F1E2-4306-AECE-2819E35484D2',
+        USRecon = '4BE86DA1-0229-448D-A5E2-934E5490E11C',
+        USSupport = '23CFF61F-F1E2-4306-AECE-2819E35484D2',
 
         RUAssault = 'A7A90928-FA6A-4013-96BA-AE559BA8B74F',
         RUEngineer = '0A020AB7-E777-4B6D-BFDB-F842D0BCF33B',
-        RUSupport = 'F3211E83-7C35-497A-A1C8-57F5FC1D3AE8',
-        RURecon = '6BD15FC4-1451-4F0B-9902-73E53582DE95'
+        RURecon = 'F3211E83-7C35-497A-A1C8-57F5FC1D3AE8',
+        RUSupport = '6BD15FC4-1451-4F0B-9902-73E53582DE95'
     }
 
     self.m_waitingGuids = {
@@ -74,10 +86,10 @@ function SoldiersAppearances:RegisterVars()
         _RU_Upperbody01_Desert = {'C835A476-95C0-11E0-B23E-855EFEEC204F', '8CDE9129-D9BE-C6A4-5F6D-975C111EEAA9'},
 
         _Gasmask02_Desert = {'9A62A548-95D0-11E0-B23E-855EFEEC204F', '07DC6312-7A34-A1DF-AB5A-23FB91EE5575'},
-        _RU_Upperbody04_Desert = {'193-95CA-11E0-B23E-855EFEEC204F', '0F1F3-882A-1D11-7253-7E05117E7BA2'},
+        _RU_Upperbody04_Desert = {'CDEF869B-959A-11E0-86C2-B30910735269', 'C9F07E77-DA10-1781-CA13-715928514D59'},
         _RU_Lowerbody01_Desert = {'90F9636A-9212-4B77-BAB1-355C9C9DA7AF', '50200AFD-094C-4578-BE21-C25B8225FC3A'},
 
-        _RU_Beanie02_Desert = {'2A52543B-9404-43DE-AAD9-89B3FC2FBDB3', '8AB1EC58-DBA4-02F1-F029-98DA3958F619'},
+        _RU_Beanie02_Desert = {'62720141-9663-11E0-828D-AD4BD8DF7BC4', '8AB1EC58-DBA4-02F1-F029-98DA3958F619'},
         _RU_Upperbody02_Desert = {'377C1E36-95C7-11E0-B23E-855EFEEC204F', 'A8F16801-B10E-625C-EC91-AEA6962BEACA'},
         _RU_Lowerbody02_Desert = {'0A6DB2C2-2B2E-4CFF-A63E-BBF225618336', 'FA9605D8-8B98-4A64-91F4-EC8647719A65'},
 
@@ -130,50 +142,50 @@ function SoldiersAppearances:RegisterVars()
     }
 
     self.m_meshMaterialIndexes = {
-        us_assault = {
+        USAssault = {
             us_helmet09 = { 1 },
             us_upperbody04 = { 1 },
             us_lb03 = { 1 },
             arms1p_bareglove03 = { 1, 2, 4 }
         },
-        us_engi = {
+        USEngineer = {
             us_cap03 = { 1 },
             us_upperbody06 = { 1 },
             us_lowerbody01 = { 1 },
             arms1p_bareglove03 = { 1, 2, 4 }
         },
-        us_recon = {
+        USRecon = {
             shemagh02 = { 3 },
             us_upperbody08 = { 1 },
             us_lowerbody02 = { 1 },
             arms1p_bareglove03 = { 1, 2, 4 }
         },
-        us_support = {
+        USSupport = {
             us_helmet07 = { 1 },
             us_upperbody07 = { 1 },
             us_lowerbody04 = { 1 },
             arms1p_bareglove03 = { 1, 2, 4 }
         },
 
-        ru_assault = {
+        RUAssault = {
             ru_helmet05 = { 1 },
             us_lb03 = { 1 },
             ru_upperbody01 = { 1 },
             arms1p_rus = { 1, 2, 4 }
         },
-        ru_engi = {
+        RUEngineer = {
             gasmask02 = { 1 },
             ru_upperbody04 = { 1 },
             us_lowerbody01 = { 1 },
             arms1p_rus = { 1, 2, 4 }
         },
-        ru_recon = {
+        RURecon = {
             ru_beanie02 = { 3 },
             ru_upperbody02 = { 1 },
             us_lowerbody02 = { 1 },
             arms1p_rus = { 1, 2, 4 }
         },
-        ru_support = {
+        RUSupport = {
             ru_helmet04 = { 1 },
             ru_upperbody03 = { 1 },
             us_lowerbody04 = { 1 },
@@ -262,17 +274,17 @@ function SoldiersAppearances:ReadInstances(p_instances)
 
     self.m_waitingInstances.characterSocketListAsset = p_instances['CharacterSocketListAsset']
 
-    self.m_waitingInstances.appearanceUnlockAssets['us_assault'] = p_instances['MP_US_Assault_Appearance01']
-    self.m_waitingInstances.appearanceUnlockAssets['us_engi'] = p_instances['MP_US_Engi_Appearance_Wood01']
-    self.m_waitingInstances.appearanceUnlockAssets['us_recon'] = p_instances['MP_US_Recon_Appearance_Wood01']
-    self.m_waitingInstances.appearanceUnlockAssets['us_support'] = p_instances['MP_US_Support_Appearance_Wood01']
+    self.m_waitingInstances.appearanceUnlockAssets['USAssault'] = p_instances['MP_US_Assault_Appearance01']
+    self.m_waitingInstances.appearanceUnlockAssets['USEngineer'] = p_instances['MP_US_Engi_Appearance_Wood01']
+    self.m_waitingInstances.appearanceUnlockAssets['USRecon'] = p_instances['MP_US_Recon_Appearance_Wood01']
+    self.m_waitingInstances.appearanceUnlockAssets['USSupport'] = p_instances['MP_US_Support_Appearance_Wood01']
 
-    self.m_waitingInstances.appearanceUnlockAssets['ru_assault'] = p_instances['MP_RU_Assault_Appearance01']
-    self.m_waitingInstances.appearanceUnlockAssets['ru_engi'] = p_instances['MP_RU_Engi_Appearance01']
-    self.m_waitingInstances.appearanceUnlockAssets['ru_recon'] = p_instances['MP_RU_Recon_Appearance01']
-    self.m_waitingInstances.appearanceUnlockAssets['ru_support'] = p_instances['MP_RU_Support_Appearance01']
+    self.m_waitingInstances.appearanceUnlockAssets['RUAssault'] = p_instances['MP_RU_Assault_Appearance01']
+    self.m_waitingInstances.appearanceUnlockAssets['RUEngineer'] = p_instances['MP_RU_Engi_Appearance01']
+    self.m_waitingInstances.appearanceUnlockAssets['RURecon'] = p_instances['MP_RU_Recon_Appearance01']
+    self.m_waitingInstances.appearanceUnlockAssets['RUSupport'] = p_instances['MP_RU_Support_Appearance01']
 
-    for l_class, _ in pairs(self.m_kitAppearanceGuids) do
+    for _, l_class in pairs(self.m_classNames) do
         self.m_waitingInstances.linkUnlockAssets[l_class] = {}
         self.m_waitingInstances.blueprintAndVariationPairs[l_class] = {}
         self.m_waitingInstances.objectVariationAssets[l_class] = {}
@@ -416,7 +428,7 @@ function SoldiersAppearances:CreateInstances()
 
     self.m_registryContainer = RegistryContainer()
 
-    for l_class, _ in pairs(self.m_kitAppearanceGuids) do
+    for _, l_class in pairs(self.m_classNames) do
         -- processing MeshVariationDatabaseEntry
         for _, ll_value in pairs(self.m_waitingInstances.meshVariationDatabaseEntrys[l_class]) do
             self:CreateMeshMaterialVariations(ll_value)
@@ -654,6 +666,8 @@ function SoldiersAppearances:GetUnlockAsset(p_player, p_element)
     local s_kitName = s_kitNameParts[#s_kitNameParts]
     local s_appearanceGuid = self.m_kitAppearanceGuids[s_kitName]
     local s_appearanceUnlockAsset = self.m_appearanceUnlockAssets[s_appearanceGuid][p_element]
+
+    print(s_kitName)
 
     return s_appearanceUnlockAsset
 end

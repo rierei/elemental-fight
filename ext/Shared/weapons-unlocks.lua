@@ -117,11 +117,11 @@ function WeaponsUnlocks:RegisterEvents()
     Events:Subscribe('Partition:Loaded', function(p_partition)
         for _, l_instance in pairs(p_partition.instances) do
             if l_instance:Is('MaterialGridData') then
-                if self.m_verbose >= 2 then
+                if self.m_verbose >= 1 then
                     print('Found MaterialGridData')
                 end
 
-                self.m_waitingInstances.materialGrid = l_instance
+                self.m_waitingInstances.materialGridAsset = l_instance
             end
         end
     end)
@@ -196,7 +196,7 @@ function WeaponsUnlocks:ReadInstances(p_instances)
 
     -- grid shotgun material
     for _, l_value in pairs(self.m_materialGridAsset.interactionGrid[65].items[48].physicsPropertyProperties) do
-        if l_value:is('MaterialRelationPenetrationData') then
+        if l_value:Is('MaterialRelationPenetrationData') then
             self.m_projectileMaterialRelationPenetrationData = MaterialRelationPenetrationData(l_value)
         end
     end
@@ -609,17 +609,27 @@ function WeaponsUnlocks:CreateProjectileEntities(p_entity)
         local s_projectileExplosionEntity = self:_GetInstance(s_newProjectileEntity.explosion, 'explodeExplosionEntities')
         local s_missileExplosionEntity = self:_GetInstance(s_newProjectileEntity.dudExplosion, 'explodeExplosionEntities')
 
+        -- non-explosive projectile
         if s_projectileExplosionEntity == nil and s_missileExplosionEntity == nil then
-            s_projectileExplosionEntity = self.m_impactExplosionEntities[l_element]
+            s_newProjectileEntity.explosion = self.m_impactExplosionEntities[l_element]
         end
 
+        -- explosive projectile
+        if s_projectileExplosionEntity ~= nil then
+            s_newProjectileEntity.explosion = s_projectileExplosionEntity[l_element]
+        end
+
+        -- missile projectile
+        if s_missileExplosionEntity ~= nil then
+            s_newProjectileEntity.dudExplosion = s_missileExplosionEntity[l_element]
+        end
+
+        -- smoke projectile
         if s_isSmoke then
-            s_projectileExplosionEntity = self.m_smokeExplosionEntities
+            s_newProjectileEntity.explosion = self.m_smokeExplosionEntities[l_element]
         end
 
         -- patching projectile entity
-        s_newProjectileEntity.explosion = s_projectileExplosionEntity[l_element]
-        s_newProjectileEntity.dudExplosion = s_missileExplosionEntity[l_element]
         s_newProjectileEntity.materialPair = s_materialPair
 
         self.m_registryContainer.entityRegistry:add(s_newProjectileEntity)
@@ -859,25 +869,25 @@ function WeaponsUnlocks:UpdateProjectilePhysicsPropertys(p_index)
         s_propertyIndex = 256 + s_propertyIndex
     end
 
-    local s_gridPropertyIndex = self.m_materialGridAsset.materialIndexMap[s_propertyIndex]
+    local s_gridPropertyIndex = self.m_materialGridAsset.materialIndexMap[s_propertyIndex] + 1
     local s_materialInteractionGridRow = self.m_materialGridAsset.interactionGrid[s_gridPropertyIndex]
 
     for _, l_value in pairs(self.m_soldierGridPropertyIndexes) do
         local s_materialRelationPropertyPair = s_materialInteractionGridRow.items[l_value]
 
-        local s_hasNeverPenetrate = false
+        local s_hasRelationPenetration = false
 
         for ll_key, ll_value in pairs(s_materialRelationPropertyPair.physicsPropertyProperties) do
             if ll_value:Is('MaterialRelationPenetrationData') then
                 if MaterialRelationPenetrationData(ll_value).neverPenetrate then
-                    s_hasNeverPenetrate = true
+                    s_hasRelationPenetration = true
                 else
                     s_materialRelationPropertyPair.physicsPropertyProperties:erase(ll_key)
                 end
             end
         end
 
-        if not s_hasNeverPenetrate then
+        if not s_hasRelationPenetration then
             s_materialRelationPropertyPair.physicsPropertyProperties:add(self.m_projectileMaterialRelationPenetrationData)
         end
     end
