@@ -201,8 +201,12 @@ function WeaponsUnlocks:ReadInstances(p_instances)
     self.m_materialGridAsset = MaterialGridData(self.m_waitingInstances.materialGridAsset)
     self.m_materialGridAsset:MakeWritable()
 
-    -- grid shotgun material
-    for _, l_value in pairs(self.m_materialGridAsset.interactionGrid[65].items[48].physicsPropertyProperties) do
+    local s_shotgunGridPropertyIndex = self.m_materialGridAsset.materialIndexMap[89] + 1
+    local s_headGridPropertyIndex = self.m_materialGridAsset.materialIndexMap[66] + 1
+
+    -- finding MaterialRelationPenetrationData from shotgun
+    local s_shotgunMaterialInteractionGridRow = self.m_materialGridAsset.interactionGrid[s_shotgunGridPropertyIndex].items[s_headGridPropertyIndex]
+    for _, l_value in pairs(s_shotgunMaterialInteractionGridRow.physicsPropertyProperties) do
         if l_value:Is('MaterialRelationPenetrationData') then
             self.m_projectileMaterialRelationPenetrationData = MaterialRelationPenetrationData(l_value)
         end
