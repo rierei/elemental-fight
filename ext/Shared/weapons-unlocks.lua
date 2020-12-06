@@ -1,8 +1,10 @@
 local WeaponsUnlocks = class('WeaponsUnlocks')
 
-local MaterialPairs = require('__shared/utils/consts').materialPairs
-local Uuid = require('__shared/utils/uuid')
+local ElementalConfig = require('__shared/elemental-config')
 local InstanceWait = require('__shared/utils/wait')
+local InstanceUtils = require('__shared/utils/instances')
+
+local MaterialPairs = require('__shared/utils/consts').materialPairs
 
 function WeaponsUnlocks:__init()
     self:RegisterVars()
@@ -312,23 +314,23 @@ function WeaponsUnlocks:CreateInstances()
     ResourceManager:AddRegistry(self.m_registryContainer, ResourceCompartment.ResourceCompartment_Game)
 
     if self.m_verbose >= 1 then
-        print('Created PolynomialColorInterps: ' .. self:_Count(self.m_polynomialColorInterps))
-        print('Created EmitterDocumentAssets: ' .. self:_Count(self.m_emitterDocumentAssets))
-        print('Created EmitterEntities: ' .. self:_Count(self.m_emitterEntities))
-        print('Created ImpactEffectBlueprints: ' .. self:_Count(self.m_impactEffectBlueprints))
-        print('Created ExplodeEffectBlueprints: ' .. self:_Count(self.m_explodeEffectBlueprints))
-        print('Created ImpactExplosionEntities: ' .. self:_Count(self.m_impactExplosionEntities))
-        print('Created ExplodeExplosionEntities: ' .. self:_Count(self.m_explodeExplosionEntities))
-        print('Created ProjectileEntities: ' .. self:_Count(self.m_projectileEntities))
-        print('Created ProjectileBlueprints: ' .. self:_Count(self.m_projectileBlueprints))
-        print('Created WeaponProjectileModifiers: ' .. self:_Count(self.m_weaponProjectileModifiers))
-        print('Created WeaponFiringModifiers: ' .. self:_Count(self.m_weaponFiringModifiers))
-        print('Created WeaponEntities: ' .. self:_Count(self.m_weaponEntities))
-        print('Created WeaponBlueprints: ' .. self:_Count(self.m_weaponBlueprints))
-        print('Created WeaponUnlockAssets: ' .. self:_Count(self.m_weaponUnlockAssets))
-        print('Created RegistryContainerAssets: ' .. self:_Count(self.m_registryContainer.assetRegistry))
-        print('Created RegistryContainerEntities: ' .. self:_Count(self.m_registryContainer.entityRegistry))
-        print('Created RegistryContainerBlueprints: ' .. self:_Count(self.m_registryContainer.blueprintRegistry))
+        print('Created PolynomialColorInterps: ' .. InstanceUtils:Count(self.m_polynomialColorInterps))
+        print('Created EmitterDocumentAssets: ' .. InstanceUtils:Count(self.m_emitterDocumentAssets))
+        print('Created EmitterEntities: ' .. InstanceUtils:Count(self.m_emitterEntities))
+        print('Created ImpactEffectBlueprints: ' .. InstanceUtils:Count(self.m_impactEffectBlueprints))
+        print('Created ExplodeEffectBlueprints: ' .. InstanceUtils:Count(self.m_explodeEffectBlueprints))
+        print('Created ImpactExplosionEntities: ' .. InstanceUtils:Count(self.m_impactExplosionEntities))
+        print('Created ExplodeExplosionEntities: ' .. InstanceUtils:Count(self.m_explodeExplosionEntities))
+        print('Created ProjectileEntities: ' .. InstanceUtils:Count(self.m_projectileEntities))
+        print('Created ProjectileBlueprints: ' .. InstanceUtils:Count(self.m_projectileBlueprints))
+        print('Created WeaponProjectileModifiers: ' .. InstanceUtils:Count(self.m_weaponProjectileModifiers))
+        print('Created WeaponFiringModifiers: ' .. InstanceUtils:Count(self.m_weaponFiringModifiers))
+        print('Created WeaponEntities: ' .. InstanceUtils:Count(self.m_weaponEntities))
+        print('Created WeaponBlueprints: ' .. InstanceUtils:Count(self.m_weaponBlueprints))
+        print('Created WeaponUnlockAssets: ' .. InstanceUtils:Count(self.m_weaponUnlockAssets))
+        print('Created RegistryContainerAssets: ' .. InstanceUtils:Count(self.m_registryContainer.assetRegistry))
+        print('Created RegistryContainerEntities: ' .. InstanceUtils:Count(self.m_registryContainer.entityRegistry))
+        print('Created RegistryContainerBlueprints: ' .. InstanceUtils:Count(self.m_registryContainer.blueprintRegistry))
     end
 end
 
@@ -342,7 +344,7 @@ function WeaponsUnlocks:CreatePolynomialColorInterps(p_data)
     s_elements['neutral'] = p_data
 
     for _, l_element in pairs(self.m_elementNames) do
-        local s_newPolynomialColor = self:_CloneInstance(p_data, l_element)
+        local s_newPolynomialColor = InstanceUtils:CloneInstance(p_data, l_element)
 
         s_newPolynomialColor.color0 = self.m_elementColors[l_element]
         s_newPolynomialColor.color1 = self.m_elementColors[l_element]
@@ -363,12 +365,12 @@ function WeaponsUnlocks:_CreateEmitterDocumentAssets(p_asset)
     s_elements['neutral'] = p_asset
 
     for _, l_element in pairs(self.m_elementNames) do
-        local s_newEmitterDocumentAsset = self:_CloneInstance(p_asset, l_element)
-        local s_newTemplateData = self:_CloneInstance(p_asset.templateData, l_element)
+        local s_newEmitterDocumentAsset = InstanceUtils:CloneInstance(p_asset, l_element)
+        local s_newTemplateData = InstanceUtils:CloneInstance(p_asset.templateData, l_element)
 
         local s_updateColor = nil
         local function createProcessorData(p_data)
-            local s_newProcessorData = self:_CloneInstance(p_data, l_element)
+            local s_newProcessorData = InstanceUtils:CloneInstance(p_data, l_element)
 
             if s_newProcessorData.nextProcessor ~= nil then
                 s_newProcessorData.nextProcessor = createProcessorData(s_newProcessorData.nextProcessor)
@@ -457,7 +459,7 @@ function WeaponsUnlocks:_CreateEmitterEntity(p_entity)
     local emitterDocumentAsset = self:_GetInstance(p_entity.emitter, 'emitterDocumentAssets')
 
     for _, l_element in pairs(self.m_elementNames) do
-        local s_newEmitterEntity = self:_CloneInstance(p_entity, l_element)
+        local s_newEmitterEntity = InstanceUtils:CloneInstance(p_entity, l_element)
 
         -- disable water spray arm
         if s_newEmitterEntity.emitter.name:match('Em_Impact_Water_S_SprayArm') then
@@ -481,8 +483,8 @@ function WeaponsUnlocks:_CreateEffectBlueprint(p_blueprint, p_element)
         print('Create EffectBlueprints')
     end
 
-    local s_newEffectBlueprint = self:_CloneInstance(p_blueprint, p_element)
-    local s_newEffectEntity = self:_CloneInstance(s_newEffectBlueprint.object, p_element)
+    local s_newEffectBlueprint = InstanceUtils:CloneInstance(p_blueprint, p_element)
+    local s_newEffectEntity = InstanceUtils:CloneInstance(s_newEffectBlueprint.object, p_element)
 
     for l_key, l_value in pairs(s_newEffectEntity.components) do
         if l_value:Is('EmitterEntityData') then
@@ -555,7 +557,7 @@ function WeaponsUnlocks:CreateImpactExplosionEntities(p_entity)
     s_elements['neutral'] = p_entity
 
     for _, l_element in pairs(self.m_elementNames) do
-        local s_newExplosionEntity = self:_CloneInstance(p_entity, 'impact' .. l_element)
+        local s_newExplosionEntity = InstanceUtils:CloneInstance(p_entity, 'impact' .. l_element)
 
         -- patching explosion properties
         s_newExplosionEntity.detonationEffect = self.m_impactEffectBlueprints[l_element]
@@ -580,7 +582,7 @@ function WeaponsUnlocks:_CreateExplodeExplosionEntities(p_entity)
     s_elements['neutral'] = p_entity
 
     for _, l_element in pairs(self.m_elementNames) do
-        local s_newExplosionEntity = self:_CloneInstance(p_entity, l_element)
+        local s_newExplosionEntity = InstanceUtils:CloneInstance(p_entity, l_element)
 
         if s_newExplosionEntity.materialPair ~= nil then
             local s_materialContainerPairIndex = MaterialPairs[MaterialContainerPair(s_newExplosionEntity.materialPair).physicsPropertyIndex]
@@ -608,7 +610,7 @@ function WeaponsUnlocks:CreateSmokeExplosionEntities(p_entity)
     s_elements['neutral'] = p_entity
 
     for _, l_element in pairs(self.m_elementNames) do
-        local s_newExplosionEntity = self:_CloneInstance(p_entity, 'smoke' .. l_element)
+        local s_newExplosionEntity = InstanceUtils:CloneInstance(p_entity, 'smoke' .. l_element)
 
         -- patching explosion properties
         s_newExplosionEntity.detonationEffect = self.m_smokeEffectBlueprints[l_element]
@@ -647,7 +649,7 @@ function WeaponsUnlocks:CreateProjectileEntities(p_entity)
     end
 
     for _, l_element in pairs(self.m_elementNames) do
-        local s_newProjectileEntity = self:_CloneInstance(p_entity, l_element)
+        local s_newProjectileEntity = InstanceUtils:CloneInstance(p_entity, l_element)
 
         local s_projectileExplosionEntity = self:_GetInstance(s_newProjectileEntity.explosion, 'explodeExplosionEntities')
         local s_missileExplosionEntity = self:_GetInstance(s_newProjectileEntity.dudExplosion, 'explodeExplosionEntities')
@@ -699,7 +701,7 @@ function WeaponsUnlocks:_CreateProjectileBlueprints(p_blueprint)
     local s_projectileEntity = self:_GetInstance(p_blueprint.object, 'projectileEntities')
 
     for _, l_element in pairs(self.m_elementNames) do
-        local s_newProjectileBlueprint = self:_CloneInstance(p_blueprint, l_element)
+        local s_newProjectileBlueprint = InstanceUtils:CloneInstance(p_blueprint, l_element)
 
         -- patching projectile blueprint
         s_newProjectileBlueprint.object = s_projectileEntity[l_element]
@@ -728,7 +730,7 @@ function WeaponsUnlocks:_CreateWeaponProjectileModifiers(p_data)
     local s_projectileEntity = self:_GetInstance(p_data.projectileData, 'projectileEntities')
 
     for _, l_element in pairs(self.m_elementNames) do
-        local s_newWeaponProjectileModifier = self:_CloneInstance(p_data, l_element)
+        local s_newWeaponProjectileModifier = InstanceUtils:CloneInstance(p_data, l_element)
 
         -- patching projectile modifier
         s_newWeaponProjectileModifier.projectileData = s_projectileEntity[l_element]
@@ -758,9 +760,9 @@ function WeaponsUnlocks:_CreateWeaponFiringModifiers(p_data)
     local s_projectileEntity = self:_GetInstance(s_firingFunction.shot.projectileData, 'projectileEntities')
     local s_projectileBlueprint = self:_GetInstance(s_firingFunction.shot.projectile, 'projectileBlueprints')
     for _, l_element in pairs(self.m_elementNames) do
-        local s_newFiringFunction = self:_CloneInstance(s_firingFunction, l_element)
-        local s_newModifierFiringData = self:_CloneInstance(s_firingData, l_element)
-        local s_newFiringModifier = self:_CloneInstance(p_data, l_element)
+        local s_newFiringFunction = InstanceUtils:CloneInstance(s_firingFunction, l_element)
+        local s_newModifierFiringData = InstanceUtils:CloneInstance(s_firingData, l_element)
+        local s_newFiringModifier = InstanceUtils:CloneInstance(p_data, l_element)
 
         -- patching firing function
         s_newFiringFunction.shot.projectileData = s_projectileEntity[l_element]
@@ -815,9 +817,9 @@ function WeaponsUnlocks:CreateWeaponEntities(p_entity)
     local s_projectileBlueprint = self:_GetInstance(s_firingFunction.shot.projectile, 'projectileBlueprints')
     local s_projectileEntity = self.m_projectileEntities[p_entity.weaponFiring.primaryFire.shot.projectileData.instanceGuid:ToString('D')]
     for _, l_element in pairs(self.m_elementNames) do
-        local s_newFiringFunction = self:_CloneInstance(s_firingFunction, l_element)
-        local s_newFiringData = self:_CloneInstance(s_firingData, l_element)
-        local s_newWeaponEntity = self:_CloneInstance(p_entity, l_element)
+        local s_newFiringFunction = InstanceUtils:CloneInstance(s_firingFunction, l_element)
+        local s_newFiringData = InstanceUtils:CloneInstance(s_firingData, l_element)
+        local s_newWeaponEntity = InstanceUtils:CloneInstance(p_entity, l_element)
 
         -- patching FiringData
         s_newFiringFunction.shot.projectileData = s_projectileEntity[l_element]
@@ -860,7 +862,7 @@ function WeaponsUnlocks:CreateWeaponBlueprints(p_blueprint)
 
     local s_entityGuid = p_blueprint.object.instanceGuid:ToString('D')
     for _, l_element in pairs(self.m_elementNames) do
-        local s_newWeaponBlueprint = self:_CloneInstance(p_blueprint, l_element)
+        local s_newWeaponBlueprint = InstanceUtils:CloneInstance(p_blueprint, l_element)
 
         -- patching weapon blueprint
         s_newWeaponBlueprint.object = self.m_weaponEntities[s_entityGuid][l_element]
@@ -887,7 +889,7 @@ function WeaponsUnlocks:CreateWeaponUnlockAssets(p_asset)
 
     local s_blueprintGuid = p_asset.weapon.instanceGuid:ToString('D')
     for _, l_element in pairs(self.m_elementNames) do
-        local s_newWeaponUnlockAsset = self:_CloneInstance(p_asset, l_element)
+        local s_newWeaponUnlockAsset = InstanceUtils:CloneInstance(p_asset, l_element)
 
         -- patching unlock
         s_newWeaponUnlockAsset.name = s_newWeaponUnlockAsset.name .. l_element
@@ -996,47 +998,6 @@ function WeaponsUnlocks:_GetInstance(p_instance, p_type)
     end
 
     return self['m_' .. p_type][p_instance.instanceGuid:ToString('D')]
-end
-
--- cloning the instance and adding to partition
-function WeaponsUnlocks:_CloneInstance(p_instance, p_variation)
-    if self.m_verbose >= 2 then
-        print('Clone: ' .. p_instance.typeInfo.name)
-    end
-
-    local s_seed = p_instance.instanceGuid:ToString('D') .. p_variation
-    local s_partition = p_instance.partition
-
-    local s_newGuid = self:_GenerateGuid(s_seed)
-    local s_newInstance = p_instance:Clone(s_newGuid)
-    s_partition:AddInstance(s_newInstance)
-
-    -- casting the instance
-    local s_typeName = s_newInstance.typeInfo.name
-    local s_type = _G[s_typeName]
-
-    if s_type ~= nil then
-        s_newInstance = s_type(s_newInstance)
-    end
-
-    return s_newInstance
-end
-
--- generating UUID for the provided seed
-function WeaponsUnlocks:_GenerateGuid(p_seed)
-    Uuid.randomseed(MathUtils:FNVHash(p_seed))
-    return Guid(Uuid())
-end
-
--- counting table elements
-function WeaponsUnlocks:_Count(p_table)
-    local s_count = 0
-
-    for _, _ in pairs(p_table) do
-        s_count = s_count + 1
-    end
-
-    return s_count
 end
 
 return WeaponsUnlocks

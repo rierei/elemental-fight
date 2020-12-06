@@ -1,7 +1,7 @@
 local SoldiersAppearances = class('SoldiersAppearances')
 
-local Uuid = require('__shared/utils/uuid')
 local InstanceWait = require('__shared/utils/wait')
+local InstanceUtils = require('__shared/utils/instances')
 
 function SoldiersAppearances:__init()
     self:RegisterVars()
@@ -401,7 +401,7 @@ function SoldiersAppearances:ReadMeshVariationDatabaseMaterialIndexes(p_class)
         local s_indexes = {}
         if self.m_meshMaterialIndexes[p_class] ~= nil then
             local s_skinnedMeshAsset = SkinnedMeshAsset(l_value.mesh)
-            local s_skinnedMeshAssetNameParts = self:_Split(s_skinnedMeshAsset.name, '/')
+            local s_skinnedMeshAssetNameParts = InstanceUtils:Split(s_skinnedMeshAsset.name, '/')
             local s_skinnedMeshName = s_skinnedMeshAssetNameParts[#s_skinnedMeshAssetNameParts]:gsub('_Mesh', '')
             local s_meshMaterialIndexes = self.m_meshMaterialIndexes[p_class][s_skinnedMeshName]
 
@@ -457,17 +457,17 @@ function SoldiersAppearances:CreateInstances()
     ResourceManager:AddRegistry(self.m_registryContainer, ResourceCompartment.ResourceCompartment_Game)
 
     if self.m_verbose >= 1 then
-        print('Created SkinnedSocketObjects: ' .. self:_Count(self.m_skinnedSocketObjects))
-        print('Created DatabaseEntryMaterialIndexes: ' .. self:_Count(self.m_databaseEntryMaterialIndexes))
-        print('Created MeshMaterialVariations: ' .. self:_Count(self.m_meshMaterialVariations))
-        print('Created VariationDatabaseEntrys: ' .. self:_Count(self.m_meshVariationDatabaseEntrys))
-        print('Created ObjectVariationAssets: ' .. self:_Count(self.m_objectVariationAssets))
-        print('Created BlueprintVariationPairs: ' .. self:_Count(self.m_blueprintVariationPairs))
-        print('Created LinkUnlockAssets: ' .. self:_Count(self.m_linkUnlockAssets))
-        print('Created AppearanceUnlockAssets: ' .. self:_Count(self.m_appearanceUnlockAssets))
-        print('Created RegistryContainerAssets: ' .. self:_Count(self.m_registryContainer.assetRegistry))
-        print('Created RegistryContainerEntities: ' .. self:_Count(self.m_registryContainer.entityRegistry))
-        print('Created RegistryContainerBlueprints: ' .. self:_Count(self.m_registryContainer.blueprintRegistry))
+        print('Created SkinnedSocketObjects: ' .. InstanceUtils:Count(self.m_skinnedSocketObjects))
+        print('Created DatabaseEntryMaterialIndexes: ' .. InstanceUtils:Count(self.m_databaseEntryMaterialIndexes))
+        print('Created MeshMaterialVariations: ' .. InstanceUtils:Count(self.m_meshMaterialVariations))
+        print('Created VariationDatabaseEntrys: ' .. InstanceUtils:Count(self.m_meshVariationDatabaseEntrys))
+        print('Created ObjectVariationAssets: ' .. InstanceUtils:Count(self.m_objectVariationAssets))
+        print('Created BlueprintVariationPairs: ' .. InstanceUtils:Count(self.m_blueprintVariationPairs))
+        print('Created LinkUnlockAssets: ' .. InstanceUtils:Count(self.m_linkUnlockAssets))
+        print('Created AppearanceUnlockAssets: ' .. InstanceUtils:Count(self.m_appearanceUnlockAssets))
+        print('Created RegistryContainerAssets: ' .. InstanceUtils:Count(self.m_registryContainer.assetRegistry))
+        print('Created RegistryContainerEntities: ' .. InstanceUtils:Count(self.m_registryContainer.entityRegistry))
+        print('Created RegistryContainerBlueprints: ' .. InstanceUtils:Count(self.m_registryContainer.blueprintRegistry))
     end
 end
 
@@ -484,7 +484,7 @@ function SoldiersAppearances:CreateMeshMaterialVariations(p_entry)
     for _, l_element in pairs(self.m_elementNames) do
         local s_variations = {}
         for _, ll_value in pairs(s_meshVariationDatabaseMaterialIndexes) do
-            local s_newMeshMaterialVariation = MeshMaterialVariation(self:_GenerateGuid(p_entry.instanceGuid:ToString('D') .. ll_value .. l_element))
+            local s_newMeshMaterialVariation = MeshMaterialVariation(InstanceUtils:GenerateGuid(p_entry.instanceGuid:ToString('D') .. ll_value .. l_element))
             p_entry.partition:AddInstance(s_newMeshMaterialVariation)
 
             local s_surfaceShaderInstanceDataStruct = SurfaceShaderInstanceDataStruct()
@@ -529,7 +529,7 @@ function SoldiersAppearances:CreateMeshVariationDatabaseEntrys(p_entry)
     s_elements['neutral'] = p_entry
 
     for _, l_element in pairs(self.m_elementNames) do
-        local s_newMeshVariationDatabaseEntry = self:_CloneInstance(p_entry, l_element)
+        local s_newMeshVariationDatabaseEntry = InstanceUtils:CloneInstance(p_entry, l_element)
 
         for l_key, l_value in pairs(self.m_meshMaterialVariations[p_entry.instanceGuid:ToString('D')][l_element]) do
             s_newMeshVariationDatabaseEntry.materials[l_key].materialVariation = l_value
@@ -555,7 +555,7 @@ function SoldiersAppearances:CreateObjectVariationAssets(p_asset)
     s_elements['neutral'] = p_asset
 
     for _, l_element in pairs(self.m_elementNames) do
-        local s_newObjectVariationAsset = self:_CloneInstance(p_asset, l_element)
+        local s_newObjectVariationAsset = InstanceUtils:CloneInstance(p_asset, l_element)
 
         -- patching object variation properties
         s_newObjectVariationAsset.name = p_asset.nameHash .. l_element
@@ -588,7 +588,7 @@ function SoldiersAppearances:CreateBlueprintAndVariationPairs(p_data)
     s_elements['neutral'] = p_data
 
     for _, l_element in pairs(self.m_elementNames) do
-        local s_newBlueprintAndVariationPair = self:_CloneInstance(p_data, l_element)
+        local s_newBlueprintAndVariationPair = InstanceUtils:CloneInstance(p_data, l_element)
 
         -- patching pair properties
         s_newBlueprintAndVariationPair.name = s_newBlueprintAndVariationPair.name .. l_element
@@ -612,7 +612,7 @@ function SoldiersAppearances:CreateLinkUnlockAssets(p_asset)
     s_elements['neutral'] = p_asset
 
     for _, l_element in pairs(self.m_elementNames) do
-        local s_newLinkUnlockAsset = self:_CloneInstance(p_asset, l_element)
+        local s_newLinkUnlockAsset = InstanceUtils:CloneInstance(p_asset, l_element)
         s_newLinkUnlockAsset.name = s_newLinkUnlockAsset.name .. l_element
 
         for l_key, l_value in pairs(s_newLinkUnlockAsset.linkedTo) do
@@ -641,7 +641,7 @@ function SoldiersAppearances:CreateAppearanceUnlockAssets(p_asset)
     -- s_elements['neutral'] = p_asset -- hanging instance
 
     for _, l_element in pairs(self.m_elementNames) do
-        local s_newAppearanceUnlockAsset = self:_CloneInstance(p_asset, l_element)
+        local s_newAppearanceUnlockAsset = InstanceUtils:CloneInstance(p_asset, l_element)
         s_newAppearanceUnlockAsset.name = s_newAppearanceUnlockAsset.name .. l_element
         s_newAppearanceUnlockAsset.debugUnlockId = l_element
 
@@ -662,7 +662,7 @@ end
 -- getting custom unlock
 function SoldiersAppearances:GetUnlockAsset(p_player, p_element)
     local s_customization = VeniceSoldierCustomizationAsset(p_player.customization)
-    local s_kitNameParts = self:_Split(s_customization.name, '/')
+    local s_kitNameParts = InstanceUtils:Split(s_customization.name, '/')
     local s_kitName = s_kitNameParts[#s_kitNameParts]
     local s_appearanceGuid = self.m_kitAppearanceGuids[s_kitName]
     local s_appearanceUnlockAsset = self.m_appearanceUnlockAssets[s_appearanceGuid][p_element]
@@ -670,58 +670,6 @@ function SoldiersAppearances:GetUnlockAsset(p_player, p_element)
     print(s_kitName)
 
     return s_appearanceUnlockAsset
-end
-
--- cloning the instance and adding to partition
-function SoldiersAppearances:_CloneInstance(p_instance, p_variation)
-    if self.m_verbose >= 2 then
-        print('Clone: ' .. p_instance.typeInfo.name)
-    end
-
-    local s_seed = p_instance.instanceGuid:ToString('D') .. p_variation
-    local s_partition = p_instance.partition
-
-    local s_newGuid = self:_GenerateGuid(s_seed)
-    local s_newInstance = p_instance:Clone(s_newGuid)
-    s_partition:AddInstance(s_newInstance)
-
-    -- casting the instance
-    local s_typeName = s_newInstance.typeInfo.name
-    local s_type = _G[s_typeName]
-
-    if s_type ~= nil then
-        s_newInstance = s_type(s_newInstance)
-    end
-
-    return s_newInstance
-end
-
--- generating UUID for the provided seed
-function SoldiersAppearances:_GenerateGuid(p_seed)
-    Uuid.randomseed(MathUtils:FNVHash(p_seed))
-    return Guid(Uuid())
-end
-
--- counting table elements
-function SoldiersAppearances:_Count(p_table)
-    local s_count = 0
-
-    for _, _ in pairs(p_table) do
-        s_count = s_count + 1
-    end
-
-    return s_count
-end
-
--- splitting string
-function SoldiersAppearances:_Split(p_string, p_separator)
-    local s_parts = {}
-
-    for l_part in string.gmatch(p_string, "([^" .. p_separator .. "]+)") do
-        table.insert(s_parts, l_part)
-    end
-
-    return s_parts
 end
 
 return SoldiersAppearances

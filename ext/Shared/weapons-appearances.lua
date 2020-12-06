@@ -1,7 +1,7 @@
 local WeaponsAppearances = class('WeaponsAppearances')
 
-local Uuid = require('__shared/utils/uuid')
 local InstanceWait = require('__shared/utils/wait')
+local InstanceUtils = require('__shared/utils/instances')
 
 function WeaponsAppearances:__init()
     self:RegisterVars()
@@ -183,14 +183,14 @@ function WeaponsAppearances:CreateInstances()
     ResourceManager:AddRegistry(self.m_registryContainer, ResourceCompartment.ResourceCompartment_Game)
 
     if self.m_verbose >= 1 then
-        print('Created MeshMaterialVariations: ' .. self:_Count(self.m_meshMaterialVariations))
-        print('Created VariationDatabaseEntrys: ' .. self:_Count(self.m_meshVariationDatabaseEntrys))
-        print('Created ObjectVariationAssets: ' .. self:_Count(self.m_objectVariationAssets))
-        print('Created BlueprintVariationPairs: ' .. self:_Count(self.m_blueprintVariationPairs))
-        print('Created UnlockAssets: ' .. self:_Count(self.m_unlockAssets))
-        print('Created RegistryContainerAssets: ' .. self:_Count(self.m_registryContainer.assetRegistry))
-        print('Created RegistryContainerEntities: ' .. self:_Count(self.m_registryContainer.entityRegistry))
-        print('Created RegistryContainerBlueprints: ' .. self:_Count(self.m_registryContainer.blueprintRegistry))
+        print('Created MeshMaterialVariations: ' .. InstanceUtils:Count(self.m_meshMaterialVariations))
+        print('Created VariationDatabaseEntrys: ' .. InstanceUtils:Count(self.m_meshVariationDatabaseEntrys))
+        print('Created ObjectVariationAssets: ' .. InstanceUtils:Count(self.m_objectVariationAssets))
+        print('Created BlueprintVariationPairs: ' .. InstanceUtils:Count(self.m_blueprintVariationPairs))
+        print('Created UnlockAssets: ' .. InstanceUtils:Count(self.m_unlockAssets))
+        print('Created RegistryContainerAssets: ' .. InstanceUtils:Count(self.m_registryContainer.assetRegistry))
+        print('Created RegistryContainerEntities: ' .. InstanceUtils:Count(self.m_registryContainer.entityRegistry))
+        print('Created RegistryContainerBlueprints: ' .. InstanceUtils:Count(self.m_registryContainer.blueprintRegistry))
     end
 end
 
@@ -244,7 +244,7 @@ function WeaponsAppearances:CreateMeshMaterialVariations(p_entry)
                 end
 
                 if s_isNoCamo1p or s_isNoCamo3p or s_isPreset1p or s_isPreset3p or s_isShadow1p then
-                    local s_newMeshMaterialVariation = MeshMaterialVariation(self:_GenerateGuid(p_entry.instanceGuid:ToString('D') .. 'MeshMaterialVariation' .. l_element .. ll_key))
+                    local s_newMeshMaterialVariation = MeshMaterialVariation(InstanceUtils:GenerateGuid(p_entry.instanceGuid:ToString('D') .. 'MeshMaterialVariation' .. l_element .. ll_key))
                     p_entry.partition:AddInstance(s_newMeshMaterialVariation)
 
                     s_newMeshMaterialVariation.shader = s_surfaceShaderInstanceDataStruct
@@ -274,8 +274,8 @@ function WeaponsAppearances:CreateMeshVariationDatabaseEntrys(p_entry)
     local s_meshMaterialVariations = self.m_meshMaterialVariations[p_entry.instanceGuid:ToString('D')]
 
     for _, l_element in pairs(self.m_elementNames) do
-        local s_newMeshVariationDatabaseEntry1p = self:_CloneInstance(p_entry, l_element)
-        local s_newMeshVariationDatabaseEntry3p = self:_CloneInstance(s_meshVariationDatabaseEntry3p, l_element)
+        local s_newMeshVariationDatabaseEntry1p = InstanceUtils:CloneInstance(p_entry, l_element)
+        local s_newMeshVariationDatabaseEntry3p = InstanceUtils:CloneInstance(s_meshVariationDatabaseEntry3p, l_element)
 
         for ll_key, ll_value in pairs(s_meshMaterialVariations[l_element]) do
             s_newMeshVariationDatabaseEntry1p.materials[ll_key].materialVariation = ll_value
@@ -304,7 +304,7 @@ function WeaponsAppearances:CreateObjectVariationAssets(p_entry)
     s_elements['neutral'] = nil
 
     for _, l_element in pairs(self.m_elementNames) do
-        local s_newObjectVariationAsset = ObjectVariation(self:_GenerateGuid(p_entry.instanceGuid:ToString('D') .. 'ObjectVariationAsset' .. l_element))
+        local s_newObjectVariationAsset = ObjectVariation(InstanceUtils:GenerateGuid(p_entry.instanceGuid:ToString('D') .. 'ObjectVariationAsset' .. l_element))
         p_entry.partition:AddInstance(s_newObjectVariationAsset)
 
         s_newObjectVariationAsset.name = p_entry.instanceGuid:ToString('D') .. l_element
@@ -331,7 +331,7 @@ function WeaponsAppearances:CreateBlueprintAndVariationPairs(p_entry)
     local s_weaponBlueprint = self.m_weaponBlueprints[s_skinnedMeshAsset1pWeaponGuid]
 
     for _, l_element in pairs(self.m_elementNames) do
-        local s_newBlueprintAndVariationPair = BlueprintAndVariationPair(self:_GenerateGuid(p_entry.instanceGuid:ToString('D') .. 'BlueprintAndVariationPair' .. l_element))
+        local s_newBlueprintAndVariationPair = BlueprintAndVariationPair(InstanceUtils:GenerateGuid(p_entry.instanceGuid:ToString('D') .. 'BlueprintAndVariationPair' .. l_element))
         p_entry.partition:AddInstance(s_newBlueprintAndVariationPair)
 
         s_newBlueprintAndVariationPair.name = p_entry.instanceGuid:ToString('D')
@@ -358,7 +358,7 @@ function WeaponsAppearances:CreateUnlockAssets(p_entry)
     local s_skinnedMeshAsset1pWeaponGuid = self.m_skinnedMeshAsset1pWeaponGuids[p_entry.mesh.instanceGuid:ToString('D')]
 
     for _, l_element in pairs(self.m_elementNames) do
-        local s_newUnlockAsset = UnlockAsset(self:_GenerateGuid(p_entry.instanceGuid:ToString('D') .. 'UnlockAsset' .. l_element))
+        local s_newUnlockAsset = UnlockAsset(InstanceUtils:GenerateGuid(p_entry.instanceGuid:ToString('D') .. 'UnlockAsset' .. l_element))
         p_entry.partition:AddInstance(s_newUnlockAsset)
 
         s_newUnlockAsset.name = p_entry.instanceGuid:ToString('D') .. l_element
@@ -389,47 +389,6 @@ function WeaponsAppearances:GetUnlockAssets(p_player, p_element)
     end
 
     return s_unlocks
-end
-
--- cloning the instance and adding to partition
-function WeaponsAppearances:_CloneInstance(p_instance, p_variation)
-    if self.m_verbose >= 2 then
-        print('Clone: ' .. p_instance.typeInfo.name)
-    end
-
-    local s_seed = p_instance.instanceGuid:ToString('D') .. p_variation
-    local s_partition = p_instance.partition
-
-    local s_newGuid = self:_GenerateGuid(s_seed)
-    local s_newInstance = p_instance:Clone(s_newGuid)
-    s_partition:AddInstance(s_newInstance)
-
-    -- casting the instance
-    local s_typeName = s_newInstance.typeInfo.name
-    local s_type = _G[s_typeName]
-
-    if s_type ~= nil then
-        s_newInstance = s_type(s_newInstance)
-    end
-
-    return s_newInstance
-end
-
--- generating UUID for the provided seed
-function WeaponsAppearances:_GenerateGuid(p_seed)
-    Uuid.randomseed(MathUtils:FNVHash(p_seed))
-    return Guid(Uuid())
-end
-
--- counting table elements
-function WeaponsAppearances:_Count(p_table)
-    local s_count = 0
-
-    for _, _ in pairs(p_table) do
-        s_count = s_count + 1
-    end
-
-    return s_count
 end
 
 return WeaponsAppearances
