@@ -13,8 +13,10 @@ function WeaponsAppearances:RegisterVars()
     self.m_currentLevel = nil
     self.m_currentMode = nil
 
+    self.m_isLoaded = false
+
     self.m_waitingGuids = {
-        camo = {'07EA9024-7D81-11E1-91A4-E3E3C1704D3D', '7DE14177-6868-59B2-06B5-3C9AA2610EEC'},
+        _DefaultCamo = {'07EA9024-7D81-11E1-91A4-E3E3C1704D3D', '7DE14177-6868-59B2-06B5-3C9AA2610EEC'},
         _RU_Helmet05_Navy = {'706BF6C9-0EAD-4382-A986-39D571DBFA77', '53828D27-7C4A-415A-892D-8D410136E1B6'},
     }
 
@@ -42,7 +44,7 @@ end
 function WeaponsAppearances:RegisterEvents()
     -- waiting variation database
     Events:Subscribe('Partition:Loaded', function(p_partition)
-        if not self.m_isInstancesLoaded then
+        if not self.m_isLoaded then
             for _, l_instance in pairs(p_partition.instances) do
                 if l_instance:Is('MeshVariationDatabase') and Asset(l_instance).name:match('Levels') then
                     if self.m_verbose >= 1 then
@@ -82,6 +84,8 @@ function WeaponsAppearances:RegisterEvents()
 end
 
 function WeaponsAppearances:RegisterWait()
+    self.m_isLoaded = false
+
     -- waiting instances
     InstanceWait(self.m_waitingGuids, function(p_instances)
         self:ReadInstances()
@@ -104,6 +108,8 @@ function WeaponsAppearances:ReadInstances(p_instances)
     if self.m_verbose >= 1 then
         print('Reading Instances')
     end
+
+    self.m_isLoaded = true
 
     self.m_meshVariationDatabase = MeshVariationDatabase(self.m_waitingInstances.meshVariationDatabase)
     self.m_meshVariationDatabase:MakeWritable()

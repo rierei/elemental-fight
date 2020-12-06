@@ -10,6 +10,8 @@ function SoldiersAppearances:__init()
 end
 
 function SoldiersAppearances:RegisterVars()
+    self.m_isLoaded = false
+
     self.m_classNames = {
         'USAssault',
         'USEngineer',
@@ -216,7 +218,7 @@ function SoldiersAppearances:RegisterEvents()
     -- waiting variation database
     Events:Subscribe('Partition:Loaded', function(p_partition)
         for _, l_instance in pairs(p_partition.instances) do
-            if l_instance:Is('MeshVariationDatabase') and Asset(l_instance).name:match('Levels') then
+            if not self.m_isLoaded and l_instance:Is('MeshVariationDatabase') and Asset(l_instance).name:match('Levels') then
                 if self.m_verbose >= 1 then
                     print('Found MeshVariationDatabase')
                 end
@@ -239,6 +241,8 @@ function SoldiersAppearances:RegisterEvents()
 end
 
 function SoldiersAppearances:RegisterWait()
+    self.m_isLoaded = false
+
     -- waiting instances
     InstanceWait(self.m_waitingGuids, function(p_instances)
         self:ReadInstances(p_instances)
@@ -261,6 +265,8 @@ function SoldiersAppearances:ReadInstances(p_instances)
     if self.m_verbose >= 1 then
         print('Reading Instances')
     end
+
+    self.m_isLoaded = true
 
     self.m_meshVariationDatabase = MeshVariationDatabase(self.m_waitingInstances.meshVariationDatabase)
     self.m_meshVariationDatabase:MakeWritable()
