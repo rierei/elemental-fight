@@ -136,9 +136,7 @@ end
 function SoldiersAppearances:RegisterWait()
     -- waiting instances
     InstanceWait(self.m_waitingGuids, function(p_instances)
-        if not self.m_isInstancesLoaded then
-            self:ReadInstances(p_instances)
-        end
+        self:ReadInstances(p_instances)
     end)
 end
 
@@ -551,7 +549,9 @@ function SoldiersAppearances:ReplacePlayerAppearance(p_player, p_element)
         return
     end
 
-    local s_kitNameParts = self:_Split(p_player.customization.name, '/')
+    local s_customization = VeniceSoldierCustomizationAsset(p_player.customization)
+
+    local s_kitNameParts = self:_Split(s_customization.name, '/')
     local s_kitName = s_kitNameParts[#s_kitNameParts]
     local s_appearanceGuid = self.m_appearanceGuids[s_kitName]
 

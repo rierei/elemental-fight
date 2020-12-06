@@ -22,13 +22,14 @@ function WeaponsAppearances:RegisterVars()
 
     self.m_meshVariationDatabase = nil -- MeshVariationDatabase
     self.m_weaponCustomizationAssets = {}
+    self.m_weaponBlueprints = {}
     self.m_meshMaterialVariations = {}
     self.m_meshVariationDatabaseEntrys = {}
     self.m_objectVariationAssets = {}
     self.m_blueprintVariationPairs = {}
     self.m_unlockAssets = {}
 
-    self.m_verbose = 2 -- prints debug information
+    self.m_verbose = 1 -- prints debug information
 end
 
 function WeaponsAppearances:RegisterEvents()
@@ -70,31 +71,35 @@ function WeaponsAppearances:ReadInstances(p_instances)
         print('Reading Instances')
     end
 
+    self.m_meshVariationDatabase = MeshVariationDatabase(self.m_waitingInstances.meshVariationDatabase)
+    self.m_meshVariationDatabase:MakeWritable()
+
     for _, l_value in pairs(self.m_waitingInstances.weaponEntities) do
         local s_weaponEntity = SoldierWeaponData(l_value)
 
-        if s_weaponEntity.customization == nil then
-            return
+        if s_weaponEntity.customization ~= nil then
+            local s_weaponCustomizationAsset = VeniceSoldierWeaponCustomizationAsset(s_weaponEntity.customization)
+
+            self.m_weaponCustomizationAssets[s_weaponEntity.instanceGuid:ToString('D')] = s_weaponCustomizationAsset
+
+            self.m_waitingInstances.skinnedMeshAssetWeaponGuids[s_weaponEntity.weaponStates[1].mesh1p.instanceGuid:ToString('D')] = s_weaponEntity.instanceGuid:ToString('D')
+            self.m_waitingInstances.skinnedMeshAssetWeaponGuids[s_weaponEntity.weaponStates[1].mesh3p.instanceGuid:ToString('D')] = s_weaponEntity.instanceGuid:ToString('D')
+
+            self.m_weaponBlueprints[s_weaponEntity.instanceGuid:ToString('D')] = l_value.soldierWeaponBlueprint
         end
-
-        local s_weaponCustomizationAsset = VeniceSoldierWeaponCustomizationAsset(s_weaponEntity.customization)
-
-        self.m_weaponCustomizationAssets[s_weaponEntity.instanceGuid:ToString('D')] = s_weaponCustomizationAsset
-
-        self.m_waitingInstances.skinnedMeshAssetWeaponGuids[s_weaponEntity.mesh1p.instanceGuid:ToString('D')] = s_weaponEntity.instanceGuid:ToString('D')
-        self.m_waitingInstances.skinnedMeshAssetWeaponGuids[s_weaponEntity.mesh3p.instanceGuid:ToString('D')] = s_weaponEntity.instanceGuid:ToString('D')
-
-        self.m_weaponBlueprints[s_weaponEntity.instanceGuid:ToString('D')] = l_value.soldierWeaponBlueprint
     end
 
     for _, l_value in pairs(self.m_meshVariationDatabase.entries) do
         local s_meshVariationDatabaseEntry = MeshVariationDatabaseEntry(l_value)
         for ll_key, ll_value in pairs(self.m_waitingInstances.skinnedMeshAssetWeaponGuids) do
-            self.m_waitingInstances.meshVariationDatabaseEntrys[ll_value] = {}
             if s_meshVariationDatabaseEntry.mesh.instanceGuid:ToString('D') == ll_key then
-                self.m_waitingInstances.meshVariationDatabaseEntrys[ll_value]:add(s_meshVariationDatabaseEntry)
+                if self.m_waitingInstances.meshVariationDatabaseEntrys[ll_value] == nil then
+                    self.m_waitingInstances.meshVariationDatabaseEntrys[ll_value] = {}
+                end
+                table.insert(self.m_waitingInstances.meshVariationDatabaseEntrys[ll_value], s_meshVariationDatabaseEntry)
             end
         end
+
     end
 
     self:CreateInstances()
@@ -109,7 +114,7 @@ function WeaponsAppearances:CreateInstances()
 
     -- creating MeshMaterialVariation for MeshVariationDatabaseMaterial
     for l_key, l_value in pairs(self.m_waitingInstances.meshVariationDatabaseEntrys) do
-        local s_newMeshMaterialVariation = MeshMaterialVariation(self:_GenerateGuid(l_value.instanceGuid:ToString('D') .. 'newMeshMaterialVariation'))
+        local s_newMeshMaterialVariation = MeshMaterialVariation(self:_GenerateGuid(l_value[1].instanceGuid:ToString('D') .. 'newMeshMaterialVariation'))
         l_value[1].partition:AddInstance(s_newMeshMaterialVariation)
 
         local s_shaderGraph = ShaderGraph()
@@ -190,9 +195,10 @@ function WeaponsAppearances:CreateInstances()
 
     -- patching CustomizationUnlockParts
     for l_key, l_value in pairs(self.m_weaponCustomizationAssets) do
-        local s_customizationUnlockParts = l_value.customization.unlockParts[4]
+        local s_customizationUnlockParts = l_value.customization.unlockParts[#l_value.customization.unlockParts]
+        s_customizationUnlockParts:MakeWritable()
 
-        s_customizationUnlockParts:add(self.m_unlockAssets[l_key])
+        s_customizationUnlockParts.selectableUnlocks:add(self.m_unlockAssets[l_key])
     end
 
     ResourceManager:AddRegistry(self.m_registryContainer, ResourceCompartment.ResourceCompartment_Game)
@@ -212,21 +218,14 @@ end
 
 -- replacing player weapons
 function WeaponsAppearances:ReplacePlayerWeapons(p_player)
-    for i = #p_player.weapons, 1, -1 do
-        local s_weaponUnlockAsset = p_player.weapons[i]
-        if s_weaponUnlockAsset ~= nil then
-            local s_unlockAsset = self.m_unlockAssets[s_weaponUnlockAsset.instanceGuid:ToString('D')]
+    local s_weaponUnlockAsset = p_player.weapons[1]
 
-            local s_weaponUnlockAssets = p_player.weaponUnlocks[i]
-            if s_weaponUnlockAssets == nil then
-                s_weaponUnlockAssets = {}
-            end
+    local s_unlockAsset = self.m_unlockAssets[s_weaponUnlockAsset.instanceGuid:ToString('D')]
 
-            s_weaponUnlockAssets:add(s_unlockAsset)
+    local s_weaponUnlockAssets = p_player.weaponUnlocks[1]
+    table.insert(s_weaponUnlockAssets, s_unlockAsset)
 
-            p_player:SelectWeapon(i - 1, s_weaponUnlockAsset, s_weaponUnlockAssets)
-        end
-    end
+    p_player:SelectWeapon(0, s_weaponUnlockAsset, s_weaponUnlockAssets)
 end
 
 -- cloning the instance and adding to partition
@@ -269,3 +268,5 @@ function WeaponsAppearances:_Count(p_table)
 
     return s_count
 end
+
+return WeaponsAppearances

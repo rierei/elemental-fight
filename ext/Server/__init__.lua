@@ -2,6 +2,7 @@ local ElementalFight = class('ElementalFight')
 
 local BotsCustom = require('__shared/bots-custom')
 local WeaponUnlocks = require('__shared/weapons-unlocks')
+local WeaponAppearances = require('__shared/weapons-appearances')
 local SoldierAppearances = require('__shared/soldiers-appearances')
 
 function ElementalFight:__init()
@@ -39,10 +40,11 @@ function ElementalFight:RegisterVars()
         }
     }
 
-    self.m_weaponUnlocks = WeaponUnlocks()
-    self.m_soldierAppearances = SoldierAppearances()
+    -- self.m_weaponUnlocks = WeaponUnlocks()
+    self.m_weaponAppearances = WeaponAppearances()
+    -- self.m_soldierAppearances = SoldierAppearances()
 
-    self.counter = 1
+    self.counter = 2
 end
 
 function ElementalFight:RegisterEvents()
@@ -61,26 +63,26 @@ function ElementalFight:RegisterEvents()
 
         local s_element = self.m_elementNames[self.counter]
 
-        self.m_soldierAppearances:ReplacePlayerAppearance(s_soldier1.player, s_element)
-        self.m_weaponUnlocks:ReplacePlayerWeapons(s_soldier1.player, s_element)
+        -- self.m_soldierAppearances:ReplacePlayerAppearance(s_soldier1.player, s_element)
+        -- self.m_weaponUnlocks:ReplacePlayerWeapons(s_soldier1.player, s_element)
 
         self.counter = self.counter % #self.m_elementNames + 1
         s_element = self.m_elementNames[self.counter]
 
-        self.m_soldierAppearances:ReplacePlayerAppearance(s_soldier2.player, s_element)
-        self.m_weaponUnlocks:ReplacePlayerWeapons(s_soldier2.player, s_element)
+        -- self.m_soldierAppearances:ReplacePlayerAppearance(s_soldier2.player, s_element)
+        -- self.m_weaponUnlocks:ReplacePlayerWeapons(s_soldier2.player, s_element)
 
         self.counter = self.counter % #self.m_elementNames + 1
         s_element = self.m_elementNames[self.counter]
 
-        self.m_soldierAppearances:ReplacePlayerAppearance(s_soldier3.player, s_element)
-        self.m_weaponUnlocks:ReplacePlayerWeapons(s_soldier3.player, s_element)
+        -- self.m_soldierAppearances:ReplacePlayerAppearance(s_soldier3.player, s_element)
+        -- self.m_weaponUnlocks:ReplacePlayerWeapons(s_soldier3.player, s_element)
 
         self.counter = self.counter % #self.m_elementNames + 1
         s_element = self.m_elementNames[self.counter]
 
-        self.m_soldierAppearances:ReplacePlayerAppearance(s_soldier4.player, s_element)
-        self.m_weaponUnlocks:ReplacePlayerWeapons(s_soldier4.player, s_element)
+        -- self.m_soldierAppearances:ReplacePlayerAppearance(s_soldier4.player, s_element)
+        -- self.m_weaponUnlocks:ReplacePlayerWeapons(s_soldier4.player, s_element)
 
         self.counter = self.counter % #self.m_elementNames + 1
     end)
@@ -91,8 +93,9 @@ function ElementalFight:RegisterEvents()
         local s_element = self.m_elementNames[self.counter]
         print(s_element)
 
-        self.m_weaponUnlocks:ReplacePlayerWeapons(p_player, s_element)
-        self.m_soldierAppearances:ReplacePlayerAppearance(p_player, s_element)
+        -- self.m_weaponUnlocks:ReplacePlayerWeapons(p_player, s_element)
+        self.m_weaponAppearances:ReplacePlayerWeapons(p_player, s_element)
+        -- self.m_soldierAppearances:ReplacePlayerAppearance(p_player, s_element)
 
         self.counter = self.counter % #self.m_elementNames + 1
     end)
@@ -100,8 +103,29 @@ function ElementalFight:RegisterEvents()
     Hooks:Install('Soldier:Damage', 1, function(p_hook, p_soldier, p_info, p_giver)
         print('Event Soldier:Damage')
 
-        local s_soldierElement = p_soldier.visualUnlocks[1].debugUnlockId
-        local s_weaponElement = p_giver.weaponUnlock.weapon.object.damageGiverName
+        -- healing
+        if p_info.damage < 0 then
+            return
+        end
+
+        -- self
+        if p_giver.weaponUnlock == nil then
+            return
+        end
+
+        local s_weaponUnlockAsset = SoldierWeaponUnlockAsset(p_giver.weaponUnlock)
+        local s_weaponBlueprint = SoldierWeaponBlueprint(s_weaponUnlockAsset.weapon)
+        local s_weaponEntity = SoldierWeaponData(s_weaponBlueprint.object)
+
+        -- knife
+        if s_weaponUnlockAsset.name:match('knife') then
+            return
+        end
+
+        local s_appearanceUnlock = UnlockAsset(p_soldier.player.visualUnlocks[1])
+
+        local s_soldierElement = s_appearanceUnlock.debugUnlockId
+        local s_weaponElement = s_weaponEntity.damageGiverName
 
         local s_elementDamage = self.m_elementDamages[s_weaponElement]
         if s_elementDamage == nil then
@@ -119,6 +143,8 @@ function ElementalFight:RegisterEvents()
         if s_isHeadshot then
             p_info.damage = p_info.damage * 1.25
         end
+
+        print(s_soldierElement .. 'x' .. s_weaponElement .. '=' .. tostring(p_info.damage))
 
         p_hook:Pass(p_soldier, p_info)
     end)

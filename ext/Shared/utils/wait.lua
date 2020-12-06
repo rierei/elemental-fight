@@ -77,7 +77,7 @@ end
 
 function InstanceWait:DeregisterWait()
     if self.m_verbose >= 2 then
-        print('Wait Done')
+        print('Wait: Done')
     end
 
     for l_key, l_value in pairs(self.m_instanceRefs) do
