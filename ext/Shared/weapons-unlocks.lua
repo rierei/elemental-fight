@@ -18,6 +18,13 @@ function WeaponsUnlocks:RegisterVars()
         fire = Vec3(1, 0.3, 0)
     }
 
+    self.m_soldierGridPropertyIndexes = {
+        head = 47,
+        body = 48,
+        foot = 68,
+        chest = 110
+    }
+
     self.m_waitingImpactEffectGuids = {
         FX_Impact_Water_S = {'20B18CF1-F2F7-11DF-9BE8-9E0183D704DD', '23298636-5C6F-8CA0-F0EF-6097924181C3'},
         FX_Impact_Foliage_Generic_S_01 = {'6C1A14FF-83C9-410E-A7D0-4FD024EBE33A', '06E4F5D2-5883-46A0-B898-2A21E8BFEEDA'},
@@ -49,11 +56,13 @@ function WeaponsUnlocks:RegisterVars()
         genericExplodeEffectBlueprint = {}, -- EffectBlueprint
         dummyPolynomialColor = nil, -- PolynomialColorInterpData
         dummyExplosionEntity = nil, -- VeniceExplosionEntityData
+        materialGridAsset = nil, -- MaterialGridData
         weaponUnlockAssets = {} -- SoldierWeaponUnlockAsset
     }
 
     self.m_registryContainer = nil -- RegistryContainer
-    self.m_gameMaterialContainerAsset = nil -- MaterialContainerAsset
+    self.m_materialContainerAsset = nil -- MaterialContainerAsset
+    self.m_materialGridAsset = nil -- MaterialGridData
     self.m_explodeSoundEffect = nil -- SoundEffectEntityData
     self.m_polynomialColorInterps = {} -- PolynomialColorInterpData
     self.m_emitterDocumentAssets = {} -- EmitterDocument
@@ -70,6 +79,9 @@ function WeaponsUnlocks:RegisterVars()
     self.m_weaponEntities = {} -- SoldierWeaponData
     self.m_weaponBlueprints = {} -- SoldierWeaponBlueprint
     self.m_weaponUnlockAssets = {} -- SoldierWeaponUnlockAsset
+
+    self.m_projectilePhysicsProperties = {} -- MaterialContainerPair.PhysicsPropertyIndex
+    self.m_projectileMaterialRelationPenetrationData = nil -- MaterialRelationPenetrationData
 
     self.m_currentLevel = nil
     self.m_currentMode = nil
@@ -97,6 +109,19 @@ function WeaponsUnlocks:RegisterEvents()
                 end
 
                 table.insert(self.m_waitingInstances.weaponUnlockAssets, l_instance)
+            end
+        end
+    end)
+
+    -- waiting material grid
+    Events:Subscribe('Partition:Loaded', function(p_partition)
+        for _, l_instance in pairs(p_partition.instances) do
+            if l_instance:Is('MaterialGridData') then
+                if self.m_verbose >= 2 then
+                    print('Found MaterialGridData')
+                end
+
+                self.m_waitingInstances.materialGrid = l_instance
             end
         end
     end)
@@ -144,14 +169,7 @@ function WeaponsUnlocks:RegisterWait()
 
     -- waiting common instances
     InstanceWait(self.m_waitingCommonGuids, function(p_instances)
-        self.m_gameMaterialContainerAsset = p_instances['MaterialContainer']
-        self.m_waitingInstances.genericImpactEffectBlueprint = p_instances['FX_Impact_Concrete_01_S']
-        self.m_waitingInstances.genericExplodeEffectBlueprints = p_instances['FX_Grenade_Frag_01']
-        self.m_explodeSoundEffectEntity = p_instances['FX_Grenade_Frag_01_Sound']
-        self.m_waitingInstances.dummyExplosionEntity = p_instances['M224_Projectile_Smoke']
-        self.m_waitingInstances.dummyPolynomialColor = p_instances['Em_Impact_Generic_S_Sparks_01']
-
-        self:ReadInstances()
+        self:ReadInstances(p_instances)
     end)
 end
 
@@ -168,10 +186,27 @@ function WeaponsUnlocks:ReloadInstances()
 end
 
 -- reading waiting instances
-function WeaponsUnlocks:ReadInstances()
+function WeaponsUnlocks:ReadInstances(p_instances)
     if self.m_verbose >= 1 then
         print('Reading Instances')
     end
+
+    self.m_materialGridAsset = MaterialGridData(self.m_waitingInstances.materialGridAsset)
+    self.m_materialGridAsset:MakeWritable()
+
+    -- grid shotgun material
+    for _, l_value in pairs(self.m_materialGridAsset.interactionGrid[65].items[48].physicsPropertyProperties) do
+        if l_value:is('MaterialRelationPenetrationData') then
+            self.m_projectileMaterialRelationPenetrationData = MaterialRelationPenetrationData(l_value)
+        end
+    end
+
+    self.m_materialContainerAsset = p_instances['MaterialContainer']
+    self.m_waitingInstances.genericImpactEffectBlueprint = p_instances['FX_Impact_Concrete_01_S']
+    self.m_waitingInstances.genericExplodeEffectBlueprints = p_instances['FX_Grenade_Frag_01']
+    self.m_explodeSoundEffectEntity = p_instances['FX_Grenade_Frag_01_Sound']
+    self.m_waitingInstances.dummyExplosionEntity = p_instances['M224_Projectile_Smoke']
+    self.m_waitingInstances.dummyPolynomialColor = p_instances['Em_Impact_Generic_S_Sparks_01']
 
     for _, l_element in pairs(self.m_elementNames) do
         if self.m_waitingInstances.impactEffectBlueprints[l_element] == nil then
@@ -221,6 +256,9 @@ function WeaponsUnlocks:ReadInstances()
     self.m_weaponFiringModifiers = {} -- WeaponFiringDataModifier
     self.m_weaponEntities = {} -- SoldierWeaponData
     self.m_weaponBlueprints = {} -- SoldierWeaponBlueprint
+
+    self.m_projectilePhysicsProperties = {} -- MaterialContainerPair.PhysicsPropertyIndex
+    self.m_projectileMaterialRelationPenetrationData = nil -- MaterialRelationPenetrationData
 end
 
 -- creating instances of elements
@@ -250,6 +288,10 @@ function WeaponsUnlocks:CreateInstances()
         self:CreateWeaponEntities(s_weaponEntity)
         self:CreateWeaponBlueprints(s_weaponBlueprint)
         self:CreateWeaponUnlockAssets(s_weaponUnlockAsset)
+    end
+
+    for l_key, _ in pairs(self.m_projectilePhysicsProperties) do
+        self:UpdateProjectilePhysicsPropertys(l_key)
     end
 
     for _, l_asset in pairs(self.m_waitingInstances.weaponUnlockAssets) do
@@ -499,7 +541,7 @@ function WeaponsUnlocks:_CreateExplodeExplosionEntities(p_entity)
 
         if s_newExplosionEntity.materialPair ~= nil then
             local s_materialContainerPairIndex = MaterialPairs[MaterialContainerPair(s_newExplosionEntity.materialPair).physicsPropertyIndex]
-            s_newExplosionEntity.materialPair = MaterialContainerAsset(self.m_gameMaterialContainerAsset).materialPairs[s_materialContainerPairIndex]
+            s_newExplosionEntity.materialPair = MaterialContainerAsset(self.m_materialContainerAsset).materialPairs[s_materialContainerPairIndex]
         end
 
         -- patching explosion properties
@@ -549,45 +591,36 @@ function WeaponsUnlocks:CreateProjectileEntities(p_entity)
     local s_elements = {}
     s_elements['neutral'] = p_entity
 
+    local s_isSmoke = p_entity.explosion ~= nil and p_entity.explosion.detonationEffect ~= nil and p_entity.explosion.detonationEffect.name:match('FX_40mm_Smoke')
+
+    local s_materialPair = nil
+    if p_entity.materialPair ~= nil then
+        local s_physicsPropertyIndex = MaterialContainerPair(p_entity.materialPair).physicsPropertyIndex
+        local s_materialContainerPairIndex = MaterialPairs[s_physicsPropertyIndex]
+
+        s_materialPair = MaterialContainerAsset(self.m_materialContainerAsset).materialPairs[s_materialContainerPairIndex]
+
+        self.m_projectilePhysicsProperties[s_physicsPropertyIndex] = true
+    end
+
     for _, l_element in pairs(self.m_elementNames) do
         local s_newProjectileEntity = self:_CloneInstance(p_entity, l_element)
 
         local s_projectileExplosionEntity = self:_GetInstance(s_newProjectileEntity.explosion, 'explodeExplosionEntities')
         local s_missileExplosionEntity = self:_GetInstance(s_newProjectileEntity.dudExplosion, 'explodeExplosionEntities')
 
-        if s_projectileExplosionEntity ~= nil and s_projectileExplosionEntity['neutral'].detonationEffect ~= nil and s_projectileExplosionEntity['neutral'].detonationEffect.name:match('FX_40mm_Smoke') then
+        if s_projectileExplosionEntity == nil and s_missileExplosionEntity == nil then
+            s_projectileExplosionEntity = self.m_impactExplosionEntities[l_element]
+        end
+
+        if s_isSmoke then
             s_projectileExplosionEntity = self.m_smokeExplosionEntities
         end
 
-        local s_materialContainerPairIndex = MaterialPairs[88]
-        local s_physicsPropertyIndex = nil
-
-        if s_newProjectileEntity.materialPair ~= nil then
-            s_physicsPropertyIndex = MaterialContainerPair(s_newProjectileEntity.materialPair).physicsPropertyIndex
-            s_materialContainerPairIndex = MaterialPairs[s_physicsPropertyIndex]
-        end
-
-        if s_projectileExplosionEntity == nil and s_missileExplosionEntity == nil then
-            s_materialContainerPairIndex = MaterialPairs[88]
-
-            -- patching projectile entity
-            s_newProjectileEntity.explosion = self.m_impactExplosionEntities[l_element]
-        end
-
-        if s_projectileExplosionEntity ~= nil then
-            -- patching projectile entity
-            s_newProjectileEntity.explosion = s_projectileExplosionEntity[l_element]
-        end
-
-        if s_missileExplosionEntity ~= nil then
-            -- patching projectile entity
-            s_newProjectileEntity.dudExplosion = s_missileExplosionEntity[l_element]
-        end
-
-        -- melee material pair
-        if s_physicsPropertyIndex ~= 113 then
-            s_newProjectileEntity.materialPair = MaterialContainerAsset(self.m_gameMaterialContainerAsset).materialPairs[s_materialContainerPairIndex]
-        end
+        -- patching projectile entity
+        s_newProjectileEntity.explosion = s_projectileExplosionEntity[l_element]
+        s_newProjectileEntity.dudExplosion = s_missileExplosionEntity[l_element]
+        s_newProjectileEntity.materialPair = s_materialPair
 
         self.m_registryContainer.entityRegistry:add(s_newProjectileEntity)
 
@@ -815,8 +848,47 @@ function WeaponsUnlocks:CreateWeaponUnlockAssets(p_asset)
     self.m_weaponUnlockAssets[p_asset.instanceGuid:ToString('D')] = s_elementUnlocks
 end
 
+-- replacing MaterialRelationPenetrationData
+function WeaponsUnlocks:UpdateProjectilePhysicsPropertys(p_index)
+    if self.m_verbose >= 2 then
+        print('Update ProjectilePhysicsPropertys')
+    end
+
+    local s_propertyIndex = p_index + 1
+    if s_propertyIndex < 0 then
+        s_propertyIndex = 256 + s_propertyIndex
+    end
+
+    local s_gridPropertyIndex = self.m_materialGridAsset.materialIndexMap[s_propertyIndex]
+    local s_materialInteractionGridRow = self.m_materialGridAsset.interactionGrid[s_gridPropertyIndex]
+
+    for _, l_value in pairs(self.m_soldierGridPropertyIndexes) do
+        local s_materialRelationPropertyPair = s_materialInteractionGridRow.items[l_value]
+
+        local s_hasNeverPenetrate = false
+
+        for ll_key, ll_value in pairs(s_materialRelationPropertyPair.physicsPropertyProperties) do
+            if ll_value:Is('MaterialRelationPenetrationData') then
+                if MaterialRelationPenetrationData(ll_value).neverPenetrate then
+                    s_hasNeverPenetrate = true
+                else
+                    s_materialRelationPropertyPair.physicsPropertyProperties:erase(ll_key)
+                end
+            end
+        end
+
+        if not s_hasNeverPenetrate then
+            s_materialRelationPropertyPair.physicsPropertyProperties:add(self.m_projectileMaterialRelationPenetrationData)
+        end
+    end
+end
+
 -- replacing WeaponUnlockAsset
 function WeaponsUnlocks:UpdateWeaponUnlockAssets(p_entity)
+    if self.m_verbose >= 2 then
+        print('Update WeaponUnlockAssets')
+    end
+
     local s_weaponEntityGuid = p_entity.instanceGuid:ToString('D')
 
     for l_key, l_value in pairs(p_entity.weaponModifierData) do
