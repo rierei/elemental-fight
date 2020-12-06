@@ -82,16 +82,14 @@ function SoldiersAppearances:RegisterVars()
     }
 
     self.m_waitingInstances = {
-        meshVariationDatabase = nil,
-        characterSocketListAsset = nil,
-        appearanceUnlockAssets = {},
-        linkUnlockAssets = {},
-        blueprintAndVariationPairs = {},
-        objectVariationAssets = {},
-        meshVariationDatabaseEntrys = {}
+        meshVariationDatabase = nil, -- MeshVariationDatabase
+        characterSocketListAsset = nil, -- CharacterSocketListAsset
+        appearanceUnlockAssets = {}, -- UnlockAsset
+        linkUnlockAssets = {}, -- UnlockAsset
+        blueprintAndVariationPairs = {}, -- BlueprintAndVariationPair
+        objectVariationAssets = {}, -- ObjectVariationAsset
+        meshVariationDatabaseEntrys = {} -- MeshVariationDatabaseEntry
     }
-
-    self.m_currentLevel = nil
 
     self.m_registryContainer = nil -- RegistryContainer
     self.m_meshVariationDatabase = nil -- MeshVariationDatabase
@@ -103,6 +101,8 @@ function SoldiersAppearances:RegisterVars()
     self.m_blueprintVariationPairs = {} -- BlueprintAndVariationPair
     self.m_linkUnlockAssets = {} -- UnlockAsset
     self.m_appearanceUnlockAssets = {} -- UnlockAsset
+
+    self.m_currentLevel = nil
 
     self.m_verbose = 1 -- prints debug information
 end
@@ -541,23 +541,15 @@ function SoldiersAppearances:CreateAppearanceUnlockAssets(p_asset)
     self.m_appearanceUnlockAssets[p_asset.instanceGuid:ToString('D')] = s_elements
 end
 
-function SoldiersAppearances:ReplacePlayerAppearance(p_player, p_element)
-    if self.m_verbose >= 1 then
-        print('Replace Visuals')
-    end
-
-    if p_element == 'neutral' then
-        return
-    end
-
+-- getting custom unlock
+function SoldiersAppearances:GetUnlockAsset(p_player, p_element)
     local s_customization = VeniceSoldierCustomizationAsset(p_player.customization)
-
     local s_kitNameParts = self:_Split(s_customization.name, '/')
     local s_kitName = s_kitNameParts[#s_kitNameParts]
     local s_appearanceGuid = self.m_appearanceGuids[s_kitName]
-
     local s_appearanceUnlockAsset = self.m_appearanceUnlockAssets[s_appearanceGuid][p_element]
-	p_player:SelectUnlockAssets(p_player.customization, { s_appearanceUnlockAsset })
+
+    return s_appearanceUnlockAsset
 end
 
 -- cloning the instance and adding to partition

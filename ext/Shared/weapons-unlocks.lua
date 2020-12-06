@@ -824,29 +824,18 @@ function WeaponsUnlocks:UpdateWeaponUnlockAssets(p_entity)
     end
 end
 
--- replacing player weapons
-function WeaponsUnlocks:ReplacePlayerWeapons(p_player, p_element)
-    if self.m_verbose >= 1 then
-        print('Replace Weapons')
+-- getting custom unlocks
+function WeaponsUnlocks:GetUnlocks(p_player, p_element)
+    local s_unlocks = {}
+
+    for l_key, l_value in pairs(p_player.weapons) do
+        local s_weaponUnlockAsset = SoldierWeaponUnlockAsset(l_value)
+        local s_unlockAsset = self.m_weaponUnlockAssets[s_weaponUnlockAsset.instanceGuid:ToString('D')][p_element]
+
+        s_unlocks[l_key] = s_unlockAsset
     end
 
-    if p_element == 'neutral' then
-        return
-    end
-
-    for i = #p_player.weapons, 1, -1 do
-        local s_weaponUnlockAsset = p_player.weapons[i]
-        if s_weaponUnlockAsset ~= nil then
-            local s_elementWeaponUnlockAsset = self.m_weaponUnlockAssets[s_weaponUnlockAsset.instanceGuid:ToString('D')][p_element]
-
-            local s_weaponUnlockAssets = p_player.weaponUnlocks[i]
-            if s_weaponUnlockAssets == nil then
-                s_weaponUnlockAssets = {}
-            end
-
-            p_player:SelectWeapon(i - 1, s_elementWeaponUnlockAsset, s_weaponUnlockAssets)
-        end
-    end
+    return s_unlocks
 end
 
 -- creating missing instances
