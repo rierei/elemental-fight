@@ -92,7 +92,6 @@ function SoldiersAppearances:RegisterVars()
     }
 
     self.m_currentLevel = nil
-    self.m_currentMode = nil
 
     self.m_registryContainer = nil -- RegistryContainer
     self.m_meshVariationDatabase = nil -- MeshVariationDatabase
@@ -124,11 +123,13 @@ function SoldiersAppearances:RegisterEvents()
 
     -- reading instances before level loads
     Events:Subscribe('Level:LoadResources', function(p_level, p_mode, p_dedicated)
-        if self.m_currentMap == nil then
+        if self.m_currentLevel == nil then
             self:RegisterWait()
         else
             self:ReloadInstances()
         end
+
+        self.m_currentLevel = p_level
     end)
 end
 
@@ -359,7 +360,7 @@ function SoldiersAppearances:CreateMeshMaterialVariations(p_entry)
     end
 
     local s_elements = {}
-    -- s_elements['neutral'] = p_entry.materials -- hanging instance
+    s_elements['neutral'] = p_entry.materials
 
     local s_meshVariationDatabaseMaterialIndexes = self.m_databaseEntryMaterialIndexes[p_entry.instanceGuid:ToString('D')]
     for _, l_element in pairs(self.m_elementNames) do
@@ -407,7 +408,7 @@ function SoldiersAppearances:CreateMeshVariationDatabaseEntrys(p_entry)
     end
 
     local s_elements = {}
-    -- s_elements['neutral'] = p_entry -- hanging instance
+    s_elements['neutral'] = p_entry
 
     for _, l_element in pairs(self.m_elementNames) do
         local s_newMeshVariationDatabaseEntry = self:_CloneInstance(p_entry, l_element)
@@ -433,7 +434,7 @@ function SoldiersAppearances:CreateObjectVariationAssets(p_asset)
     end
 
     local s_elements = {}
-    -- s_elements['neutral'] = p_asset -- hanging instance
+    s_elements['neutral'] = p_asset
 
     for _, l_element in pairs(self.m_elementNames) do
         local s_newObjectVariationAsset = self:_CloneInstance(p_asset, l_element)
@@ -466,7 +467,7 @@ function SoldiersAppearances:CreateBlueprintAndVariationPairs(p_data)
     end
 
     local s_elements = {}
-    -- s_elements['neutral'] = p_data -- hanging instance
+    s_elements['neutral'] = p_data
 
     for _, l_element in pairs(self.m_elementNames) do
         local s_newBlueprintAndVariationPair = self:_CloneInstance(p_data, l_element)
@@ -490,7 +491,7 @@ function SoldiersAppearances:CreateLinkUnlockAssets(p_asset)
     end
 
     local s_elements = {}
-    -- s_elements['neutral'] = p_asset -- hanging instance
+    s_elements['neutral'] = p_asset
 
     for _, l_element in pairs(self.m_elementNames) do
         local s_newLinkUnlockAsset = self:_CloneInstance(p_asset, l_element)
