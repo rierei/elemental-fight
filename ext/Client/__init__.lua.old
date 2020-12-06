@@ -1,0 +1,142 @@
+g_verbose = true
+
+local MyInstance = class('MyInstance')
+
+local InstanceWait = require('__shared/wait')
+local InstancePatch = require('__shared/patch')
+local Uuid = require('__shared/uuid')
+
+function MyInstance:__init()
+    self:RegisterVars()
+    self:RegisterWait()
+end
+
+function MyInstance:RegisterVars()
+    self.m_soldierGuids = {
+        ['database'] = {'B056DEA3-8F11-D2FA-20FA-7A5C3F94A15E', 'B056DEA3-8F11-D2FA-20FA-7A5C3F94A15E'},
+        ['variationEntry'] = {'B056DEA3-8F11-D2FA-20FA-7A5C3F94A15E', 'DB8D0C32-98B4-9E27-D004-7B419A7486FB'},
+        ['variationEntryB'] = {'B056DEA3-8F11-D2FA-20FA-7A5C3F94A15E', 'C1E22DDE-8BF3-7E2A-9AD7-D149CB17D900'},
+
+        ['Arms1P_BareGlove03_Afro_ObjectVariation'] = {'2871BA93-D577-11E0-A7F0-894741C432F0', '67A32FD0-AEE3-61D0-7041-D6B811C9BFE6'},
+        ['Arms1P_BareGlove03_Afro_MeshMaterialVariation'] = {'2871BA93-D577-11E0-A7F0-894741C432F0', '840A841B-2FD6-4AAF-AD73-940B0ACAF977'},
+
+        ['sm_assaultUpper'] = {'4B1F7DBE-6A67-5C01-4316-A075DE5C25EB', '27B3A54D-9D61-E1EB-2F66-4FBD28825B92'},
+        ['sm_bare'] = {'7CAD7AE4-23DC-6D25-3A3B-F34913054E24', 'A08BFCBE-52E1-51C6-0E00-CA0AE76E3102'},
+        ['u_assaultUpper'] = {'CBEBACDB-6158-416D-8D1C-665539F65CDD', '9E49E623-0F88-4D50-88ED-AE9EA0139156'}
+    }
+
+    self.m_Materials = {}
+    self.m_Hands = {}
+end
+
+function MyInstance:RegisterWait()
+    InstanceWait(self.m_soldierGuids, function(p_instances)
+        self:CreateVariations(p_instances)
+        self:CreateMaterials(p_instances)
+        self:CreateHands(p_instances)
+    end)
+end
+
+function MyInstance:CreateVariations(p_instances)
+    local s_newObjectVariation = self:CloneInstance(p_instances['Arms1P_BareGlove03_Afro_ObjectVariation'], 'objectv')
+    local s_newMaterialVariation = self:CloneInstance(p_instances['Arms1P_BareGlove03_Afro_MeshMaterialVariation'], 'materialv')
+
+    s_newObjectVariation.name = 'cloning/testing/material'
+    s_newObjectVariation.nameHash = MathUtils:FNVHash('cloning/testing/material')
+
+    -- local s_registry = RegistryContainer()
+    -- s_registry.assetRegistry:add(s_newObjectVariation)
+    -- s_registry.assetRegistry:add(s_newMaterialVariation)
+    -- ResourceManager:AddRegistry(s_registry, ResourceCompartment.ResourceCompartment_Static)
+
+    self.m_Hands['objectv'] = s_newObjectVariation
+    self.m_Hands['materialv'] = s_newMaterialVariation
+end
+
+function MyInstance:CreateMaterials(p_instances)
+    local s_meshMaterial = p_instances['sm_bare'].materials[4]
+    local s_newBareMaterial = self:CloneInstance(s_meshMaterial, 'mc_bare1')
+
+    local s_shaderDataPatch = {
+        shader = {
+            vectorParameters = {
+                [2] = {
+                    value = Vec4(0, 0.6, 1, 0) -- _DirtColor
+                },
+                [3] = {
+                    value = Vec4(10, 0, 0, 0) -- _DirtScaleMax
+                }
+            }
+        }
+    }
+
+    InstancePatch(p_instances['sm_assaultUpper'].materials[1], s_shaderDataPatch)
+    s_newBareMaterial.shader = p_instances['sm_assaultUpper'].materials[1].shader
+
+    -- local s_registry = RegistryContainer()
+    -- s_registry.assetRegistry:add(s_newBareMaterial)
+    -- ResourceManager:AddRegistry(s_registry, ResourceCompartment.ResourceCompartment_Static)
+
+    self.m_Materials['mc_bare1'] = s_newBareMaterial
+end
+
+function MyInstance:CreateHands(p_instances)
+    -- local s_newBareMesh = self:CloneInstance(p_instances['sm_bare'], 'smc_bare')
+    -- s_newBareMesh.materials[4] = self.m_Materials['mc_bare1']
+
+    -- local s_registry = RegistryContainer()
+    -- s_registry.assetRegistry:add(s_newBareMesh)
+    -- ResourceManager:AddRegistry(s_registry, ResourceCompartment.ResourceCompartment_Static)
+
+    p_instances['u_assaultUpper']:MakeWritable()
+    BlueprintAndVariationPair(UnlockAsset(p_instances['u_assaultUpper']).linkedTo[2]):MakeWritable()
+    -- BlueprintAndVariationPair(UnlockAsset(p_instances['u_assaultUpper']).linkedTo[2]).baseAsset = s_newBareMesh
+    BlueprintAndVariationPair(UnlockAsset(p_instances['u_assaultUpper']).linkedTo[2]).variation = self.m_Hands['objectv']
+    -- UnlockAsset(p_instances['u_assaultUpper']).linkedTo[2] = s_newBareMesh
+
+    -- p_instances['variationEntry']:MakeWritable()
+    -- p_instances['variationEntry'].mesh = s_newBareMesh
+    -- p_instances['variationEntry'].materials[4].material = self.m_Materials['mc_bare1']
+
+    -- p_instances['variationEntryB']:MakeWritable()
+    -- p_instances['variationEntryB'].mesh = s_newBareMesh
+    -- p_instances['variationEntryB'].materials[4].material = self.m_Materials['mc_bare1']
+
+    self.m_Hands['materialv']:MakeWritable()
+    self.m_Hands['materialv'].shader = p_instances['sm_assaultUpper'].materials[1].shader
+
+    local s_newVariationEntry = self:CloneInstance(p_instances['variationEntryB'], 'new_variation')
+
+    s_newVariationEntry:MakeWritable()
+    s_newVariationEntry.variationAssetNameHash = MathUtils:FNVHash('cloning/testing/material')
+    -- s_newVariationEntry.mesh = s_newBareMesh
+    -- s_newVariationEntry.materials[2].material = self.m_Hands['materialv']
+    -- s_newVariationEntry.materials[3].material = self.m_Hands['materialv']
+    s_newVariationEntry.materials[3].materialVariation = nil
+    s_newVariationEntry.materials[4].material = self.m_Materials['mc_bare1']
+    s_newVariationEntry.materials[4].materialVariation = self.m_Hands['materialv']
+
+    p_instances['database']:MakeWritable()
+    p_instances['database'].entries:add(s_newVariationEntry)
+
+    -- self.m_Hands['smc_bare'] = s_newBareMesh
+end
+
+function MyInstance:CloneInstance(p_instance, p_name)
+    print('Clone: ' .. p_name)
+
+    local s_partition = p_instance.partition
+
+    local s_newGuid = self:_GenerateGuid(p_name)
+    local s_newInstance = p_instance:Clone(s_newGuid)
+    s_partition:AddInstance(s_newInstance)
+
+    return s_newInstance
+end
+
+function MyInstance:_GenerateGuid(p_name)
+    Uuid.randomseed(MathUtils:FNVHash(p_name))
+    return Guid(Uuid())
+end
+
+g_MyInstance = MyInstance()
