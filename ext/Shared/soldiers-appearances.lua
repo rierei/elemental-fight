@@ -10,7 +10,7 @@ end
 
 function SoldiersAppearances:RegisterVars()
     self.m_elementNames = {'water', 'grass', 'fire'}
-    self.m_classNames = {'assault', 'engi'}
+    self.m_classNames = {'assault', 'engi', 'recon', 'support'}
 
     self.m_elementColors = {
         water = Vec3(0, 0.6, 1),
@@ -19,30 +19,48 @@ function SoldiersAppearances:RegisterVars()
     }
 
     self.m_waitingGuids = {
-        -- meshVariationDatabase = {'B056DEA3-8F11-D2FA-20FA-7A5C3F94A15E' ,'B056DEA3-8F11-D2FA-20FA-7A5C3F94A15E'}, -- MeshVariationDatabase
-        characterSocketListAsset = {'1F5CC239-BE4F-4D03-B0B5-A0FF89976036', '8F1A9F10-6BF8-442A-909F-AF0D9F8E1608'}, -- CharacterSocketListAsset
+        CharacterSocketListAsset = {'1F5CC239-BE4F-4D03-B0B5-A0FF89976036', '8F1A9F10-6BF8-442A-909F-AF0D9F8E1608'}, -- CharacterSocketListAsset
 
         MP_US_Assault_Appearance01 = {'6252040E-A16A-11E0-AAC3-854900935C42', 'F2ECBAB2-F00A-47CA-66DC-0F89C6A138D4'}, -- UnlockAsset
-        MP_US_Assault_Helmet01 = {'45B47A2D-9F0E-4A20-B37F-FF9066A3C8E4', 'CB7204EC-D4FA-4722-A540-9D4643D0BDBF'}, -- link UnlockAsset
-        MP_US_Assault_Head01 = {'9B54E4CA-6207-4DA4-9E4D-A09F11893844', 'B5C8DFEC-7503-4771-8BCB-5F75DE529D89'}, -- link UnlockAsset
-        MP_US_Assault_UpperBody01 = {'CBEBACDB-6158-416D-8D1C-665539F65CDD', '9E49E623-0F88-4D50-88ED-AE9EA0139156'}, -- link UnlockAsset
-        MP_US_Assault_LowerBody01 = {'C4FBCFC7-416F-42D2-99B3-2DCF1840FCFD', '98187809-F0CD-4F9B-8D9C-23729FC366C7'}, -- link UnlockAsset
-
         MP_US_Engi_Appearance_Wood01 = {'FA825024-20C0-4207-9037-CE25CC5FBA38', 'F2ADB1BC-466F-4B51-90D1-E8F8670C7BE7'}, -- UnlockAsset
-        MP_US_Engi_Cap01_Wood01 = {'99212B4D-6FE0-404A-81EF-595C25AC7A31', '15F330AE-322A-41A1-892F-4D2902B8E2F9'}, -- link UnlockAsset
-        MP_US_Engi_Head01 = {'CCC88822-E9E8-42FE-8FAB-ED92E797DD18', 'A2B386A1-710F-4B0A-B2DE-B059A8E20D12'}, -- link UnlockAsset
-        MP_US_Engi_UpperBody01_Wood01 = {'756B6776-B14E-463D-BC2C-DC3A5AA6C16F', 'B4A1F1F1-A4DF-492B-8C1A-3C98836A7E99'}, -- link UnlockAsset
-        MP_US_Engi_LowerBody01_Wood01 = {'67BDFCC5-79BA-4125-99D5-6FE943BC947C', 'B19E00A9-F888-444E-805C-59737AD3FE96'}, -- link UnlockAsset
+        MP_US_Recon_Appearance_Wood01 = {'E3BE172B-C32F-4ECF-A85C-E9F9796610FF', '4BE86DA1-0229-448D-A5E2-934E5490E11C'}, -- UnlockAsset
+        MP_US_Support_Appearance_Wood01 = {'9D8C49AB-0E01-4FA6-9127-5FCCDB110B2C', '23CFF61F-F1E2-4306-AECE-2819E35484D2'}, -- UnlockAsset
 
-        US_Helmet09_Desert = {'5B06C0E2-AFDC-455A-BDC4-11B77E1A8AFE', 'B1A0F507-D7F8-4301-8DE6-C6198364FE3B'}, -- variation UnlockAsset
-        US_Upperbody04_Desert = {'CDEF869B-959A-11E0-86C2-B30910735269', 'C9F07E77-DA10-1781-CA13-715928514D59'}, -- variation UnlockAsset
-        Arms1P_BareGlove03_Afro = {'2871BA93-D577-11E0-A7F0-894741C432F0', '67A32FD0-AEE3-61D0-7041-D6B811C9BFE6'}, -- variation UnlockAsset
-        US_LB03_Desert = {'6149C356-959B-11E0-86C2-B30910735269', '494B07F4-4C11-1D87-E024-4FE4EB042055'}, -- variation UnlockAsset
+        _US_Helmet09_Desert02 = {'5A980D3E-19B7-4E1F-95D8-8F6E8D0D5139', 'C9FA0036-B75C-4D70-8CBB-736627C93D77'}, -- ObjectVariation
+        _US_Upperbody04_Desert = {'CDEF869B-959A-11E0-86C2-B30910735269', 'C9F07E77-DA10-1781-CA13-715928514D59'}, -- ObjectVariation
+        _RU_LB03_Desert = {'59966EFA-3C5D-4115-ADB9-7013A94D4F85', 'AAD994DE-5C6D-49A9-9844-788CDCECEBED'}, -- ObjectVariation
 
-        US_Cap03_Wood01 = {'6F4D0143-B7B9-4BAA-8E0D-3A87F53E9E9E', 'FE865E0C-778F-414A-9C7B-851A8040FCE0'}, -- variation UnlockAsset
-        US_Upperbody06_Wood01 = {'266E865B-7CA2-47A3-9E17-421C3766B664', 'BA5D71CE-D53B-44CC-81F4-2B16F850E24A'}, -- variation UnlockAsset
-        Arms1P_BareGlove03_Wood01 = {'EDEAC49D-D498-11E0-B43C-843E507B97C8', 'A0B1B8BF-7A51-003D-C299-9D06B4394C12'}, -- variation UnlockAsset
-        US_Lowerbody01_Wood01 = {'5CB7C07C-7366-4C3D-9F24-3599F0AA8568', '07C001B1-741A-4428-8618-D89EAB25794B'}, -- variation UnlockAsset
+        _US_Cap03_Wood01 = {'6F4D0143-B7B9-4BAA-8E0D-3A87F53E9E9E', 'FE865E0C-778F-414A-9C7B-851A8040FCE0'}, -- ObjectVariation
+        _US_Upperbody06_Wood01 = {'266E865B-7CA2-47A3-9E17-421C3766B664', 'BA5D71CE-D53B-44CC-81F4-2B16F850E24A'}, -- ObjectVariation
+        _US_Lowerbody01_Wood01 = {'5CB7C07C-7366-4C3D-9F24-3599F0AA8568', '07C001B1-741A-4428-8618-D89EAB25794B'}, -- ObjectVariation
+
+        _Shemagh02_Para = {'69A0369F-35A9-4781-ADD2-B088E8BA98DE', '08D775AC-F36D-494A-A19E-02347A1FE03F'}, -- ObjectVariation
+        _US_Upperbody08_Wood01 = {'D10B9D0C-CE69-4100-A9AC-3602201FCCF2', 'D2A44FF7-D279-4FEA-8B18-52E820EEBCCD'}, -- ObjectVariation
+        _US_Lowerbody02_Wood01 = {'A2EC519D-2412-4D84-9B64-EAE5B40E03EB', '24447F29-6EB8-4C30-88B2-B151B9F3F664'}, -- ObjectVariation
+
+        _US_Helmet07_Wood01 = {'05FD662F-79FC-4A7F-9575-807194D55CBB', 'D522146F-9506-4E4D-845A-B386025B1D90'}, -- ObjectVariation
+        _US_Upperbody07_Wood01 = {'7EAF31A7-3E60-4F59-8166-3446750B14C8', 'D135952A-C832-42C0-8164-840453146926'}, -- ObjectVariation
+        _US_Lowerbody04_Wood01 = {'A31F3463-71B0-4B52-B471-37D62D81C2C2', '77C332BB-93D4-435B-A3B8-706EE73CCA31'}, -- ObjectVariation
+
+        _Arms1P_BareGlove03_Afro = {'2871BA93-D577-11E0-A7F0-894741C432F0', '67A32FD0-AEE3-61D0-7041-D6B811C9BFE6'}, -- ObjectVariation
+        _Arms1P_BareGlove03_Wood01 = {'EDEAC49D-D498-11E0-B43C-843E507B97C8', 'A0B1B8BF-7A51-003D-C299-9D06B4394C12'}, -- ObjectVariation
+
+        -- meshVariationDatabase = {'B056DEA3-8F11-D2FA-20FA-7A5C3F94A15E' ,'B056DEA3-8F11-D2FA-20FA-7A5C3F94A15E'}, -- MeshVariationDatabase
+
+        -- MP_US_Assault_Helmet01 = {'45B47A2D-9F0E-4A20-B37F-FF9066A3C8E4', 'CB7204EC-D4FA-4722-A540-9D4643D0BDBF'}, -- link UnlockAsset
+        -- MP_US_Assault_Head01 = {'9B54E4CA-6207-4DA4-9E4D-A09F11893844', 'B5C8DFEC-7503-4771-8BCB-5F75DE529D89'}, -- link UnlockAsset
+        -- MP_US_Assault_UpperBody01 = {'CBEBACDB-6158-416D-8D1C-665539F65CDD', '9E49E623-0F88-4D50-88ED-AE9EA0139156'}, -- link UnlockAsset
+        -- MP_US_Assault_LowerBody01 = {'C4FBCFC7-416F-42D2-99B3-2DCF1840FCFD', '98187809-F0CD-4F9B-8D9C-23729FC366C7'}, -- link UnlockAsset
+
+        -- MP_US_Engi_Cap01_Wood01 = {'99212B4D-6FE0-404A-81EF-595C25AC7A31', '15F330AE-322A-41A1-892F-4D2902B8E2F9'}, -- link UnlockAsset
+        -- MP_US_Engi_Head01 = {'CCC88822-E9E8-42FE-8FAB-ED92E797DD18', 'A2B386A1-710F-4B0A-B2DE-B059A8E20D12'}, -- link UnlockAsset
+        -- MP_US_Engi_UpperBody01_Wood01 = {'756B6776-B14E-463D-BC2C-DC3A5AA6C16F', 'B4A1F1F1-A4DF-492B-8C1A-3C98836A7E99'}, -- link UnlockAsset
+        -- MP_US_Engi_LowerBody01_Wood01 = {'67BDFCC5-79BA-4125-99D5-6FE943BC947C', 'B19E00A9-F888-444E-805C-59737AD3FE96'}, -- link UnlockAsset
+
+        -- US_Helmet09_Desert = {'5B06C0E2-AFDC-455A-BDC4-11B77E1A8AFE', 'B1A0F507-D7F8-4301-8DE6-C6198364FE3B'}, -- variation UnlockAsset
+        -- US_Upperbody04_Desert = {'CDEF869B-959A-11E0-86C2-B30910735269', 'C9F07E77-DA10-1781-CA13-715928514D59'}, -- variation UnlockAsset
+        -- Arms1P_BareGlove03_Afro = {'2871BA93-D577-11E0-A7F0-894741C432F0', '67A32FD0-AEE3-61D0-7041-D6B811C9BFE6'}, -- variation UnlockAsset
+        -- US_LB03_Desert = {'6149C356-959B-11E0-86C2-B30910735269', '494B07F4-4C11-1D87-E024-4FE4EB042055'}, -- variation UnlockAsset
 
         -- MP_US_Engi_Appearance01 = {'DD279859-1C83-4E2F-B8F4-36DD17024F2D', '915CE40B-0A8B-4423-A769-FBBE45C0D834'}, -- variation UnlockAsset
         -- US_Cap03_Desert = {'5090CBF1-959F-11E0-86C2-B30910735269', 'FA3E6AEB-B8AB-56B2-A54F-D15679697F85'}, -- variation UnlockAsset
@@ -58,15 +76,27 @@ function SoldiersAppearances:RegisterVars()
     self.m_meshMaterialIndexes = {
         assault = {
             us_helmet09 = { 1 },
-            us_upperbody04 = { 1, 3 },
-            arms1p_bareglove03 = { 1, 2, 4 },
-            us_lb03 = { 1 }
+            us_upperbody04 = { 1 },
+            us_lb03 = { 1 },
+            arms1p_bareglove03 = { 1, 2, 4 }
         },
         engi = {
             us_cap03 = { 1 },
             us_upperbody06 = { 1 },
-            arms1p_bareglove03 = { 1, 2, 4 },
-            us_lowerbody01 = { 1 }
+            us_lowerbody01 = { 1 },
+            arms1p_bareglove03 = { 1, 2, 4 }
+        },
+        recon = {
+            shemagh02 = { 3 },
+            us_upperbody08 = { 1 },
+            us_lowerbody02 = { 1 },
+            arms1p_bareglove03 = { 1, 2, 4 }
+        },
+        support = {
+            us_helmet07 = { 1 },
+            us_upperbody07 = { 1 },
+            us_lowerbody04 = { 1 },
+            arms1p_bareglove03 = { 1, 2, 4 }
         }
     }
 
@@ -80,7 +110,7 @@ function SoldiersAppearances:RegisterVars()
         meshVariationDatabaseEntrys = {}
     }
 
-    self.m_loaded = false
+    self.m_isInstancesLoaded = false
 
     self.m_registryContainer = nil -- RegistryContainer
     self.m_meshVariationDatabase = nil -- MeshVariationDatabase
@@ -97,8 +127,43 @@ function SoldiersAppearances:RegisterVars()
     self.m_verbose = 1 -- prints information
 end
 
-function SoldiersAppearances:Reset()
-    print('RESET')
+function SoldiersAppearances:RegisterEvents()
+    -- waiting instances
+    InstanceWait(self.m_waitingGuids, function(p_instances)
+        if not self.m_isInstancesLoaded then
+            self:ReadInstances(p_instances)
+        end
+    end)
+
+    -- waiting variation database
+    Events:Subscribe('Partition:Loaded', function(p_partition)
+        if not self.m_isInstancesLoaded then
+            for _, l_instance in pairs(p_partition.instances) do
+                if l_instance:Is('MeshVariationDatabase') and Asset(l_instance).name:match('Levels') then
+                    if self.m_verbose >= 1 then
+                        print('Found MeshVariationDatabase')
+                    end
+
+                    self.m_meshVariationDatabase = MeshVariationDatabase(l_instance)
+                    self.m_meshVariationDatabase:MakeWritable()
+                end
+            end
+        end
+    end)
+
+    -- reloading instances
+    Events:Subscribe('Level:LoadResources', function(p_level, p_mode, p_dedicated)
+        if self.m_isInstancesLoaded then
+            self.ReloadInstances()
+        end
+    end)
+end
+
+-- reseting created instances
+function SoldiersAppearances:ReloadInstances()
+    if self.m_verbose >= 1 then
+        print('Reloading Instances')
+    end
 
     self.m_registryContainer = nil -- RegistryContainer
     self.m_meshVariationDatabase = nil -- MeshVariationDatabase
@@ -112,64 +177,19 @@ function SoldiersAppearances:Reset()
     self.m_linkUnlockAssets = {} -- UnlockAsset
     self.m_appearanceUnlockAssets = {} -- UnlockAsset
 
-    self.m_loaded = false
+    self.m_isInstancesLoaded = false
 end
 
-function SoldiersAppearances:RegisterResources()
-    print('RegisterResources')
-    ResourceManager:AddRegistry(self.m_registryContainer, ResourceCompartment.ResourceCompartment_Game)
-
-    print(#self.m_meshVariationDatabase.entries)
-
-    for _, l_value in pairs(self.m_variationDatabaseEntrys) do
-        for _, ll_element in pairs(self.m_elementNames) do
-            self.m_meshVariationDatabase.entries:add(l_value[ll_element])
-        end
-    end
-
-    print(#self.m_meshVariationDatabase.entries)
-end
-
-function SoldiersAppearances:RegisterEvents()
-    InstanceWait(self.m_waitingGuids, function(p_instances)
-        if not self.m_loaded then
-            print('ReadInstances')
-            self:ReadInstances(p_instances)
-        else
-            self.m_meshVariationDatabase = MeshVariationDatabase(self.m_waitingInstances.meshVariationDatabase)
-            self.m_meshVariationDatabase:MakeWritable()
-
-            self:RegisterResources()
-        end
-    end)
-
-    Events:Subscribe('Partition:Loaded', function(p_partition)
-        for _, l_instance in pairs(p_partition.instances) do
-            if l_instance:Is('MeshVariationDatabase') and Asset(l_instance).name:match('Levels') then
-                if self.m_verbose >= 1 then
-                    print('Found MeshVariationDatabase')
-                end
-
-                self.m_waitingInstances.meshVariationDatabase = l_instance
-            end
-        end
-    end)
-end
-
+-- reading waiting instances
 function SoldiersAppearances:ReadInstances(p_instances)
-    self.m_loaded = true
+    self.m_isInstancesLoaded = true
 
-    -- self.m_meshVariationDatabase = p_instances['meshVariationDatabase']
-    -- self.m_meshVariationDatabase:MakeWritable()
-
-    self.m_meshVariationDatabase = MeshVariationDatabase(self.m_waitingInstances.meshVariationDatabase)
-    self.m_meshVariationDatabase:MakeWritable()
-
-    self.m_waitingInstances.characterSocketListAsset = p_instances['characterSocketListAsset']
+    self.m_waitingInstances.characterSocketListAsset = p_instances['CharacterSocketListAsset']
 
     self.m_waitingInstances.appearanceUnlockAssets['assault'] = p_instances['MP_US_Assault_Appearance01']
     self.m_waitingInstances.appearanceUnlockAssets['engi'] = p_instances['MP_US_Engi_Appearance_Wood01']
-    -- self.m_waitingInstances.appearanceUnlockAssets['recon'] = p_instances['MP_US_Recon_Appearance01']
+    self.m_waitingInstances.appearanceUnlockAssets['recon'] = p_instances['MP_US_Recon_Appearance_Wood01']
+    self.m_waitingInstances.appearanceUnlockAssets['support'] = p_instances['MP_US_Support_Appearance_Wood01']
 
     for _, l_class in pairs(self.m_classNames) do
         self.m_waitingInstances.linkUnlockAssets[l_class] = {}
@@ -314,7 +334,7 @@ function SoldiersAppearances:CreateInstances()
         self:CreateAppearanceUnlockAssets(self.m_waitingInstances.appearanceUnlockAssets[l_class])
     end
 
-    self:RegisterResources()
+    ResourceManager:AddRegistry(self.m_registryContainer, ResourceCompartment.ResourceCompartment_Game)
 
     self.m_waitingInstances = {
         meshVariationDatabase = nil,
@@ -355,7 +375,7 @@ function SoldiersAppearances:CreateMeshMaterialVariations(p_entry)
         local s_variations = {}
         for _, ll_value in pairs(s_meshVariationDatabaseMaterialIndexes) do
             local s_newMeshMaterialVariation = MeshMaterialVariation(self:_GenerateGuid(p_entry.instanceGuid:ToString('D') .. ll_value .. l_element))
-            p_entry.partition:AddInstance(s_newMeshMaterialVariation)
+            p_entry.partition:AddInstance(s_newMeshMaterialVariation) -- TO CHECK: partition destroyed on rotation
 
             local s_surfaceShaderInstanceDataStruct = SurfaceShaderInstanceDataStruct()
 
@@ -399,13 +419,15 @@ function SoldiersAppearances:CreateMeshVariationDatabaseEntrys(p_entry)
     s_elements['neutral'] = p_entry
 
     for _, l_element in pairs(self.m_elementNames) do
-        local s_newMeshVariationDatabaseEntry = self:_CloneInstance(p_entry, l_element)
+        local s_newMeshVariationDatabaseEntry = self:_CloneInstance(p_entry, l_element) -- TO CHECK: partition destroyed on rotation
 
         for l_key, l_value in pairs(self.m_meshMaterialVariations[p_entry.instanceGuid:ToString('D')][l_element]) do
             s_newMeshVariationDatabaseEntry.materials[l_key].materialVariation = l_value
         end
 
         s_newMeshVariationDatabaseEntry.variationAssetNameHash = MathUtils:FNVHash(p_entry.variationAssetNameHash .. l_element)
+
+        self.m_meshVariationDatabase.entries:add(s_newMeshVariationDatabaseEntry)
 
         s_elements[l_element] = s_newMeshVariationDatabaseEntry
     end
@@ -425,18 +447,18 @@ function SoldiersAppearances:CreateObjectVariationAssets(p_asset)
     for _, l_element in pairs(self.m_elementNames) do
         local s_newObjectVariationAsset = self:_CloneInstance(p_asset, l_element)
 
-        -- patching object properties
+        -- patching object variation properties
         s_newObjectVariationAsset.name = p_asset.nameHash .. l_element
         s_newObjectVariationAsset.nameHash = MathUtils:FNVHash(p_asset.nameHash .. l_element)
 
         local skinnedSocketObject = self.m_skinnedSocketObjects[p_asset.instanceGuid:ToString('D')]
 
-        -- adding object guid
-        -- if skinnedSocketObject.is1p then
-        --     skinnedSocketObject.object.variation1pGuids:add(s_newObjectVariationAsset.instanceGuid)
-        -- else
-        --     skinnedSocketObject.object.variation3pGuids:add(s_newObjectVariationAsset.instanceGuid)
-        -- end
+        -- adding object variation guid
+        if skinnedSocketObject.is1p then
+            skinnedSocketObject.object.variation1pGuids:add(s_newObjectVariationAsset.instanceGuid)
+        else
+            skinnedSocketObject.object.variation3pGuids:add(s_newObjectVariationAsset.instanceGuid)
+        end
 
         self.m_registryContainer.assetRegistry:add(s_newObjectVariationAsset)
 
@@ -477,7 +499,7 @@ function SoldiersAppearances:CreateLinkUnlockAssets(p_asset)
     end
 
     local s_elements = {}
-    s_elements['neutral'] = p_asset
+    s_elements['neutral'] = p_asset -- TO CHECK: hanging reference
 
     for _, l_element in pairs(self.m_elementNames) do
         local s_newLinkUnlockAsset = self:_CloneInstance(p_asset, l_element)
@@ -526,14 +548,8 @@ function SoldiersAppearances:CreateAppearanceUnlockAssets(p_asset)
     self.m_appearanceUnlockAssets[p_asset.instanceGuid:ToString('D')] = s_elements
 end
 
-function SoldiersAppearances:ReplacePlayerAppearance(p_player, p_element)
-    -- local s_assaultAppearanceUnlockAssetGuid = self.m_waitingInstances.appearanceUnlockAssets['assault'].instanceGuid:ToString('D')
-    -- local s_engiAppearanceUnlockAssetGuid = self.m_waitingInstances.appearanceUnlockAssets['engi'].instanceGuid:ToString('D')
-
-    local s_appearanceUnlockAsset = nil
-
-    -- s_appearanceUnlockAsset = self.m_appearanceUnlockAssets[s_assaultAppearanceUnlockAssetGuid][p_element]
-    s_appearanceUnlockAsset = self.m_appearanceUnlockAssets['F2ECBAB2-F00A-47CA-66DC-0F89C6A138D4'][p_element]
+function SoldiersAppearances:ReplacePlayerAppearance(p_player, p_element, p_appearanceGuid)
+    local s_appearanceUnlockAsset = self.m_appearanceUnlockAssets[p_appearanceGuid][p_element]
 
 	p_player:SelectUnlockAssets(p_player.customization, { s_appearanceUnlockAsset })
 end

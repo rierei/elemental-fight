@@ -1,82 +1,42 @@
 local Bots = require('__shared/utils/bots')
 
-local function spawnCustom(player, name, teamId, squadId, trans, unlocks, weapon)
-	local existingPlayer = PlayerManager:GetPlayerByName(name)
-	local bot = nil
+local function spawnBot(p_name, p_kit, p_pos)
+	local s_player = PlayerManager:GetPlayerByName(p_name)
+	local s_bot = nil
 
-	if existingPlayer ~= nil then
-		-- If a player with this name exists and it's not a bot then error out.
-		if not Bots:isBot(existingPlayer) then
+	if s_player ~= nil then
+		if not Bots:isBot(s_player) then
 			return
 		end
 
-		-- If it is a bot, then store it and we'll call the spawn function for it after.
-		-- This will respawn the bot (killing it if it's already alive).
-		bot = existingPlayer
+		s_bot = s_player
 
-		-- We should also update its team and squad, just in case.
-		bot.teamId = teamId
-		bot.squadId = squadId
+		s_bot.teamId = TeamId.Team2
+		s_bot.squadId = SquadId.SquadNone
 	else
-		-- Otherwise, create a new bot. This returns a new Player object.
-		bot = Bots:createBot(name, teamId, squadId)
+		s_bot = Bots:createBot(p_name, SquadId.SquadNone, TeamId.Team2)
 	end
 
-    -- Get the default MpSoldier blueprint and the US assault kit.
-	local soldierBlueprint = ResourceManager:SearchForInstanceByGuid(Guid('261E43BF-259B-41D2-BF3B-9AE4DDA96AD2'))
-	local soldierKit = ResourceManager:SearchForInstanceByGuid(Guid('A15EE431-88B8-4B35-B69A-985CEA934855'))
-
-	-- Create the transform of where to spawn the bot at.
 	local transform = LinearTransform()
-	transform.trans = trans
+	transform.trans = p_pos
 
-	-- And then spawn the bot. This will create and return a new SoldierEntity object.
-	local soldier = Bots:spawnBot(bot, transform, CharacterPoseType.CharacterPoseType_Stand, soldierBlueprint, soldierKit, unlocks)
+	local soldierBlueprint = ResourceManager:SearchForInstanceByGuid(Guid('261E43BF-259B-41D2-BF3B-9AE4DDA96AD2'))
 
-	return soldier
-
-	-- local hiderCustomization = CustomizeSoldierData()
-	-- hiderCustomization.activeSlot = WeaponSlot.WeaponSlot_0
-	-- hiderCustomization.removeAllExistingWeapons = true
-	-- hiderCustomization.overrideCriticalHealthThreshold = 1.0
-
-	-- local primaryWeapon = UnlockWeaponAndSlot()
-	-- primaryWeapon.weapon = SoldierWeaponUnlockAsset(weapon)
-	-- primaryWeapon.slot = WeaponSlot.WeaponSlot_0
-
-	-- hiderCustomization.weapons:add(primaryWeapon)
-
-	-- soldier:ApplyCustomization(hiderCustomization)
+	return Bots:spawnBot(s_bot, transform, CharacterPoseType.CharacterPoseType_Stand, soldierBlueprint, p_kit, {})
 end
 
-local function spawn(appearance, pos)
-    -- local assaultAppearance = ResourceManager:SearchForDataContainer('Persistence/Unlocks/Soldiers/Visual/MP/Us/MP_US_Assault_Appearance01')
-	-- local engiAppearance = ResourceManager:SearchForDataContainer('Persistence/Unlocks/Soldiers/Visual/MP/Us/MP_US_Engi_Appearance01')
-	-- local reconAppearance = ResourceManager:SearchForDataContainer('Persistence/Unlocks/Soldiers/Visual/MP/Us/MP_US_Recon_Appearance01')
-	-- local supportAppearance = ResourceManager:SearchForDataContainer('Persistence/Unlocks/Soldiers/Visual/MP/Us/MP_US_Support_Appearance01')
+Events:Subscribe('Bot:Update', function(p_bot, p_time)
+    p_bot.input:SetLevel(EntryInputActionEnum.EIAFire, 0)
 
-	local weapon = ResourceManager:SearchForInstanceByGuid(Guid('0D6330BA-D9C4-4644-C605-0351694D1ADC'))
+	local s_shouldShot = MathUtils:GetRandomInt(0, 1000)
 
-    return spawnCustom('Bots:Spawn', 'Bot1', TeamId.Team2, SquadId.SquadNone, pos, { appearance }, weapon)
-    -- spawnCustom('Bots:Spawn', 'Bot2', TeamId.Team2, SquadId.SquadNone, Vec3(-306.493164, 70.434372, 272.194336), engiAppearance, weapon)
-    -- spawnCustom('Bots:Spawn', 'Bot3', TeamId.Team2, SquadId.SquadNone, Vec3(-306.493164, 70.434372, 274.194336), supportAppearance, weapon )
-    -- spawnCustom('Bots:Spawn', 'Bot4', TeamId.Team2, SquadId.SquadNone, Vec3(-306.493164, 70.434372, 276.194336), reconAppearance, weapon)
-end
-
-Events:Subscribe('Bot:Update', function(bot, dt)
-	-- Make the bots move forward.
-    bot.input:SetLevel(EntryInputActionEnum.EIAFire, 0)
-
-	-- Have bots jump with a 1.5% chance per frame.
-	local shouldJump = MathUtils:GetRandomInt(0, 1000)
-
-	if shouldJump <= 100 then
-		bot.input:SetLevel(EntryInputActionEnum.EIAFire, 1.0)
+	if s_shouldShot <= 100 then
+		p_bot.input:SetLevel(EntryInputActionEnum.EIAFire, 1.0)
 	end
 
-	bot.input.flags = EntryInputFlags.AuthoritativeAiming
-	bot.input.authoritativeAimingPitch = -0.3
-	bot.input.authoritativeAimingYaw = 1.5
+	p_bot.input.flags = EntryInputFlags.AuthoritativeAiming
+	p_bot.input.authoritativeAimingPitch = -0.3
+	p_bot.input.authoritativeAimingYaw = 1.5
 end)
 
-return { spawn = spawn }
+return { spawnBot = spawnBot }

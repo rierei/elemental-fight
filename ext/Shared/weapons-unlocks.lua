@@ -1,8 +1,8 @@
 local WeaponsUnlocks = class('WeaponsUnlocks')
 
-local BotsCustom = require('__shared/bots-custom')
 local MaterialPairs = require('__shared/utils/consts').materialPairs
 local Uuid = require('__shared/utils/uuid')
+local InstanceWait = require('__shared/utils/wait')
 
 function WeaponsUnlocks:__init()
     self:RegisterVars()
@@ -18,33 +18,30 @@ function WeaponsUnlocks:RegisterVars()
         fire = Vec3(1, 0.3, 0)
     }
 
-    self.m_gameMaterialContainerAssetGuid = '89492CD4-F004-42B9-97FB-07FD3D436205' -- MaterialContainer
-
-    self.m_impactEffectBlueprintGuids = {
-        water = '23298636-5C6F-8CA0-F0EF-6097924181C3', -- FX_Impact_Water_S
-        grass = '06E4F5D2-5883-46A0-B898-2A21E8BFEEDA', -- FX_Impact_Foliage_Generic_S_01
-        fire = '29C86407-1ED5-11DE-A58E-D687F51B0F2D' -- FX_Impact_Metal_01_S
+    self.m_waitingImpactEffectGuids = {
+        FX_Impact_Water_S = {' F256E142-C9D8-4BFE-985B-3960B9E9D189', '23298636-5C6F-8CA0-F0EF-6097924181C3'},
+        FX_Impact_Foliage_Generic_S_01 = {'6C1A14FF-83C9-410E-A7D0-4FD024EBE33A', '06E4F5D2-5883-46A0-B898-2A21E8BFEEDA'},
+        FX_Impact_Metal_01_S = {' 29C86406-1ED5-11DE-A58E-D687F51B0F2D', '29C86407-1ED5-11DE-A58E-D687F51B0F2D'}
     }
 
-    self.m_explodeEffectBlueprintGuids = {
-        water = '67CBADEE-34D0-11DE-A494-8B723B09CADF', -- FX_Impact_Metal_01_M
-        grass = '67CBADEE-34D0-11DE-A494-8B723B09CADF', -- FX_Impact_Metal_01_M
-        fire = '67CBADEE-34D0-11DE-A494-8B723B09CADF', -- FX_Impact_Metal_01_M
+    self.m_waitingExplodeEffectBlueprintGuids = {
+        FX_Impact_Metal_01_M = {'67CBADED-34D0-11DE-A494-8B723B09CADF', '67CBADEE-34D0-11DE-A494-8B723B09CADF'}
     }
 
-    self.m_smokeEffectBlueprintGuids = {
-        water = '00C3D2F9-1346-47B8-956D-10CC23AD8B4D', -- FX_40mm_Smoke
-        grass = '00C3D2F9-1346-47B8-956D-10CC23AD8B4D', -- FX_40mm_Smoke
-        fire = '00C3D2F9-1346-47B8-956D-10CC23AD8B4D', -- FX_40mm_Smoke
+    self.m_waitingSmokeEffectBlueprintGuids = {
+        FX_40mm_Smoke = {' 6A2C27D9-D455-458D-A542-C212C6F8F69C', '00C3D2F9-1346-47B8-956D-10CC23AD8B4D'}
     }
 
-    self.m_genericImpactEffectBlueprintGuid = 'CE89593F-1D2F-11DE-A872-CA8439DC4744' -- FX_Impact_Concrete_01_S
-    self.m_genericExplodeEffectBlueprintGuid = 'FAFA506C-816A-4339-B108-3E957F48AE2D' -- FX_Grenade_Frag_01
+    self.m_waitingCommonGuids = {
+        MaterialContainer = {' B50615C2-4743-4919-9A40-A738150DEBE9', '89492CD4-F004-42B9-97FB-07FD3D436205'},
+        FX_Impact_Concrete_01_S = {'CE89593E-1D2F-11DE-A872-CA8439DC4744', 'CE89593F-1D2F-11DE-A872-CA8439DC4744'},
+        FX_Grenade_Frag_01 = {'A6C980C2-1578-4169-81CB-C62AC369590E', 'FAFA506C-816A-4339-B108-3E957F48AE2D'},
+        Em_Impact_Generic_S_Sparks_01 = {'1F6B1EB2-86E3-473C-8E25-A24989538600', '1A0C5373-3DC4-4967-89A3-A6D53AD8A58F'},
+        M224_Projectile_Smoke = {'7C592ADA-6915-4969-BFF2-A875027A9962', 'A7E5A920-FA8C-4511-AA6C-CAF00C967C3E'},
+        FX_Grenade_Frag_01_Sound = {'A6C980C2-1578-4169-81CB-C62AC369590E', '41A352A8-783E-41E6-9B3E-989D473DB953'},
 
-    self.m_explodeSoundEffectEntityGuid = '41A352A8-783E-41E6-9B3E-989D473DB953' -- FX_Grenade_Frag_01
-
-    self.m_dummyPolynomialColorGuid = '1A0C5373-3DC4-4967-89A3-A6D53AD8A58F' -- Em_Impact_Generic_S_Sparks_01
-    self.m_dummyExplosionEntityGuid = 'A7E5A920-FA8C-4511-AA6C-CAF00C967C3E' -- M224_Projectile_Smoke
+        _SoldierWeaponsComponentData = {'F256E142-C9D8-4BFE-985B-3960B9E9D189', '2A0091DE-07DB-41FB-BB13-A7F094B05AA9'},
+    }
 
     self.m_waitingInstances = {
         impactEffectBlueprints = {}, -- EffectBlueprint
@@ -76,7 +73,8 @@ function WeaponsUnlocks:RegisterVars()
     self.m_weaponBlueprints = {} -- SoldierWeaponBlueprint
     self.m_weaponUnlockAssets = {} -- SoldierWeaponUnlockAsset
 
-    self.m_loaded = false
+    self.m_isInstancesLoaded = false
+    self.m_currentLevel = nil
 
     self.m_instanceCreateFunctions = {
         emitterDocumentAssets = self._CreateEmitterDocumentAssets,
@@ -92,25 +90,82 @@ function WeaponsUnlocks:RegisterVars()
 end
 
 function WeaponsUnlocks:RegisterEvents()
+    -- waiting impact effects
+    InstanceWait(self.m_waitingImpactEffectGuids, function(p_instances)
+        if not self.m_isInstancesLoaded then
+            self.m_waitingInstances.impactEffectBlueprints['water'] = p_instances['FX_Impact_Water_S']
+            self.m_waitingInstances.impactEffectBlueprints['fire'] = p_instances['FX_Impact_Foliage_Generic_S_01']
+            self.m_waitingInstances.impactEffectBlueprints['grass'] = p_instances['FX_Impact_Metal_01_S']
+        end
+    end)
+
+    -- waiting explode effects
+    InstanceWait(self.m_waitingExplodeEffectBlueprintGuids, function(p_instances)
+        if not self.m_isInstancesLoaded then
+            self.m_waitingInstances.explodeEffectBlueprints['water'] = p_instances['FX_Impact_Metal_01_M']
+            self.m_waitingInstances.explodeEffectBlueprints['fire'] = p_instances['FX_Impact_Metal_01_M']
+            self.m_waitingInstances.explodeEffectBlueprints['grass'] = p_instances['FX_Impact_Metal_01_M']
+        end
+    end)
+
+    -- waiting smoke effects
+    InstanceWait(self.m_waitingSmokeEffectBlueprintGuids, function(p_instances)
+        if not self.m_isInstancesLoaded then
+            self.m_waitingInstances.smokeEffectBlueprints['water'] = p_instances['FX_40mm_Smoke']
+            self.m_waitingInstances.smokeEffectBlueprints['fire'] = p_instances['FX_40mm_Smoke']
+            self.m_waitingInstances.smokeEffectBlueprints['grass'] = p_instances['FX_40mm_Smoke']
+        end
+    end)
+
+    -- waiting common instances
+    InstanceWait(self.m_waitingCommonGuids, function(p_instances)
+        if not self.m_isInstancesLoaded then
+            self.m_gameMaterialContainerAsset = p_instances['MaterialContainer']
+            self.m_waitingInstances.genericImpactEffectBlueprint = p_instances['FX_Impact_Concrete_01_S']
+            self.m_waitingInstances.genericExplodeEffectBlueprints = p_instances['FX_Grenade_Frag_01']
+            self.m_explodeSoundEffectEntity = p_instances['FX_Grenade_Frag_01_Sound']
+            self.m_waitingInstances.dummyExplosionEntity = p_instances['M224_Projectile_Smoke']
+            self.m_waitingInstances.dummyPolynomialColor = p_instances['Em_Impact_Generic_S_Sparks_01']
+
+            self:ReadInstances()
+        end
+    end)
+
+    -- waiting weapon unlocks
     Events:Subscribe('Partition:Loaded', function(p_partition)
-        if not self.m_loaded then
+        if not self.m_isInstancesLoaded then
             for _, l_instance in pairs(p_partition.instances) do
-                self:ReadInstance(l_instance)
+                if l_instance:Is('SoldierWeaponUnlockAsset') then
+                    if self.m_verbose >= 2 then
+                        print('Found WeaponUnlockAsset')
+                    end
+
+                    table.insert(self.m_waitingInstances.weaponUnlockAssets, l_instance)
+                end
             end
         end
     end)
 
-    -- Events:Subscribe('Level:Destroy', function()
-    --     if self.m_verbose >= 1 then
-    --         print('Event Level:Destroy')
-    --     end
-
-    --     self:RegisterVars()
-    -- end)
+    -- reloading instances
+    Events:Subscribe('Level:LoadResources', function(p_level, p_mode, p_dedicated)
+        if self.m_currentLevel == nil then
+            self.m_currentLevel = p_level
+        else
+            if self.m_currentLevel ~= p_level then
+                self.m_currentLevel = p_level
+                self.ReloadInstances()
+            else
+                ResourceManager:AddRegistry(self.m_registryContainer, ResourceCompartment.ResourceCompartment_Game)
+            end
+        end
+    end)
 end
 
-function WeaponsUnlocks:Reset()
-    print('RESET')
+-- reseting created instances
+function WeaponsUnlocks:ReloadInstances()
+    if self.m_verbose >= 1 then
+        print('Reloading Instances')
+    end
 
     self.m_registryContainer = nil -- RegistryContainer
     self.m_gameMaterialContainerAsset = nil -- MaterialContainerAsset
@@ -131,143 +186,32 @@ function WeaponsUnlocks:Reset()
     self.m_weaponBlueprints = {} -- SoldierWeaponBlueprint
     self.m_weaponUnlockAssets = {} -- SoldierWeaponUnlockAsset
 
-    self.m_loaded = false
+    self.m_isInstancesLoaded = false
 end
 
-function WeaponsUnlocks:RegisterResources()
-    print('RegisterResources')
-    ResourceManager:AddRegistry(self.m_registryContainer, ResourceCompartment.ResourceCompartment_Game)
-end
+-- reading waiting instances
+function WeaponsUnlocks:ReadInstances()
+    self.m_isInstancesLoaded = true
 
-function WeaponsUnlocks:ReadInstance(p_instance)
-    -- waiting material container
-    if p_instance.instanceGuid:ToString('D') == self.m_gameMaterialContainerAssetGuid then
-        if self.m_verbose >= 1 then
-            print('Found MaterialContainerAsset')
-        end
-
-        self.m_gameMaterialContainerAsset = p_instance
-    end
-
-    -- waiting impact effects
-    for l_key, l_value in pairs(self.m_impactEffectBlueprintGuids) do
-        if p_instance.instanceGuid:ToString('D') == l_value then
+    for _, l_element in pairs(self.m_elementNames) do
+        if self.m_waitingInstances.impactEffectBlueprints[l_element] == nil then
             if self.m_verbose >= 1 then
-                print('Found ImpactEffectBlueprint')
+                print('Apply GenericImpactEffectBlueprint')
             end
 
-            self.m_waitingInstances.impactEffectBlueprints[l_key] = p_instance
+            self.m_waitingInstances.impactEffectBlueprints[l_element] = self.m_waitingInstances.genericImpactEffectBlueprint
         end
-    end
 
-    -- waiting explode effects
-    for l_key, l_value in pairs(self.m_explodeEffectBlueprintGuids) do
-        if p_instance.instanceGuid:ToString('D') == l_value then
+        if self.m_waitingInstances.explodeEffectBlueprints[l_element] == nil then
             if self.m_verbose >= 1 then
-                print('Found ExplodeEffectBlueprint')
+                print('Apply GenericExplodeEffectBlueprint')
             end
 
-            self.m_waitingInstances.explodeEffectBlueprints[l_key] = p_instance
+            self.m_waitingInstances.explodeEffectBlueprints[l_element] = self.m_waitingInstances.genericExplodeEffectBlueprint
         end
     end
 
-    -- waiting smoke effects
-    for l_key, l_value in pairs(self.m_smokeEffectBlueprintGuids) do
-        if p_instance.instanceGuid:ToString('D') == l_value then
-            if self.m_verbose >= 1 then
-                print('Found SmokeEffectBlueprint')
-            end
-
-            self.m_waitingInstances.smokeEffectBlueprints[l_key] = p_instance
-        end
-    end
-
-    -- waiting generic impact
-    if p_instance.instanceGuid:ToString('D') == self.m_genericImpactEffectBlueprintGuid then
-        if self.m_verbose >= 1 then
-            print('Found GenericImpactEffectBlueprint')
-        end
-
-        self.m_waitingInstances.genericImpactEffectBlueprint = p_instance
-    end
-
-    -- waiting generic explode
-    if p_instance.instanceGuid:ToString('D') == self.m_genericExplodeEffectBlueprintGuid then
-        if self.m_verbose >= 1 then
-            print('Found GenericExplodeEffectBlueprint')
-        end
-
-        self.m_waitingInstances.genericExplodeEffectBlueprints = p_instance
-    end
-
-    -- waiting explosion sound
-    if p_instance.instanceGuid:ToString('D') == self.m_explodeSoundEffectEntityGuid then
-        if self.m_verbose >= 1 then
-            print('Found ExplodeSoundEffectEntity')
-        end
-
-        self.m_explodeSoundEffectEntity = p_instance
-    end
-
-    -- waiting explosions entities
-    if p_instance.instanceGuid:ToString('D') == self.m_dummyExplosionEntityGuid then
-        if self.m_verbose >= 1 then
-            print('Found DummyExplosionEntity')
-        end
-
-        self.m_waitingInstances.dummyExplosionEntity = p_instance
-    end
-
-    -- waiting polymonial data
-    if p_instance.instanceGuid:ToString('D') == self.m_dummyPolynomialColorGuid then
-        if self.m_verbose >= 1 then
-            print('Found DummyPolynomialColor')
-        end
-
-        self.m_waitingInstances.dummyPolynomialColor = p_instance
-    end
-
-    -- waiting weapon unlocks
-    if p_instance:Is('SoldierWeaponUnlockAsset') then
-        if self.m_verbose >= 2 then
-            print('Found WeaponUnlockAsset')
-        end
-
-        table.insert(self.m_waitingInstances.weaponUnlockAssets, p_instance)
-    end
-
-    -- waiting soldier ready
-    if p_instance:Is('SoldierWeaponsComponentData') then
-        if self.m_verbose >= 1 then
-            print('Found SoldierWeaponsComponent')
-        end
-
-        self.m_loaded = true
-
-        if self.m_gameMaterialContainerAsset == nil then
-            self.m_gameMaterialContainerAsset = ResourceManager:SearchForInstanceByGuid(Guid('89492CD4-F004-42B9-97FB-07FD3D436205'))
-        end
-
-        for _, l_element in pairs(self.m_elementNames) do
-            if self.m_waitingInstances.impactEffectBlueprints[l_element] == nil then
-                if self.m_verbose >= 1 then
-                    print('Apply GenericImpactEffectBlueprint')
-                end
-
-                self.m_waitingInstances.impactEffectBlueprints[l_element] = self.m_waitingInstances.genericImpactEffectBlueprint
-            end
-
-            if self.m_waitingInstances.explodeEffectBlueprints[l_element] == nil then
-                if self.m_verbose >= 1 then
-                    print('Apply GenericExplodeEffectBlueprint')
-                end
-
-                self.m_waitingInstances.explodeEffectBlueprints[l_element] = self.m_waitingInstances.genericExplodeEffectBlueprint
-            end
-        end
-
-        self:CreateInstances()
-    end
+    self:CreateInstances()
 end
 
 -- creating instances of elements
@@ -303,8 +247,9 @@ function WeaponsUnlocks:CreateInstances()
         self:UpdateWeaponUnlockAssets(s_weaponEntity)
     end
 
-    self:RegisterResources()
+    ResourceManager:AddRegistry(self.m_registryContainer, ResourceCompartment.ResourceCompartment_Game)
 
+    -- removing hanging references
     self.m_waitingInstances = {
         impactEffectBlueprints = {}, -- EffectBlueprint
         explodeEffectBlueprints = {}, -- EffectBlueprint
@@ -845,7 +790,7 @@ function WeaponsUnlocks:CreateWeaponUnlockAssets(p_asset)
     end
 
     local s_elementUnlocks = {}
-    -- s_elementUnlocks['neutral'] = p_asset
+    -- s_elementUnlocks['neutral'] = p_asset -- hanging instance
 
     local s_blueprintGuid = p_asset.weapon.instanceGuid:ToString('D')
     for _, l_element in pairs(self.m_elementNames) do
