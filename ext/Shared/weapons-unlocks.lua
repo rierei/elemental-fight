@@ -22,12 +22,6 @@ function WeaponsUnlocks:RegisterVars()
     self.m_currentLevel = nil
     self.m_currentMode = nil
 
-    self.m_waitingImpactEffectGuids = {
-        FX_Impact_Water_S = {'20B18CF1-F2F7-11DF-9BE8-9E0183D704DD', '23298636-5C6F-8CA0-F0EF-6097924181C3'},
-        FX_Impact_Foliage_Generic_S_01 = {'6C1A14FF-83C9-410E-A7D0-4FD024EBE33A', '06E4F5D2-5883-46A0-B898-2A21E8BFEEDA'},
-        FX_Impact_Metal_01_S = {'29C86406-1ED5-11DE-A58E-D687F51B0F2D', '29C86407-1ED5-11DE-A58E-D687F51B0F2D'}
-    }
-
     self.m_waitingCommonGuids = {
         MaterialContainer = {'B50615C2-4743-4919-9A40-A738150DEBE9', '89492CD4-F004-42B9-97FB-07FD3D436205'}, -- materialContainerAsset
 
@@ -64,7 +58,7 @@ function WeaponsUnlocks:RegisterVars()
     self.m_projectilePhysicsProperties = {} -- MaterialContainerPair.PhysicsPropertyIndex
     self.m_projectileMaterialRelationPenetrationData = nil -- MaterialRelationPenetrationData
 
-    self.m_explodeSoundEffect = nil -- SoundEffectEntityData
+    self.m_explodeSoundEffectEntity = nil -- SoundEffectEntityData
 
     self.m_polynomialColorInterps = {} -- PolynomialColorInterpData
     self.m_emitterDocumentAssets = {} -- EmitterDocument
@@ -145,12 +139,13 @@ function WeaponsUnlocks:RegisterEvents()
 end
 
 function WeaponsUnlocks:RegisterWait()
-    -- waiting impact effects
-    InstanceWait(self.m_waitingImpactEffectGuids, function(p_instances)
-        self.m_waitingInstances.impactEffectBlueprints['water'] = p_instances['FX_Impact_Water_S']
-        self.m_waitingInstances.impactEffectBlueprints['grass'] = p_instances['FX_Impact_Foliage_Generic_S_01']
-        self.m_waitingInstances.impactEffectBlueprints['fire'] = p_instances['FX_Impact_Metal_01_S']
-    end)
+    -- waiting each impact effect
+    for l_key, l_value in pairs(ElementalConfig.effects) do
+        local s_waitingGuids = {[l_key] = l_value}
+        InstanceWait(s_waitingGuids, function(p_instances)
+            self.m_waitingInstances.impactEffectBlueprints[l_key] = p_instances[l_key]
+        end)
+    end
 
     -- waiting common instances
     InstanceWait(self.m_waitingCommonGuids, function(p_instances)
@@ -242,7 +237,9 @@ function WeaponsUnlocks:ReadInstances(p_instances)
     }
 
     -- removing hanging references
-    self.m_explodeSoundEffect = nil -- SoundEffectEntityData
+    self.m_materialContainerAsset = nil -- MaterialContainerAsset
+    self.m_materialGridAsset = nil -- MaterialGridData
+    self.m_explodeSoundEffectEntity = nil -- SoundEffectEntityData
     self.m_polynomialColorInterps = {} -- PolynomialColorInterpData
     self.m_emitterDocumentAssets = {} -- EmitterDocument
     self.m_emitterEntities = {} -- EmitterEntityData
@@ -422,6 +419,7 @@ function WeaponsUnlocks:_CreateEmitterDocumentAssets(p_asset)
         s_newTemplateData.pointLightRadius = s_pointLightRadius
         s_newTemplateData.pointLightColor = ElementalConfig.colors[l_element]
         s_newTemplateData.maxSpawnDistance = 0
+        s_newTemplateData.repeatParticleSpawning = false
 
         -- patching document properties
         s_newEmitterDocumentAsset.name = s_newEmitterDocumentAsset.name .. l_element
@@ -500,8 +498,9 @@ function WeaponsUnlocks:CreateImpactEffectBlueprints(p_blueprints)
         print('Create ImpactEffectBlueprints')
     end
 
-    for l_element, l_blueprint in pairs(p_blueprints) do
-        local s_newEffectBlueprint = self:_CreateEffectBlueprint(l_blueprint, l_element)
+    for _, l_element in pairs(ElementalConfig.names) do
+        local s_effectBlueprint = p_blueprints[l_element]
+        local s_newEffectBlueprint = self:_CreateEffectBlueprint(s_effectBlueprint, l_element)
 
         self.m_impactEffectBlueprints[l_element] = s_newEffectBlueprint
     end
