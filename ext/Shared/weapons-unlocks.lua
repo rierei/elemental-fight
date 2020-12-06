@@ -38,7 +38,7 @@ function WeaponsUnlocks:RegisterVars()
         fire = '00C3D2F9-1346-47B8-956D-10CC23AD8B4D', -- FX_40mm_Smoke
     }
 
-    self.m_genericImpactEffectBlueprintGuid = 'CB6FB83D-0883-4D28-A89C-4E1086D0BA0D' -- FX_Impact_Generic_Explosive_S
+    self.m_genericImpactEffectBlueprintGuid = 'CE89593F-1D2F-11DE-A872-CA8439DC4744' -- FX_Impact_Concrete_01_S
     self.m_genericExplodeEffectBlueprintGuid = 'FAFA506C-816A-4339-B108-3E957F48AE2D' -- FX_Grenade_Frag_01
 
     self.m_explodeSoundEffectEntityGuid = '41A352A8-783E-41E6-9B3E-989D473DB953' -- FX_Grenade_Frag_01
@@ -47,30 +47,19 @@ function WeaponsUnlocks:RegisterVars()
     self.m_dummyExplosionEntityGuid = 'A7E5A920-FA8C-4511-AA6C-CAF00C967C3E' -- M224_Projectile_Smoke
 
     self.m_waitingInstances = {
-        gameMaterialContainerAsset = nil, -- MaterialContainerAsset
         impactEffectBlueprints = {}, -- EffectBlueprint
         explodeEffectBlueprints = {}, -- EffectBlueprint
         smokeEffectBlueprints = {}, -- EffectBlueprint
         genericImpactEffectBlueprint = {}, -- EffectBlueprint
         genericExplodeEffectBlueprint = {}, -- EffectBlueprint
-        explodeSoundEffectEntity = nil, -- SoundEffectEntityData
         dummyPolynomialColor = nil, -- PolynomialColorInterpData
         dummyExplosionEntity = nil, -- VeniceExplosionEntityData
         weaponUnlockAssets = {} -- SoldierWeaponUnlockAsset
     }
 
-
-    self.m_instanceCreateFunctions = {
-        emitterDocumentAssets = self._CreateEmitterDocumentAssets,
-        emitterEntities = self._CreateEmitterEntity,
-        explodeExplosionEntities = self._CreateExplodeExplosionEntities,
-        projectileEntities = self.CreateProjectileEntities,
-        projectileBlueprints = self._CreateProjectileBlueprints,
-        weaponProjectileModifiers = self._CreateWeaponProjectileModifiers,
-        weaponFiringModifiers = self._CreateWeaponFiringModifiers
-    }
-
     self.m_registryContainer = nil -- RegistryContainer
+    self.m_gameMaterialContainerAsset = nil -- MaterialContainerAsset
+    self.m_explodeSoundEffect = nil -- SoundEffectEntityData
     self.m_polynomialColorInterps = {} -- PolynomialColorInterpData
     self.m_emitterDocumentAssets = {} -- EmitterDocument
     self.m_emitterEntities = {} -- EmitterEntityData
@@ -87,35 +76,67 @@ function WeaponsUnlocks:RegisterVars()
     self.m_weaponBlueprints = {} -- SoldierWeaponBlueprint
     self.m_weaponUnlockAssets = {} -- SoldierWeaponUnlockAsset
 
+    self.m_loaded = false
+
+    self.m_instanceCreateFunctions = {
+        emitterDocumentAssets = self._CreateEmitterDocumentAssets,
+        emitterEntities = self._CreateEmitterEntity,
+        explodeExplosionEntities = self._CreateExplodeExplosionEntities,
+        projectileEntities = self.CreateProjectileEntities,
+        projectileBlueprints = self._CreateProjectileBlueprints,
+        weaponProjectileModifiers = self._CreateWeaponProjectileModifiers,
+        weaponFiringModifiers = self._CreateWeaponFiringModifiers
+    }
+
     self.m_verbose = 1 -- prints information
 end
 
 function WeaponsUnlocks:RegisterEvents()
     Events:Subscribe('Partition:Loaded', function(p_partition)
-        for _, l_instance in pairs(p_partition.instances) do
-            self:ReadInstance(l_instance)
+        if not self.m_loaded then
+            for _, l_instance in pairs(p_partition.instances) do
+                self:ReadInstance(l_instance)
+            end
         end
     end)
 
-    Events:Subscribe('Level:Destroy', function()
-        if self.m_verbose >= 1 then
-            print('Event Level:Destroy')
-        end
+    -- Events:Subscribe('Level:Destroy', function()
+    --     if self.m_verbose >= 1 then
+    --         print('Event Level:Destroy')
+    --     end
 
-        self:RegisterVars()
-    end)
+    --     self:RegisterVars()
+    -- end)
+end
 
-    Events:Subscribe('Player:Chat', function(player, recipientMask, message)
-        print('Event Player:Chat')
+function WeaponsUnlocks:Reset()
+    print('RESET')
 
-        self:ReplacePlayerWeapons(player)
-    end)
+    self.m_registryContainer = nil -- RegistryContainer
+    self.m_gameMaterialContainerAsset = nil -- MaterialContainerAsset
+    self.m_explodeSoundEffect = nil -- SoundEffectEntityData
+    self.m_polynomialColorInterps = {} -- PolynomialColorInterpData
+    self.m_emitterDocumentAssets = {} -- EmitterDocument
+    self.m_emitterEntities = {} -- EmitterEntityData
+    self.m_impactEffectBlueprints = {} -- EffectBlueprint
+    self.m_explodeEffectBlueprints = {} -- EffectBlueprint
+    self.m_smokeEffectBlueprints = {} -- EffectBlueprint
+    self.m_impactExplosionEntities = {} -- VeniceExplosionEntityData
+    self.m_explodeExplosionEntities = {} -- VeniceExplosionEntityData
+    self.m_projectileEntities = {} -- MeshProjectileEntityData
+    self.m_projectileBlueprints = {} -- ProjectileBlueprint
+    self.m_weaponProjectileModifiers = {} -- WeaponProjectileModifier
+    self.m_weaponFiringModifiers = {} -- WeaponFiringDataModifier
+    self.m_weaponEntities = {} -- SoldierWeaponData
+    self.m_weaponBlueprints = {} -- SoldierWeaponBlueprint
+    self.m_weaponUnlockAssets = {} -- SoldierWeaponUnlockAsset
 
-    NetEvents:Subscribe('Bots:Spawn', function()
-        print('NetEvent Bots:Spawn')
+    self.m_loaded = false
+end
 
-        BotsCustom.spawn()
-    end)
+function WeaponsUnlocks:RegisterResources()
+    print('RegisterResources')
+    ResourceManager:AddRegistry(self.m_registryContainer, ResourceCompartment.ResourceCompartment_Game)
 end
 
 function WeaponsUnlocks:ReadInstance(p_instance)
@@ -125,7 +146,7 @@ function WeaponsUnlocks:ReadInstance(p_instance)
             print('Found MaterialContainerAsset')
         end
 
-        self.m_waitingInstances.gameMaterialContainerAsset = p_instance
+        self.m_gameMaterialContainerAsset = p_instance
     end
 
     -- waiting impact effects
@@ -185,7 +206,7 @@ function WeaponsUnlocks:ReadInstance(p_instance)
             print('Found ExplodeSoundEffectEntity')
         end
 
-        self.m_waitingInstances.explodeSoundEffectEntity = p_instance
+        self.m_explodeSoundEffectEntity = p_instance
     end
 
     -- waiting explosions entities
@@ -221,27 +242,27 @@ function WeaponsUnlocks:ReadInstance(p_instance)
             print('Found SoldierWeaponsComponent')
         end
 
-        if self.m_waitingInstances.gameMaterialContainerAsset == nil then
-            self.m_waitingInstances.gameMaterialContainerAsset = ResourceManager:SearchForInstanceByGuid(Guid('89492CD4-F004-42B9-97FB-07FD3D436205'))
+        self.m_loaded = true
+
+        if self.m_gameMaterialContainerAsset == nil then
+            self.m_gameMaterialContainerAsset = ResourceManager:SearchForInstanceByGuid(Guid('89492CD4-F004-42B9-97FB-07FD3D436205'))
         end
 
-        for key, value in pairs(self.m_waitingInstances.impactEffectBlueprints) do
-            if value == nil then
+        for _, l_element in pairs(self.m_elementNames) do
+            if self.m_waitingInstances.impactEffectBlueprints[l_element] == nil then
                 if self.m_verbose >= 1 then
                     print('Apply GenericImpactEffectBlueprint')
                 end
 
-                self.m_waitingInstances.impactEffectBlueprints[key] = self.m_waitingInstances.genericImpactEffectBlueprint
+                self.m_waitingInstances.impactEffectBlueprints[l_element] = self.m_waitingInstances.genericImpactEffectBlueprint
             end
-        end
 
-        for key, value in pairs(self.m_waitingInstances.explodeEffectBlueprints) do
-            if value == nil then
+            if self.m_waitingInstances.explodeEffectBlueprints[l_element] == nil then
                 if self.m_verbose >= 1 then
                     print('Apply GenericExplodeEffectBlueprint')
                 end
 
-                self.m_waitingInstances.explodeEffectBlueprints[key] = self.m_waitingInstances.genericExplodeEffectBlueprint
+                self.m_waitingInstances.explodeEffectBlueprints[l_element] = self.m_waitingInstances.genericExplodeEffectBlueprint
             end
         end
 
@@ -282,7 +303,18 @@ function WeaponsUnlocks:CreateInstances()
         self:UpdateWeaponUnlockAssets(s_weaponEntity)
     end
 
-    ResourceManager:AddRegistry(self.m_registryContainer, ResourceCompartment.ResourceCompartment_Game)
+    self:RegisterResources()
+
+    self.m_waitingInstances = {
+        impactEffectBlueprints = {}, -- EffectBlueprint
+        explodeEffectBlueprints = {}, -- EffectBlueprint
+        smokeEffectBlueprints = {}, -- EffectBlueprint
+        genericImpactEffectBlueprint = {}, -- EffectBlueprint
+        genericExplodeEffectBlueprint = {}, -- EffectBlueprint
+        dummyPolynomialColor = nil, -- PolynomialColorInterpData
+        dummyExplosionEntity = nil, -- VeniceExplosionEntityData
+        weaponUnlockAssets = {} -- SoldierWeaponUnlockAsset
+    }
 
     if self.m_verbose >= 1 then
         print('Created PolynomialColorInterps: ' .. self:_Count(self.m_polynomialColorInterps))
@@ -462,7 +494,7 @@ function WeaponsUnlocks:CreateExplodeEffectBlueprints(p_blueprints)
     for l_element, l_blueprint in pairs(p_blueprints) do
         local s_newEffectBlueprint = self:_CreateEffectBlueprint(l_blueprint, l_element)
 
-        local soundEffectEntity = SoundEffectEntityData(self.m_waitingInstances.explodeSoundEffectEntity)
+        local soundEffectEntity = SoundEffectEntityData(self.m_explodeSoundEffectEntity)
         EffectEntityData(s_newEffectBlueprint.object).components:add(soundEffectEntity)
 
         self.m_explodeEffectBlueprints[l_element] = s_newEffectBlueprint
@@ -492,7 +524,7 @@ function WeaponsUnlocks:CreateImpactExplosionEntities(p_entity)
     s_elements['neutral'] = p_entity
 
     for _, l_element in pairs(self.m_elementNames) do
-        local s_newExplosionEntity = self:_CloneInstance(p_entity, l_element)
+        local s_newExplosionEntity = self:_CloneInstance(p_entity, 'impact' .. l_element)
 
         -- patching explosion properties
         s_newExplosionEntity.detonationEffect = self.m_impactEffectBlueprints[l_element]
@@ -521,7 +553,7 @@ function WeaponsUnlocks:_CreateExplodeExplosionEntities(p_entity)
 
         if s_newExplosionEntity.materialPair ~= nil then
             local s_materialContainerPairIndex = MaterialPairs[MaterialContainerPair(s_newExplosionEntity.materialPair).physicsPropertyIndex]
-            s_newExplosionEntity.materialPair = MaterialContainerAsset(self.m_waitingInstances.gameMaterialContainerAsset).materialPairs[s_materialContainerPairIndex]
+            s_newExplosionEntity.materialPair = MaterialContainerAsset(self.m_gameMaterialContainerAsset).materialPairs[s_materialContainerPairIndex]
         end
 
         -- patching explosion properties
@@ -545,7 +577,7 @@ function WeaponsUnlocks:CreateSmokeExplosionEntities(p_entity)
     s_elements['neutral'] = p_entity
 
     for _, l_element in pairs(self.m_elementNames) do
-        local s_newExplosionEntity = self:_CloneInstance(p_entity, l_element)
+        local s_newExplosionEntity = self:_CloneInstance(p_entity, 'smoke' .. l_element)
 
         -- patching explosion properties
         s_newExplosionEntity.detonationEffect = self.m_smokeEffectBlueprints[l_element]
@@ -603,7 +635,7 @@ function WeaponsUnlocks:CreateProjectileEntities(p_entity)
             s_newProjectileEntity.dudExplosion = s_missileExplosionEntity[l_element]
         end
 
-        s_newProjectileEntity.materialPair = MaterialContainerAsset(self.m_waitingInstances.gameMaterialContainerAsset).materialPairs[s_materialContainerPairIndex]
+        s_newProjectileEntity.materialPair = MaterialContainerAsset(self.m_gameMaterialContainerAsset).materialPairs[s_materialContainerPairIndex]
 
         self.m_registryContainer.entityRegistry:add(s_newProjectileEntity)
 
@@ -813,7 +845,7 @@ function WeaponsUnlocks:CreateWeaponUnlockAssets(p_asset)
     end
 
     local s_elementUnlocks = {}
-    s_elementUnlocks['neutral'] = p_asset
+    -- s_elementUnlocks['neutral'] = p_asset
 
     local s_blueprintGuid = p_asset.weapon.instanceGuid:ToString('D')
     for _, l_element in pairs(self.m_elementNames) do
@@ -836,7 +868,7 @@ function WeaponsUnlocks:UpdateWeaponUnlockAssets(p_entity)
     local s_weaponEntityGuid = p_entity.instanceGuid:ToString('D')
 
     for l_key, l_value in pairs(p_entity.weaponModifierData) do
-        if l_value.unlockAsset:Is('SoldierWeaponUnlockAsset') then
+        if l_value.unlockAsset ~= nil and l_value.unlockAsset:Is('SoldierWeaponUnlockAsset') then
             local s_soldierWeaponUnlockGuid = l_value.unlockAsset.instanceGuid:ToString('D')
             for _, l_element in pairs(self.m_elementNames) do
                 local s_weaponUnlockAsset = self.m_weaponUnlockAssets[s_soldierWeaponUnlockGuid][l_element]
@@ -847,11 +879,11 @@ function WeaponsUnlocks:UpdateWeaponUnlockAssets(p_entity)
 end
 
 -- replacing player weapons
-function WeaponsUnlocks:ReplacePlayerWeapons(p_player)
+function WeaponsUnlocks:ReplacePlayerWeapons(p_player, p_element)
     for i = #p_player.weapons, 1, -1 do
         local s_weaponUnlockAsset = p_player.weapons[i]
         if s_weaponUnlockAsset ~= nil then
-            local s_elementWeaponUnlockAsset = self.m_weaponUnlockAssets[s_weaponUnlockAsset.instanceGuid:ToString('D')].water
+            local s_elementWeaponUnlockAsset = self.m_weaponUnlockAssets[s_weaponUnlockAsset.instanceGuid:ToString('D')][p_element]
 
             local s_weaponUnlockAssets = p_player.weaponUnlocks[i]
             if s_weaponUnlockAssets == nil then

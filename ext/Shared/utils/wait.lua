@@ -10,7 +10,7 @@ function WaitRef:RegisterVars(p_partitionGuid, p_instanceGuid, p_callback)
 
     self.m_callback = p_callback -- callback function
 
-    self.m_verbose = g_verbose or false -- prints load state
+    self.m_verbose = 1 -- prints load state
 end
 
 -- registering callbacks and finding the instance
@@ -19,8 +19,8 @@ function WaitRef:FindInstance()
 
     local s_instance = ResourceManager:FindInstanceByGuid(self.m_partitionGuid, self.m_instanceGuid)
     if s_instance ~= nil then
-        if self.m_verbose then
-            print('Ref: ' .. s_instance.typeInfo.name)
+        if self.m_verbose >=  1 then
+            print('Found: ' .. s_instance.typeInfo.name)
         end
 
         self.m_callback(s_instance)
@@ -30,8 +30,8 @@ end
 -- returning the loaded instance
 function WaitRef:RegisterCallback()
     ResourceManager:RegisterInstanceLoadHandler(self.m_partitionGuid, self.m_instanceGuid, function(p_instance)
-        if self.m_verbose then
-            print('Ref: ' .. p_instance.typeInfo.name)
+        if self.m_verbose >= 1 then
+            print('Found: ' .. p_instance.typeInfo.name)
         end
 
         self.m_callback(p_instance)
@@ -57,7 +57,7 @@ function InstanceWait:RegisterVars(p_guids, p_callback)
     self.m_waitingRefs = 0 -- waiting count
     self.m_totalRefs = 0 -- refs count
 
-    self.m_verbose = g_verbose or false -- prints waiting state
+    self.m_verbose = 1 -- prints waiting state
 end
 
 -- resetings counters on level destroy
@@ -107,7 +107,7 @@ end
 function InstanceWait:SaveInstance(p_key, p_instance)
     self.m_waitingRefs = self.m_waitingRefs - 1
 
-    if self.m_verbose then
+    if self.m_verbose >= 2 then
         print('Wait: ' .. self.m_waitingRefs)
     end
 
