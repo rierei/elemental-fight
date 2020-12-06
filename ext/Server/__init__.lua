@@ -1,8 +1,8 @@
 local ElementalFight = class('ElementalFight')
 
 local BotsCustom = require('__shared/bots-custom')
-local WeaponUnlocks = require('__shared/weapons-unlocks')
 local WeaponAppearances = require('__shared/weapons-appearances')
+local WeaponUnlocks = require('__shared/weapons-unlocks')
 local SoldierAppearances = require('__shared/soldiers-appearances')
 
 function ElementalFight:__init()
@@ -40,9 +40,9 @@ function ElementalFight:RegisterVars()
         }
     }
 
-    -- self.m_weaponUnlocks = WeaponUnlocks()
     self.m_weaponAppearances = WeaponAppearances()
-    -- self.m_soldierAppearances = SoldierAppearances()
+    self.m_weaponUnlocks = WeaponUnlocks()
+    self.m_soldierAppearances = SoldierAppearances()
 
     self.counter = 2
 end
@@ -64,29 +64,29 @@ function ElementalFight:RegisterEvents()
         local s_element = self.m_elementNames[self.counter]
 
         self.m_weaponAppearances:ReplacePlayerWeapons(s_soldier1.player, s_element)
-        -- self.m_soldierAppearances:ReplacePlayerAppearance(s_soldier1.player, s_element)
-        -- self.m_weaponUnlocks:ReplacePlayerWeapons(s_soldier1.player, s_element)
+        self.m_soldierAppearances:ReplacePlayerAppearance(s_soldier1.player, s_element)
+        self.m_weaponUnlocks:ReplacePlayerWeapons(s_soldier1.player, s_element)
 
         self.counter = self.counter % #self.m_elementNames + 1
         s_element = self.m_elementNames[self.counter]
 
         self.m_weaponAppearances:ReplacePlayerWeapons(s_soldier2.player, s_element)
-        -- self.m_soldierAppearances:ReplacePlayerAppearance(s_soldier2.player, s_element)
-        -- self.m_weaponUnlocks:ReplacePlayerWeapons(s_soldier2.player, s_element)
+        self.m_soldierAppearances:ReplacePlayerAppearance(s_soldier2.player, s_element)
+        self.m_weaponUnlocks:ReplacePlayerWeapons(s_soldier2.player, s_element)
 
         self.counter = self.counter % #self.m_elementNames + 1
         s_element = self.m_elementNames[self.counter]
 
         self.m_weaponAppearances:ReplacePlayerWeapons(s_soldier3.player, s_element)
-        -- self.m_soldierAppearances:ReplacePlayerAppearance(s_soldier3.player, s_element)
-        -- self.m_weaponUnlocks:ReplacePlayerWeapons(s_soldier3.player, s_element)
+        self.m_soldierAppearances:ReplacePlayerAppearance(s_soldier3.player, s_element)
+        self.m_weaponUnlocks:ReplacePlayerWeapons(s_soldier3.player, s_element)
 
         self.counter = self.counter % #self.m_elementNames + 1
         s_element = self.m_elementNames[self.counter]
 
         self.m_weaponAppearances:ReplacePlayerWeapons(s_soldier4.player, s_element)
-        -- self.m_soldierAppearances:ReplacePlayerAppearance(s_soldier4.player, s_element)
-        -- self.m_weaponUnlocks:ReplacePlayerWeapons(s_soldier4.player, s_element)
+        self.m_soldierAppearances:ReplacePlayerAppearance(s_soldier4.player, s_element)
+        self.m_weaponUnlocks:ReplacePlayerWeapons(s_soldier4.player, s_element)
 
         self.counter = self.counter % #self.m_elementNames + 1
     end)
@@ -97,9 +97,9 @@ function ElementalFight:RegisterEvents()
         local s_element = self.m_elementNames[self.counter]
         print(s_element)
 
-        -- self.m_weaponUnlocks:ReplacePlayerWeapons(p_player, s_element)
         self.m_weaponAppearances:ReplacePlayerWeapons(p_player, s_element)
-        -- self.m_soldierAppearances:ReplacePlayerAppearance(p_player, s_element)
+        self.m_weaponUnlocks:ReplacePlayerWeapons(p_player, s_element)
+        self.m_soldierAppearances:ReplacePlayerAppearance(p_player, s_element)
 
         self.counter = self.counter % #self.m_elementNames + 1
     end)

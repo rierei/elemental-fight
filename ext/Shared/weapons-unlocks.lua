@@ -826,6 +826,10 @@ end
 
 -- replacing player weapons
 function WeaponsUnlocks:ReplacePlayerWeapons(p_player, p_element)
+    if self.m_verbose >= 1 then
+        print('Replace Weapons')
+    end
+
     if p_element == 'neutral' then
         return
     end

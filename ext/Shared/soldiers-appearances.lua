@@ -542,6 +542,10 @@ function SoldiersAppearances:CreateAppearanceUnlockAssets(p_asset)
 end
 
 function SoldiersAppearances:ReplacePlayerAppearance(p_player, p_element)
+    if self.m_verbose >= 1 then
+        print('Replace Visuals')
+    end
+
     if p_element == 'neutral' then
         return
     end
