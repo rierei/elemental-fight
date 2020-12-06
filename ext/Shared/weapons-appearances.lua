@@ -1,5 +1,6 @@
 local WeaponsAppearances = class('WeaponsAppearances')
 
+local ElementalConfig = require('__shared/elemental-config')
 local InstanceWait = require('__shared/utils/wait')
 local InstanceUtils = require('__shared/utils/instances')
 
@@ -9,13 +10,8 @@ function WeaponsAppearances:__init()
 end
 
 function WeaponsAppearances:RegisterVars()
-    self.m_elementNames = {'water', 'grass', 'fire'}
-
-    self.m_elementColors = {
-        water = Vec3(0, 0.6, 1),
-        grass = Vec3(0.2, 0.6, 0.1),
-        fire = Vec3(1, 0.3, 0)
-    }
+    self.m_currentLevel = nil
+    self.m_currentMode = nil
 
     self.m_waitingGuids = {
         camo = {'07EA9024-7D81-11E1-91A4-E3E3C1704D3D', '7DE14177-6868-59B2-06B5-3C9AA2610EEC'},
@@ -39,8 +35,6 @@ function WeaponsAppearances:RegisterVars()
     self.m_objectVariationAssets = {} -- ObjectVariationAsset
     self.m_blueprintVariationPairs = {} -- BlueprintAndVariationPair
     self.m_unlockAssets = {} -- UnlockAsset
-
-    self.m_currentLevel = nil
 
     self.m_verbose = 1 -- prints debug information
 end
@@ -203,11 +197,11 @@ function WeaponsAppearances:CreateMeshMaterialVariations(p_entry)
     local s_elements = {}
     s_elements['neutral'] = p_entry.materials[1]
 
-    for _, l_element in pairs(self.m_elementNames) do
+    for _, l_element in pairs(ElementalConfig.names) do
         local s_shaderGraph = ShaderGraph()
         s_shaderGraph.name = 'Weapons/Shaders/WeaponPresetShadowFP'
 
-        local s_color = self.m_elementColors[l_element]
+        local s_color = ElementalConfig.colors[l_element]
 
         local s_camoDarkeningParameter = VectorShaderParameter()
         s_camoDarkeningParameter.value = Vec4(s_color.x, s_color.y, s_color.z, 0)
@@ -273,7 +267,7 @@ function WeaponsAppearances:CreateMeshVariationDatabaseEntrys(p_entry)
     local s_meshVariationDatabaseEntry3p = self.m_meshVariationDatabaseEntrys3p[s_skinnedMeshAsset1pWeaponGuid]
     local s_meshMaterialVariations = self.m_meshMaterialVariations[p_entry.instanceGuid:ToString('D')]
 
-    for _, l_element in pairs(self.m_elementNames) do
+    for _, l_element in pairs(ElementalConfig.names) do
         local s_newMeshVariationDatabaseEntry1p = InstanceUtils:CloneInstance(p_entry, l_element)
         local s_newMeshVariationDatabaseEntry3p = InstanceUtils:CloneInstance(s_meshVariationDatabaseEntry3p, l_element)
 
@@ -303,7 +297,7 @@ function WeaponsAppearances:CreateObjectVariationAssets(p_entry)
     local s_elements = {}
     s_elements['neutral'] = nil
 
-    for _, l_element in pairs(self.m_elementNames) do
+    for _, l_element in pairs(ElementalConfig.names) do
         local s_newObjectVariationAsset = ObjectVariation(InstanceUtils:GenerateGuid(p_entry.instanceGuid:ToString('D') .. 'ObjectVariationAsset' .. l_element))
         p_entry.partition:AddInstance(s_newObjectVariationAsset)
 
@@ -330,7 +324,7 @@ function WeaponsAppearances:CreateBlueprintAndVariationPairs(p_entry)
     local s_skinnedMeshAsset1pWeaponGuid = self.m_skinnedMeshAsset1pWeaponGuids[p_entry.mesh.instanceGuid:ToString('D')]
     local s_weaponBlueprint = self.m_weaponBlueprints[s_skinnedMeshAsset1pWeaponGuid]
 
-    for _, l_element in pairs(self.m_elementNames) do
+    for _, l_element in pairs(ElementalConfig.names) do
         local s_newBlueprintAndVariationPair = BlueprintAndVariationPair(InstanceUtils:GenerateGuid(p_entry.instanceGuid:ToString('D') .. 'BlueprintAndVariationPair' .. l_element))
         p_entry.partition:AddInstance(s_newBlueprintAndVariationPair)
 
@@ -357,7 +351,7 @@ function WeaponsAppearances:CreateUnlockAssets(p_entry)
 
     local s_skinnedMeshAsset1pWeaponGuid = self.m_skinnedMeshAsset1pWeaponGuids[p_entry.mesh.instanceGuid:ToString('D')]
 
-    for _, l_element in pairs(self.m_elementNames) do
+    for _, l_element in pairs(ElementalConfig.names) do
         local s_newUnlockAsset = UnlockAsset(InstanceUtils:GenerateGuid(p_entry.instanceGuid:ToString('D') .. 'UnlockAsset' .. l_element))
         p_entry.partition:AddInstance(s_newUnlockAsset)
 

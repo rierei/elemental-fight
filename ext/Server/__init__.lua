@@ -1,9 +1,11 @@
 local ElementalFight = class('ElementalFight')
 
-local BotsCustom = require('__shared/bots-custom')
+local ElementalConfig = require('__shared/elemental-config')
 local SoldierAppearances = require('__shared/soldiers-appearances')
 local WeaponAppearances = require('__shared/weapons-appearances')
 local WeaponUnlocks = require('__shared/weapons-unlocks')
+
+local BotsCustom = require('__shared/bots-custom')
 
 function ElementalFight:__init()
     self:RegisterVars()
@@ -12,33 +14,6 @@ end
 
 function ElementalFight:RegisterVars()
     self.m_elementNames = {'neutral', 'water', 'grass', 'fire'}
-
-    self.m_elementDamages = {
-        neutral = {
-            neutral = 1.25,
-            water = 0.75,
-            fire = 0.75,
-            grass = 0.75
-        },
-        water = {
-            neutral = 0.75,
-            water = 0.75,
-            fire = 1.25,
-            grass = 0.50
-        },
-        fire = {
-            neutral = 0.75,
-            water = 0.50,
-            fire = 0.75,
-            grass = 1.25
-        },
-        grass = {
-            neutral = 0.75,
-            water = 1.25,
-            fire = 0.50,
-            grass = 0.75
-        }
-    }
 
     self.m_soldierAppearances = SoldierAppearances()
     self.m_weaponAppearances = WeaponAppearances()
@@ -112,7 +87,7 @@ function ElementalFight:RegisterEvents()
 
     Hooks:Install('Soldier:Damage', 1, function(p_hook, p_soldier, p_info, p_giver)
         if self.m_verbose >= 2 then
-            print('Event Player:Damage')
+            print('Event Soldier:Damage')
         end
 
         -- soldier healing
@@ -140,15 +115,15 @@ function ElementalFight:RegisterEvents()
         end
 
         local s_weaponElement = s_weaponEntity.damageGiverName
-        if self.m_elementDamages[s_weaponElement] == nil then
+        if ElementalConfig.damages[s_weaponElement] == nil then
             s_weaponElement = 'neutral'
         end
 
-        if s_soldierElement == nil or self.m_elementDamages[s_soldierElement] == nil then
+        if s_soldierElement == nil or ElementalConfig.damages[s_soldierElement] == nil then
             s_soldierElement = 'neutral'
         end
 
-        local s_elementDamage = self.m_elementDamages[s_weaponElement]
+        local s_elementDamage = ElementalConfig.damages[s_weaponElement]
         local s_damageMultiplier = s_elementDamage[s_soldierElement]
 
         if self.m_verbose >= 2 then

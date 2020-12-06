@@ -1,5 +1,6 @@
 local SoldiersAppearances = class('SoldiersAppearances')
 
+local ElementalConfig = require('__shared/elemental-config')
 local InstanceWait = require('__shared/utils/wait')
 local InstanceUtils = require('__shared/utils/instances')
 
@@ -9,14 +10,6 @@ function SoldiersAppearances:__init()
 end
 
 function SoldiersAppearances:RegisterVars()
-    self.m_elementNames = {'water', 'grass', 'fire'}
-
-    self.m_elementColors = {
-        water = Vec3(0, 0.6, 1),
-        grass = Vec3(0.2, 0.6, 0.1),
-        fire = Vec3(1, 0.3, 0)
-    }
-
     self.m_classNames = {
         'USAssault',
         'USEngineer',
@@ -40,6 +33,8 @@ function SoldiersAppearances:RegisterVars()
         RURecon = 'F3211E83-7C35-497A-A1C8-57F5FC1D3AE8',
         RUSupport = '6BD15FC4-1451-4F0B-9902-73E53582DE95'
     }
+
+    self.m_currentLevel = nil
 
     self.m_waitingGuids = {
         CharacterSocketListAsset = {'1F5CC239-BE4F-4D03-B0B5-A0FF89976036', '8F1A9F10-6BF8-442A-909F-AF0D9F8E1608'},
@@ -213,8 +208,6 @@ function SoldiersAppearances:RegisterVars()
     self.m_blueprintVariationPairs = {} -- BlueprintAndVariationPair
     self.m_linkUnlockAssets = {} -- UnlockAsset
     self.m_appearanceUnlockAssets = {} -- UnlockAsset
-
-    self.m_currentLevel = nil
 
     self.m_verbose = 1 -- prints debug information
 end
@@ -481,7 +474,7 @@ function SoldiersAppearances:CreateMeshMaterialVariations(p_entry)
     s_elements['neutral'] = p_entry.materials
 
     local s_meshVariationDatabaseMaterialIndexes = self.m_databaseEntryMaterialIndexes[p_entry.instanceGuid:ToString('D')]
-    for _, l_element in pairs(self.m_elementNames) do
+    for _, l_element in pairs(ElementalConfig.names) do
         local s_variations = {}
         for _, ll_value in pairs(s_meshVariationDatabaseMaterialIndexes) do
             local s_newMeshMaterialVariation = MeshMaterialVariation(InstanceUtils:GenerateGuid(p_entry.instanceGuid:ToString('D') .. ll_value .. l_element))
@@ -492,7 +485,7 @@ function SoldiersAppearances:CreateMeshMaterialVariations(p_entry)
             local s_shaderGraph = ShaderGraph()
             s_shaderGraph.name = 'shaders/Root/CharacterRoot'
 
-            local s_color = self.m_elementColors[l_element]
+            local s_color = ElementalConfig.colors[l_element]
 
             local s_dirtColorParameter = VectorShaderParameter()
             s_dirtColorParameter.value = Vec4(s_color.x, s_color.y, s_color.z, 0)
@@ -528,7 +521,7 @@ function SoldiersAppearances:CreateMeshVariationDatabaseEntrys(p_entry)
     local s_elements = {}
     s_elements['neutral'] = p_entry
 
-    for _, l_element in pairs(self.m_elementNames) do
+    for _, l_element in pairs(ElementalConfig.names) do
         local s_newMeshVariationDatabaseEntry = InstanceUtils:CloneInstance(p_entry, l_element)
 
         for l_key, l_value in pairs(self.m_meshMaterialVariations[p_entry.instanceGuid:ToString('D')][l_element]) do
@@ -554,7 +547,7 @@ function SoldiersAppearances:CreateObjectVariationAssets(p_asset)
     local s_elements = {}
     s_elements['neutral'] = p_asset
 
-    for _, l_element in pairs(self.m_elementNames) do
+    for _, l_element in pairs(ElementalConfig.names) do
         local s_newObjectVariationAsset = InstanceUtils:CloneInstance(p_asset, l_element)
 
         -- patching object variation properties
@@ -587,7 +580,7 @@ function SoldiersAppearances:CreateBlueprintAndVariationPairs(p_data)
     local s_elements = {}
     s_elements['neutral'] = p_data
 
-    for _, l_element in pairs(self.m_elementNames) do
+    for _, l_element in pairs(ElementalConfig.names) do
         local s_newBlueprintAndVariationPair = InstanceUtils:CloneInstance(p_data, l_element)
 
         -- patching pair properties
@@ -611,7 +604,7 @@ function SoldiersAppearances:CreateLinkUnlockAssets(p_asset)
     local s_elements = {}
     s_elements['neutral'] = p_asset
 
-    for _, l_element in pairs(self.m_elementNames) do
+    for _, l_element in pairs(ElementalConfig.names) do
         local s_newLinkUnlockAsset = InstanceUtils:CloneInstance(p_asset, l_element)
         s_newLinkUnlockAsset.name = s_newLinkUnlockAsset.name .. l_element
 
@@ -640,7 +633,7 @@ function SoldiersAppearances:CreateAppearanceUnlockAssets(p_asset)
     local s_elements = {}
     -- s_elements['neutral'] = p_asset -- hanging instance
 
-    for _, l_element in pairs(self.m_elementNames) do
+    for _, l_element in pairs(ElementalConfig.names) do
         local s_newAppearanceUnlockAsset = InstanceUtils:CloneInstance(p_asset, l_element)
         s_newAppearanceUnlockAsset.name = s_newAppearanceUnlockAsset.name .. l_element
         s_newAppearanceUnlockAsset.debugUnlockId = l_element

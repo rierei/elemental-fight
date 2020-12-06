@@ -12,14 +12,6 @@ function WeaponsUnlocks:__init()
 end
 
 function WeaponsUnlocks:RegisterVars()
-    self.m_elementNames = {'water', 'grass', 'fire'}
-
-    self.m_elementColors = {
-        water = Vec3(0, 0.6, 1),
-        grass = Vec3(0.2, 0.6, 0.1),
-        fire = Vec3(1, 0.3, 0)
-    }
-
     self.m_soldierPropertyIndexes = {
         head = 66,
         body = 67,
@@ -27,12 +19,8 @@ function WeaponsUnlocks:RegisterVars()
         chest = 159
     }
 
-    self.m_soldierGridPropertyIndexes = {
-        head = nil,
-        body = nil,
-        foot = nil,
-        chest = nil
-    }
+    self.m_currentLevel = nil
+    self.m_currentMode = nil
 
     self.m_waitingImpactEffectGuids = {
         FX_Impact_Water_S = {'20B18CF1-F2F7-11DF-9BE8-9E0183D704DD', '23298636-5C6F-8CA0-F0EF-6097924181C3'},
@@ -71,6 +59,11 @@ function WeaponsUnlocks:RegisterVars()
     self.m_registryContainer = nil -- RegistryContainer
     self.m_materialContainerAsset = nil -- MaterialContainerAsset
     self.m_materialGridAsset = nil -- MaterialGridData
+
+    self.m_soldierGridPropertyIndexes = {} -- MaterialGridData.materialIndexMap
+    self.m_projectilePhysicsProperties = {} -- MaterialContainerPair.PhysicsPropertyIndex
+    self.m_projectileMaterialRelationPenetrationData = nil -- MaterialRelationPenetrationData
+
     self.m_explodeSoundEffect = nil -- SoundEffectEntityData
 
     self.m_polynomialColorInterps = {} -- PolynomialColorInterpData
@@ -91,12 +84,6 @@ function WeaponsUnlocks:RegisterVars()
     self.m_weaponEntities = {} -- SoldierWeaponData
     self.m_weaponBlueprints = {} -- SoldierWeaponBlueprint
     self.m_weaponUnlockAssets = {} -- SoldierWeaponUnlockAsset
-
-    self.m_projectilePhysicsProperties = {} -- MaterialContainerPair.PhysicsPropertyIndex
-    self.m_projectileMaterialRelationPenetrationData = nil -- MaterialRelationPenetrationData
-
-    self.m_currentLevel = nil
-    self.m_currentMode = nil
 
     self.m_instanceCreateFunctions = {
         emitterDocumentAssets = self._CreateEmitterDocumentAssets,
@@ -222,7 +209,7 @@ function WeaponsUnlocks:ReadInstances(p_instances)
 
     self.m_explodeSoundEffectEntity = p_instances['FX_Grenade_Frag_01_Sound']
 
-    for _, l_element in pairs(self.m_elementNames) do
+    for _, l_element in pairs(ElementalConfig.names) do
         if self.m_waitingInstances.impactEffectBlueprints[l_element] == nil then
             if self.m_verbose >= 1 then
                 print('Apply GenericImpactEffectBlueprint')
@@ -233,6 +220,11 @@ function WeaponsUnlocks:ReadInstances(p_instances)
     end
 
     self:CreateInstances()
+
+    -- removing hanging references
+    self.m_soldierGridPropertyIndexes = {} -- MaterialGridData.materialIndexMap
+    self.m_projectilePhysicsProperties = {} -- MaterialContainerPair.PhysicsPropertyIndex
+    self.m_projectileMaterialRelationPenetrationData = nil -- MaterialRelationPenetrationData
 
     -- removing hanging references
     self.m_waitingInstances = {
@@ -265,9 +257,6 @@ function WeaponsUnlocks:ReadInstances(p_instances)
     self.m_weaponFiringModifiers = {} -- WeaponFiringDataModifier
     self.m_weaponEntities = {} -- SoldierWeaponData
     self.m_weaponBlueprints = {} -- SoldierWeaponBlueprint
-
-    self.m_projectilePhysicsProperties = {} -- MaterialContainerPair.PhysicsPropertyIndex
-    self.m_projectileMaterialRelationPenetrationData = nil -- MaterialRelationPenetrationData
 end
 
 -- creating instances of elements
@@ -343,11 +332,11 @@ function WeaponsUnlocks:CreatePolynomialColorInterps(p_data)
     local s_elements = {}
     s_elements['neutral'] = p_data
 
-    for _, l_element in pairs(self.m_elementNames) do
+    for _, l_element in pairs(ElementalConfig.names) do
         local s_newPolynomialColor = InstanceUtils:CloneInstance(p_data, l_element)
 
-        s_newPolynomialColor.color0 = self.m_elementColors[l_element]
-        s_newPolynomialColor.color1 = self.m_elementColors[l_element]
+        s_newPolynomialColor.color0 = ElementalConfig.colors[l_element]
+        s_newPolynomialColor.color1 = ElementalConfig.colors[l_element]
 
         s_elements[l_element] = s_newPolynomialColor
     end
@@ -364,7 +353,7 @@ function WeaponsUnlocks:_CreateEmitterDocumentAssets(p_asset)
     local s_elements = {}
     s_elements['neutral'] = p_asset
 
-    for _, l_element in pairs(self.m_elementNames) do
+    for _, l_element in pairs(ElementalConfig.names) do
         local s_newEmitterDocumentAsset = InstanceUtils:CloneInstance(p_asset, l_element)
         local s_newTemplateData = InstanceUtils:CloneInstance(p_asset.templateData, l_element)
 
@@ -381,7 +370,7 @@ function WeaponsUnlocks:_CreateEmitterDocumentAssets(p_asset)
             end
 
             if s_newProcessorData:Is('UpdateColorData') then
-                local s_color = self.m_elementColors[l_element]
+                local s_color = ElementalConfig.colors[l_element]
 
                 -- increment color visibility
                 s_color = Vec3(s_color.x * 8, s_color.y * 8, s_color.z * 8)
@@ -431,7 +420,7 @@ function WeaponsUnlocks:_CreateEmitterDocumentAssets(p_asset)
         s_newTemplateData.emissive = s_emissive
         s_newTemplateData.actAsPointLight = true
         s_newTemplateData.pointLightRadius = s_pointLightRadius
-        s_newTemplateData.pointLightColor = self.m_elementColors[l_element]
+        s_newTemplateData.pointLightColor = ElementalConfig.colors[l_element]
         s_newTemplateData.maxSpawnDistance = 0
 
         -- patching document properties
@@ -458,7 +447,7 @@ function WeaponsUnlocks:_CreateEmitterEntity(p_entity)
 
     local emitterDocumentAsset = self:_GetInstance(p_entity.emitter, 'emitterDocumentAssets')
 
-    for _, l_element in pairs(self.m_elementNames) do
+    for _, l_element in pairs(ElementalConfig.names) do
         local s_newEmitterEntity = InstanceUtils:CloneInstance(p_entity, l_element)
 
         -- disable water spray arm
@@ -524,7 +513,7 @@ function WeaponsUnlocks:CreateExplodeEffectBlueprints(p_blueprint)
         print('Create ExplodeEffectBlueprints')
     end
 
-    for _, l_element in pairs(self.m_elementNames) do
+    for _, l_element in pairs(ElementalConfig.names) do
         local s_newEffectBlueprint = self:_CreateEffectBlueprint(p_blueprint, l_element)
 
         local soundEffectEntity = SoundEffectEntityData(self.m_explodeSoundEffectEntity)
@@ -540,7 +529,7 @@ function WeaponsUnlocks:CreateSmokeEffectBlueprints(p_blueprint)
         print('Create SmokeEffectBlueprints')
     end
 
-    for _, l_element in pairs(self.m_elementNames) do
+    for _, l_element in pairs(ElementalConfig.names) do
         local s_newEffectBlueprint = self:_CreateEffectBlueprint(p_blueprint, l_element)
 
         self.m_smokeEffectBlueprints[l_element] = s_newEffectBlueprint
@@ -556,7 +545,7 @@ function WeaponsUnlocks:CreateImpactExplosionEntities(p_entity)
     local s_elements = {}
     s_elements['neutral'] = p_entity
 
-    for _, l_element in pairs(self.m_elementNames) do
+    for _, l_element in pairs(ElementalConfig.names) do
         local s_newExplosionEntity = InstanceUtils:CloneInstance(p_entity, 'impact' .. l_element)
 
         -- patching explosion properties
@@ -581,7 +570,7 @@ function WeaponsUnlocks:_CreateExplodeExplosionEntities(p_entity)
     local s_elements = {}
     s_elements['neutral'] = p_entity
 
-    for _, l_element in pairs(self.m_elementNames) do
+    for _, l_element in pairs(ElementalConfig.names) do
         local s_newExplosionEntity = InstanceUtils:CloneInstance(p_entity, l_element)
 
         if s_newExplosionEntity.materialPair ~= nil then
@@ -609,7 +598,7 @@ function WeaponsUnlocks:CreateSmokeExplosionEntities(p_entity)
     local s_elements = {}
     s_elements['neutral'] = p_entity
 
-    for _, l_element in pairs(self.m_elementNames) do
+    for _, l_element in pairs(ElementalConfig.names) do
         local s_newExplosionEntity = InstanceUtils:CloneInstance(p_entity, 'smoke' .. l_element)
 
         -- patching explosion properties
@@ -648,7 +637,7 @@ function WeaponsUnlocks:CreateProjectileEntities(p_entity)
         self.m_projectilePhysicsProperties[s_physicsPropertyIndex] = true
     end
 
-    for _, l_element in pairs(self.m_elementNames) do
+    for _, l_element in pairs(ElementalConfig.names) do
         local s_newProjectileEntity = InstanceUtils:CloneInstance(p_entity, l_element)
 
         local s_projectileExplosionEntity = self:_GetInstance(s_newProjectileEntity.explosion, 'explodeExplosionEntities')
@@ -700,7 +689,7 @@ function WeaponsUnlocks:_CreateProjectileBlueprints(p_blueprint)
 
     local s_projectileEntity = self:_GetInstance(p_blueprint.object, 'projectileEntities')
 
-    for _, l_element in pairs(self.m_elementNames) do
+    for _, l_element in pairs(ElementalConfig.names) do
         local s_newProjectileBlueprint = InstanceUtils:CloneInstance(p_blueprint, l_element)
 
         -- patching projectile blueprint
@@ -729,7 +718,7 @@ function WeaponsUnlocks:_CreateWeaponProjectileModifiers(p_data)
 
     local s_projectileEntity = self:_GetInstance(p_data.projectileData, 'projectileEntities')
 
-    for _, l_element in pairs(self.m_elementNames) do
+    for _, l_element in pairs(ElementalConfig.names) do
         local s_newWeaponProjectileModifier = InstanceUtils:CloneInstance(p_data, l_element)
 
         -- patching projectile modifier
@@ -759,7 +748,7 @@ function WeaponsUnlocks:_CreateWeaponFiringModifiers(p_data)
 
     local s_projectileEntity = self:_GetInstance(s_firingFunction.shot.projectileData, 'projectileEntities')
     local s_projectileBlueprint = self:_GetInstance(s_firingFunction.shot.projectile, 'projectileBlueprints')
-    for _, l_element in pairs(self.m_elementNames) do
+    for _, l_element in pairs(ElementalConfig.names) do
         local s_newFiringFunction = InstanceUtils:CloneInstance(s_firingFunction, l_element)
         local s_newModifierFiringData = InstanceUtils:CloneInstance(s_firingData, l_element)
         local s_newFiringModifier = InstanceUtils:CloneInstance(p_data, l_element)
@@ -816,7 +805,7 @@ function WeaponsUnlocks:CreateWeaponEntities(p_entity)
 
     local s_projectileBlueprint = self:_GetInstance(s_firingFunction.shot.projectile, 'projectileBlueprints')
     local s_projectileEntity = self.m_projectileEntities[p_entity.weaponFiring.primaryFire.shot.projectileData.instanceGuid:ToString('D')]
-    for _, l_element in pairs(self.m_elementNames) do
+    for _, l_element in pairs(ElementalConfig.names) do
         local s_newFiringFunction = InstanceUtils:CloneInstance(s_firingFunction, l_element)
         local s_newFiringData = InstanceUtils:CloneInstance(s_firingData, l_element)
         local s_newWeaponEntity = InstanceUtils:CloneInstance(p_entity, l_element)
@@ -861,7 +850,7 @@ function WeaponsUnlocks:CreateWeaponBlueprints(p_blueprint)
     s_elements['neutral'] = p_blueprint
 
     local s_entityGuid = p_blueprint.object.instanceGuid:ToString('D')
-    for _, l_element in pairs(self.m_elementNames) do
+    for _, l_element in pairs(ElementalConfig.names) do
         local s_newWeaponBlueprint = InstanceUtils:CloneInstance(p_blueprint, l_element)
 
         -- patching weapon blueprint
@@ -888,7 +877,7 @@ function WeaponsUnlocks:CreateWeaponUnlockAssets(p_asset)
     -- s_elementUnlocks['neutral'] = p_asset -- hanging instance
 
     local s_blueprintGuid = p_asset.weapon.instanceGuid:ToString('D')
-    for _, l_element in pairs(self.m_elementNames) do
+    for _, l_element in pairs(ElementalConfig.names) do
         local s_newWeaponUnlockAsset = InstanceUtils:CloneInstance(p_asset, l_element)
 
         -- patching unlock
@@ -949,7 +938,7 @@ function WeaponsUnlocks:UpdateWeaponUnlockAssets(p_entity)
     for l_key, l_value in pairs(p_entity.weaponModifierData) do
         if l_value.unlockAsset ~= nil and l_value.unlockAsset:Is('SoldierWeaponUnlockAsset') then
             local s_soldierWeaponUnlockGuid = l_value.unlockAsset.instanceGuid:ToString('D')
-            for _, l_element in pairs(self.m_elementNames) do
+            for _, l_element in pairs(ElementalConfig.names) do
                 local s_weaponUnlockAsset = self.m_weaponUnlockAssets[s_soldierWeaponUnlockGuid][l_element]
                 self.m_weaponEntities[s_weaponEntityGuid][l_element].weaponModifierData[l_key].unlockAsset = s_weaponUnlockAsset
             end
