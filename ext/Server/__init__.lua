@@ -46,7 +46,7 @@ function ElementalFight:RegisterVars()
 
     self.counter = 2
 
-    self.m_verbose = 1 -- prints debug information
+    self.m_verbose = 2 -- prints debug information
 end
 
 function ElementalFight:RegisterEvents()
@@ -111,7 +111,7 @@ function ElementalFight:RegisterEvents()
     end)
 
     Hooks:Install('Soldier:Damage', 1, function(p_hook, p_soldier, p_info, p_giver)
-        if self.m_verbose >= 1 then
+        if self.m_verbose >= 2 then
             print('Event Player:Damage')
         end
 
@@ -149,7 +149,7 @@ function ElementalFight:RegisterEvents()
         local s_elementDamage = self.m_elementDamages[s_weaponElement]
         local s_damageMultiplier = s_elementDamage[s_soldierElement]
 
-        if self.m_verbose >= 1 then
+        if self.m_verbose >= 2 then
             print(s_weaponElement .. ' x ' .. s_soldierElement .. ' = ' .. s_damageMultiplier)
             print(p_info.damage .. ' ' .. p_info.damage * s_damageMultiplier)
         end

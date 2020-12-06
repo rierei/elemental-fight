@@ -18,11 +18,18 @@ function WeaponsUnlocks:RegisterVars()
         fire = Vec3(1, 0.3, 0)
     }
 
+    self.m_soldierPropertyIndexes = {
+        head = 66,
+        body = 67,
+        foot = 92,
+        chest = 159
+    }
+
     self.m_soldierGridPropertyIndexes = {
-        head = 47,
-        body = 48,
-        foot = 68,
-        chest = 110
+        head = nil,
+        body = nil,
+        foot = nil,
+        chest = nil
     }
 
     self.m_waitingImpactEffectGuids = {
@@ -201,6 +208,13 @@ function WeaponsUnlocks:ReadInstances(p_instances)
         end
     end
 
+    self.m_soldierGridPropertyIndexes = {
+        head = self.m_materialGridAsset.materialIndexMap[self.m_soldierPropertyIndexes.head] + 1,
+        body = self.m_materialGridAsset.materialIndexMap[self.m_soldierPropertyIndexes.body] + 1,
+        foot = self.m_materialGridAsset.materialIndexMap[self.m_soldierPropertyIndexes.foot] + 1,
+        chest = self.m_materialGridAsset.materialIndexMap[self.m_soldierPropertyIndexes.chest] + 1
+    }
+
     self.m_materialContainerAsset = p_instances['MaterialContainer']
     self.m_waitingInstances.genericImpactEffectBlueprint = p_instances['FX_Impact_Concrete_01_S']
     self.m_waitingInstances.genericExplodeEffectBlueprints = p_instances['FX_Grenade_Frag_01']
@@ -363,10 +377,6 @@ function WeaponsUnlocks:_CreateEmitterDocumentAssets(p_asset)
         local function createProcessorData(p_data)
             local s_newProcessorData = self:_CloneInstance(p_data, l_element)
 
-            if s_newProcessorData:Is('UpdateColorData') then
-                s_updateColor = UpdateColorData(s_newProcessorData)
-            end
-
             if s_newProcessorData.nextProcessor ~= nil then
                 s_newProcessorData.nextProcessor = createProcessorData(s_newProcessorData.nextProcessor)
             end
@@ -375,28 +385,63 @@ function WeaponsUnlocks:_CreateEmitterDocumentAssets(p_asset)
                 s_newProcessorData.pre = createProcessorData(s_newProcessorData.pre)
             end
 
+            if s_newProcessorData:Is('UpdateColorData') then
+                local s_color = self.m_elementColors[l_element]
+
+                -- increment color visibility
+                s_color = Vec3(s_color.x * 8, s_color.y * 8, s_color.z * 8)
+
+                local polynomialColorInterp = nil
+
+                -- dont use incremented visibility for smoke
+                if s_newProcessorData.pre ~= nil and not s_newEmitterDocumentAsset.name:lower():match('smoke') then
+                    polynomialColorInterp = PolynomialColorInterpData(s_newProcessorData.pre)
+
+                    polynomialColorInterp.color0 = s_color
+                    polynomialColorInterp.color1 = s_color
+                else
+                    polynomialColorInterp = self.m_polynomialColorInterps[l_element]
+                end
+
+                s_newProcessorData.pre = polynomialColorInterp
+            end
+
             return s_newProcessorData
         end
 
         -- creating processor with recursion
-        local s_newRootProcessor = createProcessorData(s_newEmitterDocumentAsset.rootProcessor)
+        local s_newTemplateRootProcessor = createProcessorData(s_newTemplateData.rootProcessor)
+        local s_newDocumentRootProcessor = s_newTemplateRootProcessor
 
-        if s_updateColor ~= nil then
-            s_updateColor.pre = self.m_polynomialColorInterps[l_element]
+        -- low graphics processor
+        if s_newEmitterDocumentAsset.rootProcessor ~= s_newTemplateRootProcessor then
+            s_newDocumentRootProcessor = createProcessorData(s_newEmitterDocumentAsset.rootProcessor)
+        end
+
+        -- non emissive smoke
+        local s_emissive = true
+        if s_newTemplateData.name:lower():match('smoke') then
+            s_emissive = false
+        end
+
+        -- explode light radius
+        local s_pointLightRadius = 10
+        if s_newTemplateData.name:match('Metal_Smoke_01_M') then
+            s_pointLightRadius = 30
         end
 
         -- patching template properties
         s_newTemplateData.name = s_newTemplateData.name .. l_element
-        s_newTemplateData.rootProcessor = s_newRootProcessor
-        s_newTemplateData.emissive = true
+        s_newTemplateData.rootProcessor = s_newTemplateRootProcessor
+        s_newTemplateData.emissive = s_emissive
         s_newTemplateData.actAsPointLight = true
-        s_newTemplateData.pointLightRadius = 10
+        s_newTemplateData.pointLightRadius = s_pointLightRadius
         s_newTemplateData.pointLightColor = self.m_elementColors[l_element]
         s_newTemplateData.maxSpawnDistance = 0
 
         -- patching document properties
         s_newEmitterDocumentAsset.name = s_newEmitterDocumentAsset.name .. l_element
-        s_newEmitterDocumentAsset.rootProcessor = s_newRootProcessor
+        s_newEmitterDocumentAsset.rootProcessor = s_newDocumentRootProcessor
         s_newEmitterDocumentAsset.templateData = s_newTemplateData
 
         self.m_registryContainer.assetRegistry:add(s_newEmitterDocumentAsset)
@@ -420,6 +465,11 @@ function WeaponsUnlocks:_CreateEmitterEntity(p_entity)
 
     for _, l_element in pairs(self.m_elementNames) do
         local s_newEmitterEntity = self:_CloneInstance(p_entity, l_element)
+
+        -- disable water spray arm
+        if s_newEmitterEntity.emitter.name:match('Em_Impact_Water_S_SprayArm') then
+            s_newEmitterEntity.spawnProbability = 0
+        end
 
         -- patching emitter properties
         s_newEmitterEntity.emitter = emitterDocumentAsset[l_element]
@@ -541,7 +591,7 @@ function WeaponsUnlocks:_CreateExplodeExplosionEntities(p_entity)
 
         if s_newExplosionEntity.materialPair ~= nil then
             local s_materialContainerPairIndex = MaterialPairs[MaterialContainerPair(s_newExplosionEntity.materialPair).physicsPropertyIndex]
-            s_newExplosionEntity.materialPair = MaterialContainerAsset(self.m_materialContainerAsset).materialPairs[s_materialContainerPairIndex]
+            s_newExplosionEntity.materialPair = self.m_materialContainerAsset.materialPairs[s_materialContainerPairIndex]
         end
 
         -- patching explosion properties
@@ -598,7 +648,7 @@ function WeaponsUnlocks:CreateProjectileEntities(p_entity)
         local s_physicsPropertyIndex = MaterialContainerPair(p_entity.materialPair).physicsPropertyIndex
         local s_materialContainerPairIndex = MaterialPairs[s_physicsPropertyIndex]
 
-        s_materialPair = MaterialContainerAsset(self.m_materialContainerAsset).materialPairs[s_materialContainerPairIndex]
+        s_materialPair = self.m_materialContainerAsset.materialPairs[s_materialContainerPairIndex]
 
         self.m_projectilePhysicsProperties[s_physicsPropertyIndex] = true
     end
