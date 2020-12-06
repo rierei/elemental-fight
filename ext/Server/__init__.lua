@@ -196,7 +196,7 @@ function ElementalFight:CustomizePlayer(p_player, p_element)
             s_unlockWeaponAndSlot.unlockAssets:add(s_weaponVisualUnlockAsset)
 
             for l_key, l_value in pairs(s_weaponUnlockAssets) do
-                if not Asset(l_value).name:lower():match('Camo') then
+                if not Asset(l_value).name:lower():match('camo') then
                     s_unlockWeaponAndSlot.unlockAssets:add(UnlockAssetBase(l_value))
                 end
             end
