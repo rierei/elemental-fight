@@ -1,5 +1,5 @@
 -- PhysicsMaterialIndex = 0 and PhysicsPropertyIndex = ?
-return {
+local s_materialPairs = {
     [0] = 1,
     [1] = 2,
     [2] = 5,
@@ -181,3 +181,5 @@ return {
     [-78] = 31649,
     [-77] = 32002
 }
+
+return { materialPairs = s_materialPairs }

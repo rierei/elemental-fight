@@ -1,7 +1,7 @@
 local WeaponsUnlocks = class('WeaponsUnlocks')
 
 local BotsCustom = require('__shared/bots-custom')
-local MaterialPairs = require('__shared/utils/material-pairs')
+local MaterialPairs = require('__shared/utils/consts').materialPairs
 local Uuid = require('__shared/utils/uuid')
 
 function WeaponsUnlocks:__init()

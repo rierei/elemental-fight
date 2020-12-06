@@ -9,37 +9,45 @@ function SoldiersAppearances:__init()
 end
 
 function SoldiersAppearances:RegisterVars()
-    self.m_appearanceUnlockAssetGuids = {
-        assault = 'F2ECBAB2-F00A-47CA-66DC-0F89C6A138D4'
+    self.m_waitingGuids = {
+        meshVariationDatabase = {'B056DEA3-8F11-D2FA-20FA-7A5C3F94A15E' ,'B056DEA3-8F11-D2FA-20FA-7A5C3F94A15E'}, -- MeshVariationDatabase
+        upperSkinnedSocketObject = {'1F5CC239-BE4F-4D03-B0B5-A0FF89976036', '59F371BF-DAD4-4AE9-9963-1568A9B8D661'}, -- SkinnedSocketObjectData
+        lowerSkinnedSocketObject = {'1F5CC239-BE4F-4D03-B0B5-A0FF89976036', 'B4063A93-0A43-4ABD-8463-B53027FA1304'}, -- SkinnedSocketObjectData
+
+        MP_US_Assault_Appearance01 = {'6252040E-A16A-11E0-AAC3-854900935C42', 'F2ECBAB2-F00A-47CA-66DC-0F89C6A138D4'}, -- UnlockAsset
+        US_Helmet09_Desert = {'5B06C0E2-AFDC-455A-BDC4-11B77E1A8AFE', 'B1A0F507-D7F8-4301-8DE6-C6198364FE3B'}, -- UnlockAsset
+        US_Upperbody04_Desert = {'CDEF869B-959A-11E0-86C2-B30910735269', 'C9F07E77-DA10-1781-CA13-715928514D59'}, -- UnlockAsset
+        Arms1P_BareGlove03_Afro = {'2871BA93-D577-11E0-A7F0-894741C432F0', '67A32FD0-AEE3-61D0-7041-D6B811C9BFE6'}, -- UnlockAsset
+        US_LB03_Desert = {'6149C356-959B-11E0-86C2-B30910735269', '494B07F4-4C11-1D87-E024-4FE4EB042055'}, -- UnlockAsset
     }
 
-    self.m_meshVariationDatabaseGuid = 'B056DEA3-8F11-D2FA-20FA-7A5C3F94A15E'
-
     self.m_waitingInstances = {
+        meshVariationDatabase = nil,
         upperSkinnedSocketObject = nil,
         lowerSkinnedSocketObject = nil,
-        meshVariationDatabase = nil,
-        appearanceUnlockAssets = {}
+        appearanceUnlockAssets = {},
+        linkUnlockAssets = {},
+        blueprintAndVariationPairs = {},
+        objectVariationAssets = {},
+        meshVariationDatabaseEntrys = {}
     }
 
     self.m_registryContainer = nil -- RegistryContainer
-    self.m_databaseEntryIndexes = {}
-    self.m_meshMaterialVariations = {}
-    self.m_meshVariationDatabaseMaterials = {}
-    self.m_variationDatabaseEntrys = {}
-    self.m_objectVariationAssets = {}
-    self.m_blueprintvariationPairs = {}
-    self.m_linkUnlockAssets = {}
-    self.m_appearanceUnlockAssets = {}
+    self.m_databaseEntryMaterialIndexes = {} -- MeshVariationDatabaseEntry.materials
+    self.m_meshMaterialVariations = {} -- MeshMaterialVariation
+    self.m_meshVariationDatabaseMaterials = {} -- MeshVariationDatabaseMaterial
+    self.m_variationDatabaseEntrys = {} -- MeshVariationDatabaseEntry
+    self.m_objectVariationAssets = {} -- ObjectVariationAsset
+    self.m_blueprintvariationPairs = {} -- BlueprintAndVariationPair
+    self.m_linkUnlockAssets = {} -- UnlockAsset
+    self.m_appearanceUnlockAssets = {} -- UnlockAsset
 
     self.m_verbose = 1 -- prints information
 end
 
 function SoldiersAppearances:RegisterEvents()
-    Events:Subscribe('Partition:Loaded', function(p_partition)
-        for _, l_instance in pairs(p_partition.instances) do
-            self:ReadInstance(l_instance)
-        end
+    InstanceWait(self.m_waitingGuids, function(p_instances)
+        self:ReadInstances(p_instances)
     end)
 
     Events:Subscribe('Level:Destroy', function()
@@ -49,40 +57,80 @@ function SoldiersAppearances:RegisterEvents()
 
         self:RegisterVars()
     end)
-
-    local s_waitingGuids = {
-        US_Helmet09_Desert = {'5B06C0E2-AFDC-455A-BDC4-11B77E1A8AFE', 'B1A0F507-D7F8-4301-8DE6-C6198364FE3B'},
-        US_Upperbody04_Desert = {'CDEF869B-959A-11E0-86C2-B30910735269', 'C9F07E77-DA10-1781-CA13-715928514D59'},
-        Arms1P_BareGlove03_Afro = {'2871BA93-D577-11E0-A7F0-894741C432F0', '67A32FD0-AEE3-61D0-7041-D6B811C9BFE6'},
-        US_LB03_Desert = {'6149C356-959B-11E0-86C2-B30910735269', '494B07F4-4C11-1D87-E024-4FE4EB042055'},
-        upperSkinnedSocketObject = {'1F5CC239-BE4F-4D03-B0B5-A0FF89976036', '59F371BF-DAD4-4AE9-9963-1568A9B8D661'},
-        lowerSkinnedSocketObject = {'1F5CC239-BE4F-4D03-B0B5-A0FF89976036', 'B4063A93-0A43-4ABD-8463-B53027FA1304'},
-        meshVariationDatabase = {'B056DEA3-8F11-D2FA-20FA-7A5C3F94A15E' ,'B056DEA3-8F11-D2FA-20FA-7A5C3F94A15E'}
-    }
-
-    InstanceWait(s_waitingGuids, function(p_instances)
-        self.m_waitingInstances.upperSkinnedSocketObject = p_instances['upperSkinnedSocketObject']
-        self.m_waitingInstances.upperSkinnedSocketObject:MakeWritable()
-
-        self.m_waitingInstances.lowerSkinnedSocketObject = p_instances['lowerSkinnedSocketObject']
-        self.m_waitingInstances.lowerSkinnedSocketObject:MakeWritable()
-
-        self.m_waitingInstances.meshVariationDatabase = p_instances['meshVariationDatabase']
-        self.m_waitingInstances.meshVariationDatabase:MakeWritable()
-
-        self:CreateInstances()
-    end)
 end
 
-function SoldiersAppearances:ReadInstance(p_instance)
-    -- waiting appearance unlocks
-    for l_key, l_value in pairs(self.m_appearanceUnlockAssetGuids) do
-        if p_instance.instanceGuid:ToString('D') == l_value then
-            if self.m_verbose >= 1 then
-                print('Found AppearanceUnlockAsset')
-            end
+function SoldiersAppearances:ReadInstances(p_instances)
+    self.m_waitingInstances.meshVariationDatabase = p_instances['meshVariationDatabase']
+    self.m_waitingInstances.meshVariationDatabase:MakeWritable()
 
-            self.m_waitingInstances.appearanceUnlockAssets[l_key] = p_instance
+    self.m_waitingInstances.upperSkinnedSocketObject = p_instances['upperSkinnedSocketObject']
+    self.m_waitingInstances.upperSkinnedSocketObject:MakeWritable()
+
+    self.m_waitingInstances.lowerSkinnedSocketObject = p_instances['lowerSkinnedSocketObject']
+    self.m_waitingInstances.lowerSkinnedSocketObject:MakeWritable()
+
+    self.m_waitingInstances.appearanceUnlockAssets['assault'] = p_instances['MP_US_Assault_Appearance01']
+
+    self:CreateInstances()
+end
+
+function SoldiersAppearances:ReadLinkUnlockAssets(p_asset)
+    for _, l_value in pairs(p_asset.linkedTo) do
+        local s_linkUnlockAsset = UnlockAsset(l_value)
+        table.insert(self.m_waitingInstances.linkUnlockAssets, s_linkUnlockAsset)
+    end
+end
+
+function SoldiersAppearances:ReadBlueprintAndVariationPairs()
+    for _, l_value in pairs(self.m_waitingInstances.linkUnlockAssets) do
+        for _, ll_value in pairs(l_value.linkedTo) do
+            if ll_value:Is('BlueprintAndVariationPair') then
+                local s_blueprintAndVariationPair = BlueprintAndVariationPair(ll_value)
+                table.insert(self.m_waitingInstances.blueprintAndVariationPairs, s_blueprintAndVariationPair)
+            end
+        end
+    end
+end
+
+function SoldiersAppearances:ReadObjectVariationAssets()
+    for _, l_value in pairs(self.m_waitingInstances.blueprintAndVariationPairs) do
+        local s_objectVariationAsset = ObjectVariation(l_value.variation)
+        table.insert(self.m_waitingInstances.objectVariationAssets, s_objectVariationAsset)
+    end
+end
+
+function SoldiersAppearances:ReadMeshVariationDatabaseEntrys()
+    for _, l_value in pairs(self.m_waitingInstances.meshVariationDatabase.entries) do
+        local s_meshVariationDatabaseEntry = MeshVariationDatabaseEntry(l_value)
+        for _, l_value in pairs(self.m_waitingInstances.objectVariationAssets) do
+            if s_meshVariationDatabaseEntry.variationAssetNameHash == l_value.nameHash then
+                self.m_waitingInstances.meshVariationDatabaseEntrys[s_meshVariationDatabaseEntry.instanceGuid:ToString('D')] = s_meshVariationDatabaseEntry
+            end
+        end
+    end
+end
+
+function SoldiersAppearances:ReadMeshVariationDatabaseMaterialIndexes()
+    for _, l_value in pairs(self.m_waitingInstances.meshVariationDatabaseEntrys) do
+        local s_skinnedMeshAsset = SkinnedMeshAsset(l_value.mesh)
+
+        local s_meshMaterialIndex = nil
+        if s_skinnedMeshAsset.name == 'characters/arms/arms1p_bareglove03/arms1p_bareglove03_Mesh' then
+            s_meshMaterialIndex = 4
+        -- elseif s_skinnedMeshAsset.name == 'characters/upperbody/us_upperbody04/us_upperbody04_Mesh' then
+        --     s_meshMaterialIndex = 1
+        -- elseif s_skinnedMeshAsset.name == 'Characters/LowerBody/US_Lowerbody03/US_LB03_Desert' then
+        --     s_meshMaterialIndex = 1
+        end
+
+        -- searching MeshVariationDatabaseMaterial
+        if s_meshMaterialIndex ~= nil then
+            for lll_key, ll_value in pairs(l_value.materials) do
+                if ll_value.material.instanceGuid == s_skinnedMeshAsset.materials[s_meshMaterialIndex].instanceGuid then
+                    print(lll_key)
+                    self.m_databaseEntryMaterialIndexes[l_value.instanceGuid:ToString('D')] = lll_key
+                end
+            end
         end
     end
 end
@@ -90,106 +138,51 @@ end
 function SoldiersAppearances:CreateInstances()
     self.m_registryContainer = RegistryContainer()
 
-    for l_key, l_instance in pairs(self.m_waitingInstances.appearanceUnlockAssets) do
-        local s_appearanceUnlockAsset = UnlockAsset(l_instance)
+    for _, l_instance in pairs(self.m_waitingInstances.appearanceUnlockAssets) do
+        self:ReadLinkUnlockAssets(l_instance)
+        self:ReadBlueprintAndVariationPairs()
+        self:ReadObjectVariationAssets()
+        self:ReadMeshVariationDatabaseEntrys()
+        self:ReadMeshVariationDatabaseMaterialIndexes()
+    end
 
-        -- extracting link UnlockAsset from appearance UnlockAsset
-        local s_linkUnlockAssets = {}
-        for _, ll_value in pairs(s_appearanceUnlockAsset.linkedTo) do
-            local s_linkUnlockAsset = UnlockAsset(ll_value)
-            table.insert(s_linkUnlockAssets, s_linkUnlockAsset)
-        end
+    -- processing MeshVariationDatabaseEntry
+    for _, ll_value in pairs(self.m_waitingInstances.meshVariationDatabaseEntrys) do
+        self:CreateMeshMaterialVariations(ll_value)
+        self:CreateVariationDatabaseMaterials(ll_value)
+        self:CreateMeshVariationDatabaseEntrys(ll_value)
+    end
 
-        -- extracting BlueprintAndVariationPair from link UnlockAsset
-        local s_blueprintAndVariationPairs = {}
-        for _, ll_value in pairs(s_linkUnlockAssets) do
-            for _, lll_value in pairs(ll_value.linkedTo) do
-                if lll_value:Is('BlueprintAndVariationPair') then
-                    local s_blueprintAndVariationPair = BlueprintAndVariationPair(lll_value)
-                    table.insert(s_blueprintAndVariationPairs, s_blueprintAndVariationPair)
-                end
-            end
-        end
+    -- processing ObjectVariationAsset
+    for _, ll_value in pairs(self.m_waitingInstances.objectVariationAssets) do
+        self:CreateObjectVariationAssets(ll_value)
+    end
 
-        -- extracting ObjectVariationAsset from BlueprintAndVariationPair
-        local s_objectVariationAssets = {}
-        for _, ll_value in pairs(s_blueprintAndVariationPairs) do
-            local s_objectVariationAsset = ObjectVariation(ll_value.variation)
-            table.insert(s_objectVariationAssets, s_objectVariationAsset)
-        end
+    -- processing BlueprintAndVariationPair
+    for _, ll_value in pairs(self.m_waitingInstances.blueprintAndVariationPairs) do
+        self:CreateBlueprintAndVariationPairs(ll_value)
+    end
 
-        local s_meshVariationDatabaseEntrys = {}
-        -- extracting MeshVariationDatabaseEntry from MeshVariationDatabase with ObjectVariationAsset
-        local s_meshVariationDatabase = self.m_waitingInstances.meshVariationDatabase
-        for _, l_value in pairs(s_meshVariationDatabase.entries) do
-            local s_meshVariationDatabaseEntry = MeshVariationDatabaseEntry(l_value)
-            for _, ll_value in pairs(s_objectVariationAssets) do
-                if s_meshVariationDatabaseEntry.variationAssetNameHash == ll_value.nameHash then
-                    s_meshVariationDatabaseEntrys[s_meshVariationDatabaseEntry.instanceGuid:ToString('D')] = s_meshVariationDatabaseEntry
-                end
-            end
-        end
+    -- processing UnlockAsset
+    for _, ll_value in pairs(self.m_waitingInstances.linkUnlockAssets) do
+        self:CreateLinkUnlockAssets(ll_value)
+    end
 
-        -- extract MeshVariationDatabaseMaterial from MeshVariationDatabaseEntry
-        for _, ll_value in pairs(s_meshVariationDatabaseEntrys) do
-            local s_skinnedMeshAsset = SkinnedMeshAsset(ll_value.mesh)
-
-            local s_meshMaterialIndex = nil
-            if s_skinnedMeshAsset.name == 'characters/arms/arms1p_bareglove03/arms1p_bareglove03_Mesh' then
-                s_meshMaterialIndex = 4
-            -- elseif s_skinnedMeshAsset.name == 'characters/upperbody/us_upperbody04/us_upperbody04_Mesh' then
-            --     s_meshMaterialIndex = 1
-            -- elseif s_skinnedMeshAsset.name == 'Characters/LowerBody/US_Lowerbody03/US_LB03_Desert' then
-            --     s_meshMaterialIndex = 1
-            end
-
-            -- searching MeshVariationDatabaseMaterial
-            if s_meshMaterialIndex ~= nil then
-                for lll_key, lll_value in pairs(ll_value.materials) do
-                    if lll_value.material.instanceGuid == s_skinnedMeshAsset.materials[s_meshMaterialIndex].instanceGuid then
-                        print(lll_key)
-                        self.m_databaseEntryIndexes[ll_value.instanceGuid:ToString('D')] = lll_key
-                    end
-                end
-            end
-        end
-
-        -- processing MeshVariationDatabaseEntry
-        for _, ll_value in pairs(s_meshVariationDatabaseEntrys) do
-            self:CreateMeshMaterialVariations(ll_value)
-            self:CreateVariationDatabaseMaterials(ll_value)
-            self:CreateMeshVariationDatabaseEntrys(ll_value)
-        end
-
-        -- processing ObjectVariationAsset
-        for _, ll_value in pairs(s_objectVariationAssets) do
-            self:CreateObjectVariationAssets(ll_value)
-        end
-
-        -- processing BlueprintAndVariationPair
-        for _, ll_value in pairs(s_blueprintAndVariationPairs) do
-            self:CreateBlueprintAndVariationPair(ll_value)
-        end
-
-        -- processing UnlockAsset
-        for _, ll_value in pairs(s_linkUnlockAssets) do
-            self:CreateLinkUnlockAsset(ll_value)
-        end
-
-        -- processing UnlockAsset
-        self:CreateAppearanceUnlockAsset(s_appearanceUnlockAsset)
+    -- processing UnlockAsset
+    for _, l_instance in pairs(self.m_waitingInstances.appearanceUnlockAssets) do
+        self:CreateAppearanceUnlockAssets(l_instance)
     end
 
     ResourceManager:AddRegistry(self.m_registryContainer, ResourceCompartment.ResourceCompartment_Game)
 
     if self.m_verbose >= 1 then
-        print('Created databaseEntryIndexes: ' .. self:_Count(self.m_databaseEntryIndexes))
-        print('Created meshMaterialVariations: ' .. self:_Count(self.m_meshMaterialVariations))
-        print('Created variationDatabaseEntrys: ' .. self:_Count(self.m_variationDatabaseEntrys))
-        print('Created objectVariationAssets: ' .. self:_Count(self.m_objectVariationAssets))
-        print('Created blueprintvariationPairs: ' .. self:_Count(self.m_blueprintvariationPairs))
-        print('Created linkUnlockAssets: ' .. self:_Count(self.m_linkUnlockAssets))
-        print('Created appearanceUnlockAssets: ' .. self:_Count(self.m_appearanceUnlockAssets))
+        print('Created DatabaseEntryIndexes: ' .. self:_Count(self.m_databaseEntryMaterialIndexes))
+        print('Created MeshMaterialVariations: ' .. self:_Count(self.m_meshMaterialVariations))
+        print('Created VariationDatabaseEntrys: ' .. self:_Count(self.m_variationDatabaseEntrys))
+        print('Created ObjectVariationAssets: ' .. self:_Count(self.m_objectVariationAssets))
+        print('Created BlueprintvariationPairs: ' .. self:_Count(self.m_blueprintvariationPairs))
+        print('Created LinkUnlockAssets: ' .. self:_Count(self.m_linkUnlockAssets))
+        print('Created AppearanceUnlockAssets: ' .. self:_Count(self.m_appearanceUnlockAssets))
         print('Created RegistryContainerAssets: ' .. self:_Count(self.m_registryContainer.assetRegistry))
         print('Created RegistryContainerEntities: ' .. self:_Count(self.m_registryContainer.entityRegistry))
         print('Created RegistryContainerBlueprints: ' .. self:_Count(self.m_registryContainer.blueprintRegistry))
@@ -204,7 +197,7 @@ function SoldiersAppearances:CreateMeshMaterialVariations(p_entry)
 
     local s_variations = {}
 
-    local s_meshVariationDatabaseMaterialIndex = self.m_databaseEntryIndexes[p_entry.instanceGuid:ToString('D')]
+    local s_meshVariationDatabaseMaterialIndex = self.m_databaseEntryMaterialIndexes[p_entry.instanceGuid:ToString('D')]
 
     for l_key, l_value in pairs(p_entry.materials) do
         if l_key == s_meshVariationDatabaseMaterialIndex then
@@ -217,22 +210,22 @@ function SoldiersAppearances:CreateMeshMaterialVariations(p_entry)
                 p_entry.partition:AddInstance(s_newMeshMaterialVariation)
             end
 
-            local shader = ShaderGraph()
-            shader.name = 'shaders/Root/CharacterRoot'
+            local s_shaderGraph = ShaderGraph()
+            s_shaderGraph.name = 'shaders/Root/CharacterRoot'
 
-            local dirtColorParameter = VectorShaderParameter()
-            dirtColorParameter.value = Vec4(0, 0.6, 1, 0)
-            dirtColorParameter.parameterName = '_DirtColor'
-            dirtColorParameter.parameterType = ShaderParameterType.ShaderParameterType_Color
+            local s_dirtColorParameter = VectorShaderParameter()
+            s_dirtColorParameter.value = Vec4(0, 0.6, 1, 0)
+            s_dirtColorParameter.parameterName = '_DirtColor'
+            s_dirtColorParameter.parameterType = ShaderParameterType.ShaderParameterType_Color
 
-            local dirtScaleParameter = VectorShaderParameter()
-            dirtScaleParameter.value = Vec4(10, 0, 0, 0)
-            dirtScaleParameter.parameterName = '_DirtScaleMax'
-            dirtScaleParameter.parameterType = ShaderParameterType.ShaderParameterType_Scalar
+            local s_dirtScaleParameter = VectorShaderParameter()
+            s_dirtScaleParameter.value = Vec4(10, 0, 0, 0)
+            s_dirtScaleParameter.parameterName = '_DirtScaleMax'
+            s_dirtScaleParameter.parameterType = ShaderParameterType.ShaderParameterType_Scalar
 
-            s_newMeshMaterialVariation.shader.shader = shader
-            s_newMeshMaterialVariation.shader.vectorParameters:add(dirtColorParameter)
-            s_newMeshMaterialVariation.shader.vectorParameters:add(dirtScaleParameter)
+            s_newMeshMaterialVariation.shader.shader = s_shaderGraph
+            s_newMeshMaterialVariation.shader.vectorParameters:add(s_dirtColorParameter)
+            s_newMeshMaterialVariation.shader.vectorParameters:add(s_dirtScaleParameter)
 
             s_variations[l_key] = s_newMeshMaterialVariation
         end
@@ -249,17 +242,12 @@ function SoldiersAppearances:CreateVariationDatabaseMaterials(p_entry)
 
     local s_materials = {}
 
-    local s_meshVariationDatabaseMaterialIndex = self.m_databaseEntryIndexes[p_entry.instanceGuid:ToString('D')]
+    for l_key, l_value in pairs(self.m_meshMaterialVariations[p_entry.instanceGuid:ToString('D')]) do
+        local s_newMeshVariationDatabaseMaterial = p_entry.materials[l_key]:Clone()
 
-    for l_key, l_value in pairs(p_entry.materials) do
-        if l_key == s_meshVariationDatabaseMaterialIndex then
-            local s_newMeshVariationDatabaseMaterial = l_value:Clone()
+        s_newMeshVariationDatabaseMaterial.materialVariation = l_value
 
-            local s_variationDatabaseEntryGuid = p_entry.instanceGuid:ToString('D')
-            s_newMeshVariationDatabaseMaterial.materialVariation = self.m_meshMaterialVariations[s_variationDatabaseEntryGuid][l_key]
-
-            s_materials[l_key] = s_newMeshVariationDatabaseMaterial
-        end
+        s_materials[l_key] = s_newMeshVariationDatabaseMaterial
     end
 
     self.m_meshVariationDatabaseMaterials[p_entry.instanceGuid:ToString('D')] = s_materials
@@ -273,8 +261,7 @@ function SoldiersAppearances:CreateMeshVariationDatabaseEntrys(p_entry)
 
     local s_newMeshVariationDatabaseEntry = self:_CloneInstance(p_entry)
 
-    local s_meshVariationDatabaseMaterials = self.m_meshVariationDatabaseMaterials[p_entry.instanceGuid:ToString('D')]
-    for l_key, l_value in pairs(s_meshVariationDatabaseMaterials) do
+    for l_key, l_value in pairs(self.m_meshVariationDatabaseMaterials[p_entry.instanceGuid:ToString('D')]) do
         s_newMeshVariationDatabaseEntry.materials[l_key] = l_value
     end
 
@@ -293,9 +280,11 @@ function SoldiersAppearances:CreateObjectVariationAssets(p_asset)
 
     local s_newObjectVariationAsset = self:_CloneInstance(p_asset)
 
+    -- patching object properties
     s_newObjectVariationAsset.name = 'testing/abc' .. p_asset.nameHash
     s_newObjectVariationAsset.nameHash = MathUtils:FNVHash('testing/abc' .. p_asset.nameHash)
 
+    -- adding object guid
     if p_asset.name == 'Characters/Arms/Arms1P_BareGlove03/Arms1P_BareGlove03_Afro' then
         self.m_waitingInstances.upperSkinnedSocketObject.variation1pGuids:add(s_newObjectVariationAsset.instanceGuid)
     else
@@ -308,13 +297,14 @@ function SoldiersAppearances:CreateObjectVariationAssets(p_asset)
 end
 
 -- creating BlueprintAndVariationPair for Link UnlockAsset
-function SoldiersAppearances:CreateBlueprintAndVariationPair(p_data)
+function SoldiersAppearances:CreateBlueprintAndVariationPairs(p_data)
     if self.m_verbose >= 2 then
         print('Create BlueprintAndVariationPairs')
     end
 
     local s_newBlueprintAndVariationPair = self:_CloneInstance(p_data)
 
+    -- patching pair properties
     s_newBlueprintAndVariationPair.variation = self.m_objectVariationAssets[s_newBlueprintAndVariationPair.variation.instanceGuid:ToString('D')]
 
     self.m_registryContainer.assetRegistry:add(s_newBlueprintAndVariationPair)
@@ -323,7 +313,7 @@ function SoldiersAppearances:CreateBlueprintAndVariationPair(p_data)
 end
 
 -- creating link UnlockAsset for appearance UnlockAsset
-function SoldiersAppearances:CreateLinkUnlockAsset(p_asset)
+function SoldiersAppearances:CreateLinkUnlockAssets(p_asset)
     if self.m_verbose >= 2 then
         print('Create LinkUnlockAssets')
     end
@@ -344,7 +334,7 @@ function SoldiersAppearances:CreateLinkUnlockAsset(p_asset)
 end
 
 -- creating appearance UnlockAsset
-function SoldiersAppearances:CreateAppearanceUnlockAsset(p_asset)
+function SoldiersAppearances:CreateAppearanceUnlockAssets(p_asset)
     if self.m_verbose >= 2 then
         print('Create AppearanceUnlockAssets')
     end
@@ -360,8 +350,9 @@ function SoldiersAppearances:CreateAppearanceUnlockAsset(p_asset)
     self.m_appearanceUnlockAssets[p_asset.instanceGuid:ToString('D')] = s_newAppearanceUnlockAsset
 end
 
-function SoldiersAppearances:ReplacePlayerAppearance(p_player)
+function SoldiersAppearances:ReplacePlayerAppearances(p_player)
     local s_appearanceUnlockAsset = self.m_appearanceUnlockAssets[p_player.visualUnlocks[1].instanceGuid:ToString('D')]
+
 	p_player:SelectUnlockAssets(p_player.customization, { s_appearanceUnlockAsset })
 end
 
