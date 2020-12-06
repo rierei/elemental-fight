@@ -128,12 +128,7 @@ function SoldiersAppearances:RegisterVars()
 end
 
 function SoldiersAppearances:RegisterEvents()
-    -- waiting instances
-    InstanceWait(self.m_waitingGuids, function(p_instances)
-        if not self.m_isInstancesLoaded then
-            self:ReadInstances(p_instances)
-        end
-    end)
+    self:RegisterWait()
 
     -- waiting variation database
     Events:Subscribe('Partition:Loaded', function(p_partition)
@@ -144,8 +139,7 @@ function SoldiersAppearances:RegisterEvents()
                         print('Found MeshVariationDatabase')
                     end
 
-                    self.m_meshVariationDatabase = MeshVariationDatabase(l_instance)
-                    self.m_meshVariationDatabase:MakeWritable()
+                    self.m_waitingInstances.meshVariationDatabase = l_instance
                 end
             end
         end
@@ -154,7 +148,16 @@ function SoldiersAppearances:RegisterEvents()
     -- reloading instances
     Events:Subscribe('Level:LoadResources', function(p_level, p_mode, p_dedicated)
         if self.m_isInstancesLoaded then
-            self.ReloadInstances()
+            self:ReloadInstances()
+        end
+    end)
+end
+
+function SoldiersAppearances:RegisterWait()
+    -- waiting instances
+    InstanceWait(self.m_waitingGuids, function(p_instances)
+        if not self.m_isInstancesLoaded then
+            self:ReadInstances(p_instances)
         end
     end)
 end
@@ -165,24 +168,22 @@ function SoldiersAppearances:ReloadInstances()
         print('Reloading Instances')
     end
 
-    self.m_registryContainer = nil -- RegistryContainer
-    self.m_meshVariationDatabase = nil -- MeshVariationDatabase
-    self.m_skinnedSocketObjects = {} -- SkinnedSocketObject
-    self.m_databaseEntryMaterialIndexes = {} -- MeshVariationDatabaseEntry.materials
-    self.m_meshMaterialVariations = {} -- MeshMaterialVariation
-    self.m_meshVariationDatabaseMaterials = {} -- MeshVariationDatabaseMaterial
-    self.m_variationDatabaseEntrys = {} -- MeshVariationDatabaseEntry
-    self.m_objectVariationAssets = {} -- ObjectVariationAsset
-    self.m_blueprintVariationPairs = {} -- BlueprintAndVariationPair
-    self.m_linkUnlockAssets = {} -- UnlockAsset
     self.m_appearanceUnlockAssets = {} -- UnlockAsset
-
     self.m_isInstancesLoaded = false
+
+    self:RegisterWait()
 end
 
 -- reading waiting instances
 function SoldiersAppearances:ReadInstances(p_instances)
+    if self.m_verbose >= 1 then
+        print('Reading Instances')
+    end
+
     self.m_isInstancesLoaded = true
+
+    self.m_meshVariationDatabase = MeshVariationDatabase(self.m_waitingInstances.meshVariationDatabase)
+    self.m_meshVariationDatabase:MakeWritable()
 
     self.m_waitingInstances.characterSocketListAsset = p_instances['CharacterSocketListAsset']
 
@@ -206,6 +207,29 @@ function SoldiersAppearances:ReadInstances(p_instances)
     end
 
     self:CreateInstances()
+
+    -- removing hanging references
+    self.m_waitingInstances = {
+        meshVariationDatabase = nil,
+        characterSocketListAsset = nil,
+        appearanceUnlockAssets = {},
+        linkUnlockAssets = {},
+        blueprintAndVariationPairs = {},
+        objectVariationAssets = {},
+        meshVariationDatabaseEntrys = {}
+    }
+
+    -- removing hanging references
+    self.m_registryContainer = nil -- RegistryContainer
+    self.m_meshVariationDatabase = nil -- MeshVariationDatabase
+    self.m_skinnedSocketObjects = {} -- SkinnedSocketObject
+    self.m_databaseEntryMaterialIndexes = {} -- MeshVariationDatabaseEntry.materials
+    self.m_meshMaterialVariations = {} -- MeshMaterialVariation
+    self.m_meshVariationDatabaseMaterials = {} -- MeshVariationDatabaseMaterial
+    self.m_variationDatabaseEntrys = {} -- MeshVariationDatabaseEntry
+    self.m_objectVariationAssets = {} -- ObjectVariationAsset
+    self.m_blueprintVariationPairs = {} -- BlueprintAndVariationPair
+    self.m_linkUnlockAssets = {} -- UnlockAsset
 end
 
 -- reading link UnlockAssets for BlueprintAndVariationPairs
@@ -306,6 +330,10 @@ function SoldiersAppearances:ReadMeshVariationDatabaseMaterialIndexes(p_class)
 end
 
 function SoldiersAppearances:CreateInstances()
+    if self.m_verbose >= 1 then
+        print('Creating Instances')
+    end
+
     self.m_registryContainer = RegistryContainer()
 
     for _, l_class in pairs(self.m_classNames) do
@@ -336,16 +364,6 @@ function SoldiersAppearances:CreateInstances()
 
     ResourceManager:AddRegistry(self.m_registryContainer, ResourceCompartment.ResourceCompartment_Game)
 
-    self.m_waitingInstances = {
-        meshVariationDatabase = nil,
-        characterSocketListAsset = nil,
-        appearanceUnlockAssets = {},
-        linkUnlockAssets = {},
-        blueprintAndVariationPairs = {},
-        objectVariationAssets = {},
-        meshVariationDatabaseEntrys = {}
-    }
-
     if self.m_verbose >= 1 then
         print('Created SkinnedSocketObjects: ' .. self:_Count(self.m_skinnedSocketObjects))
         print('Created DatabaseEntryMaterialIndexes: ' .. self:_Count(self.m_databaseEntryMaterialIndexes))
@@ -368,7 +386,7 @@ function SoldiersAppearances:CreateMeshMaterialVariations(p_entry)
     end
 
     local s_elements = {}
-    s_elements['neutral'] = p_entry.materials
+    -- s_elements['neutral'] = p_entry.materials -- hanging instance
 
     local s_meshVariationDatabaseMaterialIndexes = self.m_databaseEntryMaterialIndexes[p_entry.instanceGuid:ToString('D')]
     for _, l_element in pairs(self.m_elementNames) do
@@ -416,7 +434,7 @@ function SoldiersAppearances:CreateMeshVariationDatabaseEntrys(p_entry)
     end
 
     local s_elements = {}
-    s_elements['neutral'] = p_entry
+    -- s_elements['neutral'] = p_entry -- hanging instance
 
     for _, l_element in pairs(self.m_elementNames) do
         local s_newMeshVariationDatabaseEntry = self:_CloneInstance(p_entry, l_element) -- TO CHECK: partition destroyed on rotation
@@ -442,7 +460,7 @@ function SoldiersAppearances:CreateObjectVariationAssets(p_asset)
     end
 
     local s_elements = {}
-    s_elements['neutral'] = p_asset
+    -- s_elements['neutral'] = p_asset -- hanging instance
 
     for _, l_element in pairs(self.m_elementNames) do
         local s_newObjectVariationAsset = self:_CloneInstance(p_asset, l_element)
@@ -475,7 +493,7 @@ function SoldiersAppearances:CreateBlueprintAndVariationPairs(p_data)
     end
 
     local s_elements = {}
-    s_elements['neutral'] = p_data
+    -- s_elements['neutral'] = p_data -- hanging instance
 
     for _, l_element in pairs(self.m_elementNames) do
         local s_newBlueprintAndVariationPair = self:_CloneInstance(p_data, l_element)
@@ -499,7 +517,7 @@ function SoldiersAppearances:CreateLinkUnlockAssets(p_asset)
     end
 
     local s_elements = {}
-    s_elements['neutral'] = p_asset -- TO CHECK: hanging reference
+    -- s_elements['neutral'] = p_asset -- hanging instance
 
     for _, l_element in pairs(self.m_elementNames) do
         local s_newLinkUnlockAsset = self:_CloneInstance(p_asset, l_element)
@@ -528,7 +546,7 @@ function SoldiersAppearances:CreateAppearanceUnlockAssets(p_asset)
     end
 
     local s_elements = {}
-    -- s_elements['neutral'] = p_asset
+    -- s_elements['neutral'] = p_asset -- hanging instance
 
     for _, l_element in pairs(self.m_elementNames) do
         local s_newAppearanceUnlockAsset = self:_CloneInstance(p_asset, l_element)

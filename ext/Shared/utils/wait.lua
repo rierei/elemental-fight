@@ -9,33 +9,35 @@ function WaitRef:RegisterVars(p_partitionGuid, p_instanceGuid, p_callback)
     self.m_instanceGuid = Guid(p_instanceGuid) -- instance guid
 
     self.m_callback = p_callback -- callback function
+    self.m_handler = nil
+    self.m_isLoaded = false
 
-    self.m_verbose = 1 -- prints load state
+    self.m_verbose = 2 -- prints load state
 end
 
 -- registering callbacks and finding the instance
 function WaitRef:FindInstance()
-    self:RegisterCallback()
-
     local s_instance = ResourceManager:FindInstanceByGuid(self.m_partitionGuid, self.m_instanceGuid)
     if s_instance ~= nil then
-        if self.m_verbose >=  1 then
-            print('Found: ' .. s_instance.typeInfo.name)
-        end
-
+        self.m_isLoaded = true
         self.m_callback(s_instance)
+    else
+        self:RegisterCallback()
     end
 end
 
 -- returning the loaded instance
 function WaitRef:RegisterCallback()
-    ResourceManager:RegisterInstanceLoadHandler(self.m_partitionGuid, self.m_instanceGuid, function(p_instance)
-        if self.m_verbose >= 1 then
-            print('Found: ' .. p_instance.typeInfo.name)
-        end
-
+    self.m_handler = ResourceManager:RegisterInstanceLoadHandlerOnce(self.m_partitionGuid, self.m_instanceGuid, function(p_instance)
+        self.m_isLoaded = true
         self.m_callback(p_instance)
     end)
+end
+
+function WaitRef:DeregisterCallback()
+    if not self.m_isLoaded then
+        self.m_handler:Deregister()
+    end
 end
 
 local InstanceWait = class('InstanceWait')
@@ -50,6 +52,7 @@ end
 function InstanceWait:RegisterVars(p_guids, p_callback)
     self.m_guids = p_guids -- guids list
     self.m_callback = p_callback -- callback function
+    self.m_event = nil
 
     self.m_instanceRefs = {} -- refs list
     self.m_instances = {} -- instances list
@@ -57,15 +60,39 @@ function InstanceWait:RegisterVars(p_guids, p_callback)
     self.m_waitingRefs = 0 -- waiting count
     self.m_totalRefs = 0 -- refs count
 
-    self.m_verbose = 1 -- prints waiting state
+    self.m_shouldDestroy = SharedUtils:IsServerModule()
+    self.m_verbose = 2 -- prints waiting state
 end
 
 -- resetings counters on level destroy
 function InstanceWait:RegisterEvents()
-    Events:Subscribe('Level:Destroy', function()
-        self.m_instances = {}
-        self.m_waitingRefs = self.m_totalRefs
+    self.m_event = Events:Subscribe('Level:Destroy', function()
+        if self.m_shouldDestroy then
+            print('Level:Destroy')
+            self:DeregisterWait()
+        else
+            -- skips joining event
+            self.m_shouldDestroy = true
+        end
     end)
+end
+
+function InstanceWait:DeregisterWait()
+    if self.m_verbose >= 2 then
+        print('Deregister Wait')
+    end
+
+    for l_key, l_value in pairs(self.m_instanceRefs) do
+        l_value:DeregisterCallback()
+    end
+
+    self.m_instanceRefs = {} -- refs list
+    self.m_instances = {} -- instances list
+
+    self.m_waitingRefs = 0 -- waiting count
+    self.m_totalRefs = 0 -- refs count
+
+    self.m_event:Unsubscribe()
 end
 
 -- creating refs list and setting counters
@@ -94,6 +121,10 @@ end
 
 -- returning the loaded instances
 function InstanceWait:ProcessRef(p_key, p_instance)
+    if self.m_verbose >= 1 then
+        print('Found: ' .. p_instance.typeInfo.name)
+    end
+
     self:SaveInstance(p_key, p_instance)
 
     if self.m_waitingRefs ~= 0 then
@@ -101,6 +132,7 @@ function InstanceWait:ProcessRef(p_key, p_instance)
     end
 
     self.m_callback(self.m_instances)
+    self:DeregisterWait()
 end
 
 -- saving the loaded instance and updating counters
