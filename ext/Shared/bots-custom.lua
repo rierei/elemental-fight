@@ -33,32 +33,34 @@ local function spawnCustom(player, name, teamId, squadId, trans, unlocks, weapon
 	-- And then spawn the bot. This will create and return a new SoldierEntity object.
 	local soldier = Bots:spawnBot(bot, transform, CharacterPoseType.CharacterPoseType_Stand, soldierBlueprint, soldierKit, unlocks)
 
-	local hiderCustomization = CustomizeSoldierData()
-	hiderCustomization.activeSlot = WeaponSlot.WeaponSlot_0
-	hiderCustomization.removeAllExistingWeapons = true
-	hiderCustomization.overrideCriticalHealthThreshold = 1.0
+	return soldier
 
-	local primaryWeapon = UnlockWeaponAndSlot()
-	primaryWeapon.weapon = SoldierWeaponUnlockAsset(weapon)
-	primaryWeapon.slot = WeaponSlot.WeaponSlot_0
+	-- local hiderCustomization = CustomizeSoldierData()
+	-- hiderCustomization.activeSlot = WeaponSlot.WeaponSlot_0
+	-- hiderCustomization.removeAllExistingWeapons = true
+	-- hiderCustomization.overrideCriticalHealthThreshold = 1.0
 
-	hiderCustomization.weapons:add(primaryWeapon)
+	-- local primaryWeapon = UnlockWeaponAndSlot()
+	-- primaryWeapon.weapon = SoldierWeaponUnlockAsset(weapon)
+	-- primaryWeapon.slot = WeaponSlot.WeaponSlot_0
 
-	soldier:ApplyCustomization(hiderCustomization)
+	-- hiderCustomization.weapons:add(primaryWeapon)
+
+	-- soldier:ApplyCustomization(hiderCustomization)
 end
 
-local function spawn()
-    local assaultAppearance = ResourceManager:SearchForDataContainer('Persistence/Unlocks/Soldiers/Visual/MP/Us/MP_US_Assault_Appearance01')
-	local engiAppearance = ResourceManager:SearchForDataContainer('Persistence/Unlocks/Soldiers/Visual/MP/Us/MP_US_Engi_Appearance01')
-	local reconAppearance = ResourceManager:SearchForDataContainer('Persistence/Unlocks/Soldiers/Visual/MP/Us/MP_US_Recon_Appearance01')
-	local supportAppearance = ResourceManager:SearchForDataContainer('Persistence/Unlocks/Soldiers/Visual/MP/Us/MP_US_Support_Appearance01')
+local function spawn(appearance, pos)
+    -- local assaultAppearance = ResourceManager:SearchForDataContainer('Persistence/Unlocks/Soldiers/Visual/MP/Us/MP_US_Assault_Appearance01')
+	-- local engiAppearance = ResourceManager:SearchForDataContainer('Persistence/Unlocks/Soldiers/Visual/MP/Us/MP_US_Engi_Appearance01')
+	-- local reconAppearance = ResourceManager:SearchForDataContainer('Persistence/Unlocks/Soldiers/Visual/MP/Us/MP_US_Recon_Appearance01')
+	-- local supportAppearance = ResourceManager:SearchForDataContainer('Persistence/Unlocks/Soldiers/Visual/MP/Us/MP_US_Support_Appearance01')
 
 	local weapon = ResourceManager:SearchForInstanceByGuid(Guid('0D6330BA-D9C4-4644-C605-0351694D1ADC'))
 
-    spawnCustom('Bots:Spawn', 'Bot1', TeamId.Team2, SquadId.SquadNone, Vec3(-306.493164, 70.434372, 270.194336), assaultAppearance, weapon)
-    spawnCustom('Bots:Spawn', 'Bot2', TeamId.Team2, SquadId.SquadNone, Vec3(-306.493164, 70.434372, 272.194336), engiAppearance, weapon)
-    spawnCustom('Bots:Spawn', 'Bot3', TeamId.Team2, SquadId.SquadNone, Vec3(-306.493164, 70.434372, 274.194336), supportAppearance, weapon )
-    spawnCustom('Bots:Spawn', 'Bot4', TeamId.Team2, SquadId.SquadNone, Vec3(-306.493164, 70.434372, 276.194336), reconAppearance, weapon)
+    return spawnCustom('Bots:Spawn', 'Bot1', TeamId.Team2, SquadId.SquadNone, pos, appearance, weapon)
+    -- spawnCustom('Bots:Spawn', 'Bot2', TeamId.Team2, SquadId.SquadNone, Vec3(-306.493164, 70.434372, 272.194336), engiAppearance, weapon)
+    -- spawnCustom('Bots:Spawn', 'Bot3', TeamId.Team2, SquadId.SquadNone, Vec3(-306.493164, 70.434372, 274.194336), supportAppearance, weapon )
+    -- spawnCustom('Bots:Spawn', 'Bot4', TeamId.Team2, SquadId.SquadNone, Vec3(-306.493164, 70.434372, 276.194336), reconAppearance, weapon)
 end
 
 Events:Subscribe('Bot:Update', function(bot, dt)

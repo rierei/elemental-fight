@@ -117,18 +117,17 @@ function SoldiersAppearances:ReadMeshVariationDatabaseMaterialIndexes()
         local s_meshMaterialIndex = nil
         if s_skinnedMeshAsset.name == 'characters/arms/arms1p_bareglove03/arms1p_bareglove03_Mesh' then
             s_meshMaterialIndex = 4
-        -- elseif s_skinnedMeshAsset.name == 'characters/upperbody/us_upperbody04/us_upperbody04_Mesh' then
-        --     s_meshMaterialIndex = 1
-        -- elseif s_skinnedMeshAsset.name == 'Characters/LowerBody/US_Lowerbody03/US_LB03_Desert' then
-        --     s_meshMaterialIndex = 1
+        elseif s_skinnedMeshAsset.name == 'characters/upperbody/us_upperbody04/us_upperbody04_Mesh' then
+            s_meshMaterialIndex = 1
+        elseif s_skinnedMeshAsset.name == 'characters/lowerbody/us_lowerbody03/us_lb03_Mesh' then
+            s_meshMaterialIndex = 1
         end
 
         -- searching MeshVariationDatabaseMaterial
         if s_meshMaterialIndex ~= nil then
-            for lll_key, ll_value in pairs(l_value.materials) do
+            for ll_key, ll_value in pairs(l_value.materials) do
                 if ll_value.material.instanceGuid == s_skinnedMeshAsset.materials[s_meshMaterialIndex].instanceGuid then
-                    print(lll_key)
-                    self.m_databaseEntryMaterialIndexes[l_value.instanceGuid:ToString('D')] = lll_key
+                    self.m_databaseEntryMaterialIndexes[l_value.instanceGuid:ToString('D')] = ll_key
                 end
             end
         end
@@ -201,17 +200,22 @@ function SoldiersAppearances:CreateMeshMaterialVariations(p_entry)
 
     for l_key, l_value in pairs(p_entry.materials) do
         if l_key == s_meshVariationDatabaseMaterialIndex then
-            local s_newMeshMaterialVariation = nil
+            local s_meshVariationDatabaseMaterial = MeshVariationDatabaseMaterial(l_value)
 
-            if l_value.variation ~= nil then
-                s_newMeshMaterialVariation = self:_CloneInstance(l_value.variation)
-            else
+            local s_newMeshMaterialVariation = nil
+            -- if s_meshVariationDatabaseMaterial.materialVariation ~= nil then
+            --     s_newMeshMaterialVariation = s_meshVariationDatabaseMaterial.materialVariation
+            --     s_newMeshMaterialVariation:MakeWritable()
+            -- else
                 s_newMeshMaterialVariation = MeshMaterialVariation(self:_GenerateGuid(p_entry.instanceGuid:ToString('D') .. l_key))
                 p_entry.partition:AddInstance(s_newMeshMaterialVariation)
-            end
+            -- end
 
             local s_shaderGraph = ShaderGraph()
-            s_shaderGraph.name = 'shaders/Root/CharacterRoot'
+            s_shaderGraph.name = 'Weapons/Shaders/WeaponPreset3P'
+
+            local s_surfaceShaderInstanceDataStruct = SurfaceShaderInstanceDataStruct()
+            s_surfaceShaderInstanceDataStruct.shader = s_shaderGraph
 
             local s_dirtColorParameter = VectorShaderParameter()
             s_dirtColorParameter.value = Vec4(0, 0.6, 1, 0)
@@ -223,9 +227,11 @@ function SoldiersAppearances:CreateMeshMaterialVariations(p_entry)
             s_dirtScaleParameter.parameterName = '_DirtScaleMax'
             s_dirtScaleParameter.parameterType = ShaderParameterType.ShaderParameterType_Scalar
 
-            s_newMeshMaterialVariation.shader.shader = s_shaderGraph
-            s_newMeshMaterialVariation.shader.vectorParameters:add(s_dirtColorParameter)
-            s_newMeshMaterialVariation.shader.vectorParameters:add(s_dirtScaleParameter)
+            s_surfaceShaderInstanceDataStruct.shader = s_shaderGraph
+            s_surfaceShaderInstanceDataStruct.vectorParameters:add(s_dirtColorParameter)
+            s_surfaceShaderInstanceDataStruct.vectorParameters:add(s_dirtScaleParameter)
+
+            s_newMeshMaterialVariation.shader = s_surfaceShaderInstanceDataStruct
 
             s_variations[l_key] = s_newMeshMaterialVariation
         end
@@ -262,10 +268,15 @@ function SoldiersAppearances:CreateMeshVariationDatabaseEntrys(p_entry)
     local s_newMeshVariationDatabaseEntry = self:_CloneInstance(p_entry)
 
     for l_key, l_value in pairs(self.m_meshVariationDatabaseMaterials[p_entry.instanceGuid:ToString('D')]) do
-        s_newMeshVariationDatabaseEntry.materials[l_key] = l_value
+        print('patching')
+        print(l_value.materialVariation)
+        print(l_key)
+
+        s_newMeshVariationDatabaseEntry.materials[l_key].materialVariation = l_value.materialVariation
     end
 
     s_newMeshVariationDatabaseEntry.variationAssetNameHash = MathUtils:FNVHash('testing/abc' .. p_entry.variationAssetNameHash)
+    print(s_newMeshVariationDatabaseEntry.variationAssetNameHash)
 
     self.m_waitingInstances.meshVariationDatabase.entries:add(s_newMeshVariationDatabaseEntry)
 
@@ -284,10 +295,20 @@ function SoldiersAppearances:CreateObjectVariationAssets(p_asset)
     s_newObjectVariationAsset.name = 'testing/abc' .. p_asset.nameHash
     s_newObjectVariationAsset.nameHash = MathUtils:FNVHash('testing/abc' .. p_asset.nameHash)
 
+    print(s_newObjectVariationAsset.nameHash)
+
+
+    print(p_asset.name)
+
     -- adding object guid
     if p_asset.name == 'Characters/Arms/Arms1P_BareGlove03/Arms1P_BareGlove03_Afro' then
+        print('add A1p')
         self.m_waitingInstances.upperSkinnedSocketObject.variation1pGuids:add(s_newObjectVariationAsset.instanceGuid)
+    elseif p_asset.name == 'Characters/UpperBody/US_Upperbody04/US_Upperbody04_Desert' then
+        print('add A3p')
+        self.m_waitingInstances.upperSkinnedSocketObject.variation3pGuids:add(s_newObjectVariationAsset.instanceGuid)
     else
+        print('add B3p')
         self.m_waitingInstances.lowerSkinnedSocketObject.variation3pGuids:add(s_newObjectVariationAsset.instanceGuid)
     end
 
@@ -350,7 +371,7 @@ function SoldiersAppearances:CreateAppearanceUnlockAssets(p_asset)
     self.m_appearanceUnlockAssets[p_asset.instanceGuid:ToString('D')] = s_newAppearanceUnlockAsset
 end
 
-function SoldiersAppearances:ReplacePlayerAppearances(p_player)
+function SoldiersAppearances:ReplacePlayerAppearance(p_player)
     local s_appearanceUnlockAsset = self.m_appearanceUnlockAssets[p_player.visualUnlocks[1].instanceGuid:ToString('D')]
 
 	p_player:SelectUnlockAssets(p_player.customization, { s_appearanceUnlockAsset })
