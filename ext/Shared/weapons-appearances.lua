@@ -226,28 +226,31 @@ function WeaponsAppearances:CreateMeshMaterialVariations(p_entry)
 
         local s_databaseEntryMaterials = {}
 
-        for ll_key, ll_value in pairs(p_entry.materials) do
-            local s_isNoCamo1p = false
-            local s_isNoCamo3p = false
-            local s_isPreset1p = false
-            local s_isPreset3p = false
-            local s_isShadow1p = false
+        -- dont customize radio beacon and c4
+        if not p_entry.mesh.name:match('radio_beacon') and not p_entry.mesh.name:match('c4') then
+            for ll_key, ll_value in pairs(p_entry.materials) do
+                local s_isNoCamo1p = false
+                local s_isNoCamo3p = false
+                local s_isPreset1p = false
+                local s_isPreset3p = false
+                local s_isShadow1p = false
 
-            if ll_value.material.shader.shader ~= nil then
-                s_isNoCamo1p = ll_value.material.shader.shader.name:match('WeaponPresetShadowNoCamoFP')
-                s_isNoCamo3p = ll_value.material.shader.shader.name:match('WeaponPresetNoCamo3P')
-                s_isPreset1p = ll_value.material.shader.shader.name:match('WeaponPresetFP')
-                s_isPreset3p = ll_value.material.shader.shader.name:match('WeaponPreset3P')
-                s_isShadow1p = ll_value.material.shader.shader.name:match('WeaponPresetShadowFP')
-            end
+                if ll_value.material.shader.shader ~= nil then
+                    s_isNoCamo1p = ll_value.material.shader.shader.name:match('WeaponPresetShadowNoCamoFP')
+                    s_isNoCamo3p = ll_value.material.shader.shader.name:match('WeaponPresetNoCamo3P')
+                    s_isPreset1p = ll_value.material.shader.shader.name:match('WeaponPresetFP')
+                    s_isPreset3p = ll_value.material.shader.shader.name:match('WeaponPreset3P')
+                    s_isShadow1p = ll_value.material.shader.shader.name:match('WeaponPresetShadowFP')
+                end
 
-            if s_isNoCamo1p or s_isNoCamo3p or s_isPreset1p or s_isPreset3p or s_isShadow1p then
-                local s_newMeshMaterialVariation = MeshMaterialVariation(self:_GenerateGuid(p_entry.instanceGuid:ToString('D') .. 'MeshMaterialVariation' .. l_element .. ll_key))
-                p_entry.partition:AddInstance(s_newMeshMaterialVariation)
+                if s_isNoCamo1p or s_isNoCamo3p or s_isPreset1p or s_isPreset3p or s_isShadow1p then
+                    local s_newMeshMaterialVariation = MeshMaterialVariation(self:_GenerateGuid(p_entry.instanceGuid:ToString('D') .. 'MeshMaterialVariation' .. l_element .. ll_key))
+                    p_entry.partition:AddInstance(s_newMeshMaterialVariation)
 
-                s_newMeshMaterialVariation.shader = s_surfaceShaderInstanceDataStruct
+                    s_newMeshMaterialVariation.shader = s_surfaceShaderInstanceDataStruct
 
-                s_databaseEntryMaterials[ll_key] = s_newMeshMaterialVariation
+                    s_databaseEntryMaterials[ll_key] = s_newMeshMaterialVariation
+                end
             end
         end
 

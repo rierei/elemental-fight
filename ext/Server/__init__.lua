@@ -115,7 +115,7 @@ function ElementalFight:RegisterEvents()
             print('Event Player:Damage')
         end
 
-        -- healing
+        -- soldier healing
         if p_info.damage < 0 then
             return
         end
@@ -129,20 +129,22 @@ function ElementalFight:RegisterEvents()
         local s_weaponBlueprint = SoldierWeaponBlueprint(s_weaponUnlockAsset.weapon)
         local s_weaponEntity = SoldierWeaponData(s_weaponBlueprint.object)
 
-        -- knife
+        -- knife takedown
         if s_weaponUnlockAsset.name:match('Knife') and p_info.boneIndex == 4294967295 then
             return
         end
 
-        local s_appearanceUnlock = UnlockAsset(p_soldier.player.visualUnlocks[1])
+        local s_soldierElement = nil
+        if #p_soldier.player.selectedUnlocks > 0 then
+            s_soldierElement = UnlockAsset(p_soldier.player.selectedUnlocks[1]).debugUnlockId
+        end
 
         local s_weaponElement = s_weaponEntity.damageGiverName
         if self.m_elementDamages[s_weaponElement] == nil then
             s_weaponElement = 'neutral'
         end
 
-        local s_soldierElement = s_appearanceUnlock.debugUnlockId
-        if self.m_elementDamages[s_soldierElement] == nil then
+        if s_soldierElement == nil or self.m_elementDamages[s_soldierElement] == nil then
             s_soldierElement = 'neutral'
         end
 
@@ -164,11 +166,24 @@ function ElementalFight:CustomizePlayer(p_player, p_element)
         return
     end
 
+    local s_customizeSoldier = CustomizeSoldierData()
+    s_customizeSoldier.activeSlot = 0
+    s_customizeSoldier.removeAllExistingWeapons = true
+    s_customizeSoldier.clearVisualState = true
+
     local s_soldierVisualUnlockAsset = self.m_soldierAppearances:GetUnlockAsset(p_player, p_element)
+
+    s_customizeSoldier.unlocks:add(s_soldierVisualUnlockAsset)
+
+	for key, value in pairs(s_soldierVisualUnlockAsset.linkedTo) do
+		local s_customizeVisual = CustomizeVisual()
+		s_customizeVisual.visual:add(UnlockAsset(value))
+
+		s_customizeSoldier.visualGroups:add(s_customizeVisual)
+	end
+
     local s_weaponVisualUnlockAssets = self.m_weaponAppearances:GetUnlockAssets(p_player, p_element)
     local s_weaponUnlockAssets = self.m_weaponUnlocks:GetUnlockAssets(p_player, p_element)
-
-    p_player:SelectUnlockAssets(p_player.customization, { s_soldierVisualUnlockAsset })
 
     for i = #p_player.weapons, 1, -1 do
         local s_weaponUnlockAsset = s_weaponUnlockAssets[i]
@@ -180,17 +195,23 @@ function ElementalFight:CustomizePlayer(p_player, p_element)
                 s_weaponUnlockAssets = {}
             end
 
+            local s_unlockWeaponAndSlot = UnlockWeaponAndSlot()
+            s_unlockWeaponAndSlot.weapon = s_weaponUnlockAsset
+            s_unlockWeaponAndSlot.slot = i - 1
+
+            s_unlockWeaponAndSlot.unlockAssets:add(s_weaponVisualUnlockAsset)
+
             for l_key, l_value in pairs(s_weaponUnlockAssets) do
-                if Asset(l_value).name:lower():match('Camo') then
-                    s_weaponUnlockAssets[l_key] = nil
+                if not Asset(l_value).name:lower():match('Camo') then
+                    s_unlockWeaponAndSlot.unlockAssets:add(UnlockAssetBase(l_value))
                 end
             end
 
-            table.insert(s_weaponUnlockAssets, s_weaponVisualUnlockAsset)
-
-            p_player:SelectWeapon(i - 1, s_weaponUnlockAsset, s_weaponUnlockAssets)
+            s_customizeSoldier.weapons:add(s_unlockWeaponAndSlot)
         end
     end
+
+    p_player.soldier:ApplyCustomization(s_customizeSoldier)
 end
 
 g_elementalFight = ElementalFight()
