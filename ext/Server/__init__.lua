@@ -120,11 +120,6 @@ function ElementalFight:_SoldierDamage(p_hook, p_soldier, p_info, p_giver)
         return
     end
 
-    local s_soldierElement = nil
-    if #p_soldier.player.selectedUnlocks > 0 then
-        s_soldierElement = UnlockAsset(p_soldier.player.selectedUnlocks[1]).debugUnlockId
-    end
-
     -- getting giver weapon element
     local s_weaponElement = s_weaponEntity.damageGiverName
     if ElementalConfig.damages[s_weaponElement] == nil then
@@ -132,6 +127,7 @@ function ElementalFight:_SoldierDamage(p_hook, p_soldier, p_info, p_giver)
     end
 
     -- getting taker soldier element
+    local s_soldierElement = UnlockAsset(p_soldier.player.visualUnlocks[1]).debugUnlockId
     if s_soldierElement == nil or ElementalConfig.damages[s_soldierElement] == nil then
         s_soldierElement = 'neutral'
     end
@@ -159,11 +155,13 @@ function ElementalFight:CustomizePlayer(p_player, p_element)
     s_customizeSoldier.activeSlot = 0
     s_customizeSoldier.removeAllExistingWeapons = true
     s_customizeSoldier.clearVisualState = true
+    s_customizeSoldier.restoreToOriginalVisualState = true
 
     -- custom soldier appearance
     local s_soldierVisualUnlockAsset = self.m_soldierAppearances:GetUnlockAsset(p_player, p_element)
 
-    -- adding soldier appearance unlock
+    -- adding soldier visual unlock
+    p_player:SelectUnlockAssets(p_player.customization, { s_soldierVisualUnlockAsset })
     s_customizeSoldier.unlocks:add(s_soldierVisualUnlockAsset)
 
     -- applying custom soldier appearance
