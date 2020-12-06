@@ -11,8 +11,6 @@ function WaitRef:RegisterVars(p_partitionGuid, p_instanceGuid, p_callback)
     self.m_callback = p_callback -- callback function
     self.m_handler = nil
     self.m_isLoaded = false
-
-    self.m_verbose = 2 -- prints load state
 end
 
 -- registering callbacks and finding the instance
@@ -79,7 +77,7 @@ end
 
 function InstanceWait:DeregisterWait()
     if self.m_verbose >= 2 then
-        print('Deregister Wait')
+        print('Wait Done')
     end
 
     for l_key, l_value in pairs(self.m_instanceRefs) do

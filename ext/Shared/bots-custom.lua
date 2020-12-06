@@ -17,12 +17,12 @@ local function spawnBot(p_name, p_kit, p_pos)
 		s_bot = Bots:createBot(p_name, SquadId.SquadNone, TeamId.Team2)
 	end
 
-	local transform = LinearTransform()
-	transform.trans = p_pos
+	local s_transform = LinearTransform()
+	s_transform.trans = p_pos
 
-	local soldierBlueprint = ResourceManager:SearchForInstanceByGuid(Guid('261E43BF-259B-41D2-BF3B-9AE4DDA96AD2'))
+	local s_soldierBlueprint = ResourceManager:SearchForInstanceByGuid(Guid('261E43BF-259B-41D2-BF3B-9AE4DDA96AD2'))
 
-	return Bots:spawnBot(s_bot, transform, CharacterPoseType.CharacterPoseType_Stand, soldierBlueprint, p_kit, {})
+	return Bots:spawnBot(s_bot, s_transform, CharacterPoseType.CharacterPoseType_Stand, s_soldierBlueprint, p_kit, {})
 end
 
 Events:Subscribe('Bot:Update', function(p_bot, p_time)

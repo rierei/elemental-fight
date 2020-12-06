@@ -41,6 +41,10 @@ function WeaponsUnlocks:RegisterVars()
         FX_Grenade_Frag_01_Sound = {'A6C980C2-1578-4169-81CB-C62AC369590E', '41A352A8-783E-41E6-9B3E-989D473DB953'},
 
         _SoldierWeaponsComponentData = {'F256E142-C9D8-4BFE-985B-3960B9E9D189', '2A0091DE-07DB-41FB-BB13-A7F094B05AA9'},
+        _USAssault = {'345B21D5-3EF4-4AFA-B409-BCDFE2C0AFF4', 'A15EE431-88B8-4B35-B69A-985CEA934855'},
+        _USEngineer = {'CFA00DBF-5106-46D0-BD82-94ADE98BBA27', '0A99EBDB-602C-4080-BC3F-B388AA18ADDD'},
+        _USSupport = {'AD18A45D-E146-4020-BBC3-1AE7AEE60BD9', '47949491-F672-4CD6-998A-101B7740F919'},
+        _USRecon = {'71E844D4-1C28-4C2C-9A7A-41DDED666764', 'BC1C1E63-2730-4E21-8ACD-FAC500D720C3'}
     }
 
     self.m_waitingInstances = {
@@ -87,7 +91,7 @@ function WeaponsUnlocks:RegisterVars()
         weaponFiringModifiers = self._CreateWeaponFiringModifiers
     }
 
-    self.m_verbose = 1 -- prints information
+    self.m_verbose = 1 -- prints debug information
 end
 
 function WeaponsUnlocks:RegisterEvents()
@@ -762,7 +766,7 @@ function WeaponsUnlocks:CreateWeaponEntities(p_entity)
 
         -- patching weapon entity
         s_newWeaponEntity.weaponFiring = s_newFiringData
-        s_newWeaponEntity.damageGiverName = s_newWeaponEntity.damageGiverName .. l_element
+        s_newWeaponEntity.damageGiverName = l_element
 
         self.m_registryContainer.entityRegistry:add(s_newWeaponEntity)
 
@@ -845,6 +849,10 @@ end
 
 -- replacing player weapons
 function WeaponsUnlocks:ReplacePlayerWeapons(p_player, p_element)
+    if p_element == 'neutral' then
+        return
+    end
+
     for i = #p_player.weapons, 1, -1 do
         local s_weaponUnlockAsset = p_player.weapons[i]
         if s_weaponUnlockAsset ~= nil then
