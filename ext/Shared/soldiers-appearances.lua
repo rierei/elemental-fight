@@ -1,5 +1,6 @@
 local SoldiersAppearances = class('SoldiersAppearances')
 
+local LoadedInstances = require('__shared/loaded-instances')
 local ElementalConfig = require('__shared/elemental-config')
 local InstanceWait = require('__shared/utils/wait')
 local InstanceUtils = require('__shared/utils/instances')
@@ -215,19 +216,6 @@ function SoldiersAppearances:RegisterVars()
 end
 
 function SoldiersAppearances:RegisterEvents()
-    -- waiting variation database
-    Events:Subscribe('Partition:Loaded', function(p_partition)
-        for _, l_instance in pairs(p_partition.instances) do
-            if not self.m_isLoaded and l_instance:Is('MeshVariationDatabase') and Asset(l_instance).name:match('Levels') then
-                if self.m_verbose >= 1 then
-                    print('Found MeshVariationDatabase')
-                end
-
-                self.m_waitingInstances.meshVariationDatabase = l_instance
-            end
-        end
-    end)
-
     -- reading instances before level loads
     Events:Subscribe('Level:LoadResources', function(p_level, p_mode, p_dedicated)
         if self.m_currentLevel == nil then
@@ -267,6 +255,8 @@ function SoldiersAppearances:ReadInstances(p_instances)
     end
 
     self.m_isLoaded = true
+
+    self.m_waitingInstances.meshVariationDatabase = LoadedInstances.m_meshVariationDatabase
 
     self.m_meshVariationDatabase = MeshVariationDatabase(self.m_waitingInstances.meshVariationDatabase)
     self.m_meshVariationDatabase:MakeWritable()

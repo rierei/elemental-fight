@@ -1,5 +1,6 @@
 local WeaponsUnlocks = class('WeaponsUnlocks')
 
+local LoadedInstances = require('__shared/loaded-instances')
 local ElementalConfig = require('__shared/elemental-config')
 local InstanceWait = require('__shared/utils/wait')
 local InstanceUtils = require('__shared/utils/instances')
@@ -93,32 +94,6 @@ function WeaponsUnlocks:RegisterVars()
 end
 
 function WeaponsUnlocks:RegisterEvents()
-    -- waiting weapon unlocks
-    Events:Subscribe('Partition:Loaded', function(p_partition)
-        for _, l_instance in pairs(p_partition.instances) do
-            if l_instance:Is('SoldierWeaponUnlockAsset') then
-                if self.m_verbose >= 2 then
-                    print('Found WeaponUnlockAsset')
-                end
-
-                table.insert(self.m_waitingInstances.weaponUnlockAssets, l_instance)
-            end
-        end
-    end)
-
-    -- waiting material grid
-    Events:Subscribe('Partition:Loaded', function(p_partition)
-        for _, l_instance in pairs(p_partition.instances) do
-            if l_instance:Is('MaterialGridData') then
-                if self.m_verbose >= 1 then
-                    print('Found MaterialGridData')
-                end
-
-                self.m_waitingInstances.materialGridAsset = l_instance
-            end
-        end
-    end)
-
     -- reading instances after level load
     Events:Subscribe('Level:Loaded', function(p_level, p_mode)
         if self.m_verbose >= 1 then
@@ -170,6 +145,9 @@ function WeaponsUnlocks:ReadInstances(p_instances)
     if self.m_verbose >= 1 then
         print('Reading Instances')
     end
+
+    self.m_waitingInstances.weaponUnlockAssets = LoadedInstances.m_weaponUnlockAssets
+    self.m_waitingInstances.materialGridAsset = LoadedInstances.m_materialGridAsset
 
     self.m_materialGridAsset = MaterialGridData(self.m_waitingInstances.materialGridAsset)
     self.m_materialGridAsset:MakeWritable()
