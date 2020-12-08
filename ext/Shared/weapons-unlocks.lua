@@ -373,7 +373,7 @@ function WeaponsUnlocks:_CreateEmitterDocumentAssets(p_asset)
         local s_newDocumentRootProcessor = s_newTemplateRootProcessor
 
         -- low graphics processor
-        if s_newEmitterDocumentAsset.rootProcessor ~= s_newTemplateRootProcessor then
+        if not s_newEmitterDocumentAsset.rootProcessor:Eq(s_newTemplateData.rootProcessor) then
             s_newDocumentRootProcessor = createProcessorData(s_newEmitterDocumentAsset.rootProcessor)
         end
 
