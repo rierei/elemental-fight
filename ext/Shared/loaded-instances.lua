@@ -14,6 +14,7 @@ function LoadedInstances:RegisterVars()
     self.m_isLevelLoaded = false
 
     self.m_weaponUnlockAssets = {} -- SoldierWeaponUnlockAsset
+    self.m_weaponEntities = {} -- SoldierWeaponData
     self.m_materialGridAsset = nil -- MaterialContainerAsset
     self.m_meshVariationDatabase = nil -- MeshVariationDatabase
 
@@ -32,6 +33,15 @@ function LoadedInstances:RegisterEvents()
                     end
 
                     table.insert(self.m_weaponUnlockAssets, l_instance)
+                end
+
+                -- waiting weapon entities
+                if l_instance:Is('SoldierWeaponData') then
+                    if self.m_verbose >= 2 then
+                        print('Found WeaponData')
+                    end
+
+                    table.insert(self.m_weaponEntities, l_instance)
                 end
 
                 -- waiting material grid
@@ -57,9 +67,6 @@ function LoadedInstances:RegisterEvents()
 
     -- removing instances on level destroy
     Events:Subscribe('Level:Destroy', function()
-        self.m_materialGridAsset = nil -- MaterialContainerAsset
-        self.m_meshVariationDatabase = nil -- MeshVariationDatabase
-
         self.m_isLevelLoaded = false
     end)
 
@@ -67,7 +74,7 @@ function LoadedInstances:RegisterEvents()
     Events:Subscribe('Level:LoadResources', function(p_level, p_mode, p_dedicated)
         -- removing instances on level change
         if self.m_currentLevel ~= nil and (self.m_currentLevel ~= p_level or self.m_currentMode ~= p_mode) then
-            self.m_weaponUnlockAssets = {} -- SoldierWeaponUnlockAsset
+            self.m_weaponEntities = {} -- SoldierWeaponData
         end
 
         self.m_currentLevel = p_level
@@ -76,6 +83,10 @@ function LoadedInstances:RegisterEvents()
 
     -- disabling instance reading after level load
     Events:Subscribe('Level:Loaded', function(p_level, p_mode)
+        self.m_materialGridAsset = nil -- MaterialContainerAsset
+        self.m_meshVariationDatabase = nil -- MeshVariationDatabase
+        self.m_weaponUnlockAssets = {} -- SoldierWeaponUnlockAsset
+
         self.m_isLevelLoaded = true
     end)
 end

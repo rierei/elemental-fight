@@ -14,8 +14,6 @@ function WeaponsAppearances:RegisterVars()
     self.m_currentLevel = nil
     self.m_currentMode = nil
 
-    self.m_isLoaded = false
-
     self.m_waitingGuids = {
         _DefaultCamo = {'07EA9024-7D81-11E1-91A4-E3E3C1704D3D', '7DE14177-6868-59B2-06B5-3C9AA2610EEC'},
         _RU_Helmet05_Navy = {'706BF6C9-0EAD-4382-A986-39D571DBFA77', '53828D27-7C4A-415A-892D-8D410136E1B6'},
@@ -23,7 +21,7 @@ function WeaponsAppearances:RegisterVars()
 
     self.m_waitingInstances = {
         meshVariationDatabase = nil, -- MeshVariationDatabase
-        weaponUnlockAssets = {} -- SoldierWeaponUnlockAsset
+        weaponEntities = {} -- SoldierWeaponData
     }
 
     self.m_registryContainer = nil -- RegistryContainer
@@ -57,8 +55,6 @@ function WeaponsAppearances:RegisterEvents()
 end
 
 function WeaponsAppearances:RegisterWait()
-    self.m_isLoaded = false
-
     -- waiting instances
     InstanceWait(self.m_waitingGuids, function(p_instances)
         self:ReadInstances()
@@ -81,19 +77,15 @@ function WeaponsAppearances:ReadInstances(p_instances)
         print('Reading Instances')
     end
 
-    self.m_isLoaded = true
-
     self.m_waitingInstances.meshVariationDatabase = LoadedInstances.m_meshVariationDatabase
-    self.m_waitingInstances.weaponUnlockAssets = LoadedInstances.m_weaponUnlockAssets
+    self.m_waitingInstances.weaponEntities = LoadedInstances.m_weaponEntities
 
     self.m_meshVariationDatabase = MeshVariationDatabase(self.m_waitingInstances.meshVariationDatabase)
     self.m_meshVariationDatabase:MakeWritable()
 
     -- reading weapon entities
-    for _, l_value in pairs(self.m_waitingInstances.weaponUnlockAssets) do
-        local s_weaponUnlockAsset = SoldierWeaponUnlockAsset(l_value)
-        local s_weaponBlueprint = s_weaponUnlockAsset.weapon
-        local s_weaponEntity = SoldierWeaponData(s_weaponBlueprint.object)
+    for _, l_value in pairs(self.m_waitingInstances.weaponEntities) do
+        local s_weaponEntity = SoldierWeaponData(l_value)
 
         self.m_skinnedMeshAsset1pWeaponGuids[s_weaponEntity.weaponStates[1].mesh1p.instanceGuid:ToString('D')] = s_weaponEntity.instanceGuid:ToString('D')
         self.m_skinnedMeshAsset3pWeaponGuids[s_weaponEntity.weaponStates[1].mesh3p.instanceGuid:ToString('D')] = s_weaponEntity.instanceGuid:ToString('D')
@@ -123,7 +115,7 @@ function WeaponsAppearances:ReadInstances(p_instances)
     -- removing hanging references
     self.m_waitingInstances = {
         meshVariationDatabase = nil, -- MeshVariationDatabase
-        weaponUnlockAssets = {} -- SoldierWeaponUnlockAsset
+        weaponEntities = {} -- SoldierWeaponData
     }
 
     -- removing hanging references
@@ -147,10 +139,8 @@ function WeaponsAppearances:CreateInstances()
 
     self.m_registryContainer = RegistryContainer()
 
-    for _, l_value in pairs(self.m_waitingInstances.weaponUnlockAssets) do
-        local s_weaponUnlockAsset = SoldierWeaponUnlockAsset(l_value)
-        local s_weaponBlueprint = s_weaponUnlockAsset.weapon
-        local s_weaponEntity = SoldierWeaponData(s_weaponBlueprint.object)
+    for _, l_value in pairs(self.m_waitingInstances.weaponEntities) do
+        local s_weaponEntity = SoldierWeaponData(l_value)
         local s_meshVariationDatabaseEntry = self.m_meshVariationDatabaseEntrys1p[s_weaponEntity.instanceGuid:ToString('D')]
 
         if s_meshVariationDatabaseEntry ~= nil then
