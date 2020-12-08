@@ -11,8 +11,6 @@ function SoldiersAppearances:__init()
 end
 
 function SoldiersAppearances:RegisterVars()
-    self.m_isLoaded = false
-
     self.m_classNames = {
         'USAssault',
         'USEngineer',
@@ -229,8 +227,6 @@ function SoldiersAppearances:RegisterEvents()
 end
 
 function SoldiersAppearances:RegisterWait()
-    self.m_isLoaded = false
-
     -- waiting instances
     InstanceWait(self.m_waitingGuids, function(p_instances)
         self:ReadInstances(p_instances)
@@ -253,8 +249,6 @@ function SoldiersAppearances:ReadInstances(p_instances)
     if self.m_verbose >= 1 then
         print('Reading Instances')
     end
-
-    self.m_isLoaded = true
 
     self.m_waitingInstances.meshVariationDatabase = LoadedInstances.m_meshVariationDatabase
 
@@ -466,6 +460,10 @@ function SoldiersAppearances:CreateMeshMaterialVariations(p_entry)
         print('Create MeshMaterialVariations')
     end
 
+    if self.m_meshMaterialVariations[p_entry.instanceGuid:ToString('D')] ~= nil then
+        return
+    end
+
     local s_elements = {}
     s_elements['neutral'] = p_entry.materials
 
@@ -514,6 +512,10 @@ function SoldiersAppearances:CreateMeshVariationDatabaseEntrys(p_entry)
         print('Create MeshVariationDatabaseEntrys')
     end
 
+    if self.m_meshVariationDatabaseEntrys[p_entry.instanceGuid:ToString('D')] ~= nil then
+        return
+    end
+
     local s_elements = {}
     s_elements['neutral'] = p_entry
 
@@ -538,6 +540,10 @@ end
 function SoldiersAppearances:CreateObjectVariationAssets(p_asset)
     if self.m_verbose >= 2 then
         print('Create ObjectVariationAssets')
+    end
+
+    if self.m_objectVariationAssets[p_asset.instanceGuid:ToString('D')] ~= nil then
+        return
     end
 
     local s_elements = {}
@@ -573,6 +579,10 @@ function SoldiersAppearances:CreateBlueprintAndVariationPairs(p_data)
         print('Create BlueprintAndVariationPairs')
     end
 
+    if self.m_blueprintVariationPairs[p_data.instanceGuid:ToString('D')] ~= nil then
+        return
+    end
+
     local s_elements = {}
     s_elements['neutral'] = p_data
 
@@ -595,6 +605,10 @@ end
 function SoldiersAppearances:CreateLinkUnlockAssets(p_asset)
     if self.m_verbose >= 2 then
         print('Create LinkUnlockAssets')
+    end
+
+    if self.m_linkUnlockAssets[p_asset.instanceGuid:ToString('D')] ~= nil then
+        return
     end
 
     local s_elements = {}
