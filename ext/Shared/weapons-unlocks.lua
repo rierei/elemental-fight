@@ -111,14 +111,23 @@ function WeaponsUnlocks:RegisterEvents()
         self.m_currentLevel = p_level
         self.m_currentMode = p_mode
     end)
+
+    -- reading instances before level loads
+    Events:Subscribe('Level:LoadingInfo', function(p_screenInfo)
+        if p_screenInfo == 'Initializing entities for autoloaded sublevels' then
+            self.m_waitingInstances.weaponUnlockAssets = LoadedInstances.m_weaponUnlockAssets
+            self.m_waitingInstances.materialGridAsset = LoadedInstances.m_materialGridAsset
+        end
+    end)
 end
 
 function WeaponsUnlocks:RegisterWait()
     -- waiting each impact effect
-    for l_key, l_value in pairs(ElementalConfig.effects) do
-        local s_waitingGuids = {[l_key] = l_value}
+    for _, l_value in pairs(ElementalConfig.names) do
+        local s_effectGuid = ElementalConfig.effects[l_value]
+        local s_waitingGuids = {[l_value] = s_effectGuid}
         InstanceWait(s_waitingGuids, function(p_instances)
-            self.m_waitingInstances.impactEffectBlueprints[l_key] = p_instances[l_key]
+            self.m_waitingInstances.impactEffectBlueprints[l_value] = p_instances[l_value]
         end)
     end
 
@@ -145,9 +154,6 @@ function WeaponsUnlocks:ReadInstances(p_instances)
     if self.m_verbose >= 1 then
         print('Reading Instances')
     end
-
-    self.m_waitingInstances.weaponUnlockAssets = LoadedInstances.m_weaponUnlockAssets
-    self.m_waitingInstances.materialGridAsset = LoadedInstances.m_materialGridAsset
 
     self.m_materialGridAsset = MaterialGridData(self.m_waitingInstances.materialGridAsset)
     self.m_materialGridAsset:MakeWritable()

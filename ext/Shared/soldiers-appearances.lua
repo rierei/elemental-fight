@@ -216,13 +216,7 @@ end
 function SoldiersAppearances:RegisterEvents()
     -- reading instances before level loads
     Events:Subscribe('Level:LoadResources', function(p_level, p_mode, p_dedicated)
-        if self.m_currentLevel == nil then
             self:RegisterWait()
-        else
-            self:ReloadInstances()
-        end
-
-        self.m_currentLevel = p_level
     end)
 end
 
@@ -231,17 +225,6 @@ function SoldiersAppearances:RegisterWait()
     InstanceWait(self.m_waitingGuids, function(p_instances)
         self:ReadInstances(p_instances)
     end)
-end
-
--- reseting created instances
-function SoldiersAppearances:ReloadInstances()
-    if self.m_verbose >= 1 then
-        print('Reloading Instances')
-    end
-
-    self.m_appearanceUnlockAssets = {} -- UnlockAsset
-
-    self:RegisterWait()
 end
 
 -- reading waiting instances

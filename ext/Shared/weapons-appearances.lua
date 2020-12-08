@@ -43,14 +43,7 @@ end
 function WeaponsAppearances:RegisterEvents()
     -- reading instances before level loads
     Events:Subscribe('Level:LoadResources', function(p_level, p_mode, p_dedicated)
-        if self.m_currentLevel ~= nil and (self.m_currentLevel ~= p_level or self.m_currentMode ~= p_mode) then
-            self:ReloadInstances()
-        else
             self:RegisterWait()
-        end
-
-        self.m_currentLevel = p_level
-        self.m_currentMode = p_mode
     end)
 end
 
@@ -59,17 +52,6 @@ function WeaponsAppearances:RegisterWait()
     InstanceWait(self.m_waitingGuids, function(p_instances)
         self:ReadInstances()
     end)
-end
-
--- reseting created instances
-function WeaponsAppearances:ReloadInstances()
-    if self.m_verbose >= 1 then
-        print('Reloading Instances')
-    end
-
-    self.m_unlockAssets = {} -- UnlockAsset
-
-    self:RegisterWait()
 end
 
 function WeaponsAppearances:ReadInstances(p_instances)
