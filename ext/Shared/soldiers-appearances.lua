@@ -216,7 +216,7 @@ end
 function SoldiersAppearances:RegisterEvents()
     -- reading instances before level loads
     Events:Subscribe('Level:LoadResources', function(p_level, p_mode, p_dedicated)
-            self:RegisterWait()
+        self:RegisterWait()
     end)
 end
 
@@ -399,6 +399,7 @@ function SoldiersAppearances:CreateInstances()
         for _, ll_value in pairs(self.m_waitingInstances.meshVariationDatabaseEntrys[l_class]) do
             self:CreateMeshMaterialVariations(ll_value)
             self:CreateMeshVariationDatabaseEntrys(ll_value)
+            self:UpdateMeshAssets(ll_value)
         end
 
         -- processing ObjectVariationAsset
@@ -643,6 +644,14 @@ function SoldiersAppearances:CreateAppearanceUnlockAssets(p_asset)
     end
 
     self.m_appearanceUnlockAssets[p_asset.instanceGuid:ToString('D')] = s_elements
+end
+
+-- replacing mesh lod
+function SoldiersAppearances:UpdateMeshAssets(p_entry)
+    local s_meshAsset = SkinnedMeshAsset(p_entry.mesh)
+
+    s_meshAsset:MakeWritable()
+    s_meshAsset.lodScale = 100
 end
 
 -- getting custom unlock
