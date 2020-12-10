@@ -233,9 +233,9 @@ function SoldiersAppearances:ReadInstances(p_instances)
         print('Reading Instances')
     end
 
-    self.m_waitingInstances.meshVariationDatabase = LoadedInstances.m_meshVariationDatabase
+    self.m_waitingInstances.meshVariationDatabase = LoadedInstances.m_loadedInstances.MeshVariationDatabase
 
-    self.m_meshVariationDatabase = MeshVariationDatabase(self.m_waitingInstances.meshVariationDatabase)
+    self.m_meshVariationDatabase = self.m_waitingInstances.meshVariationDatabase
     self.m_meshVariationDatabase:MakeWritable()
 
     self.m_waitingInstances.characterSocketListAsset = p_instances['CharacterSocketListAsset']

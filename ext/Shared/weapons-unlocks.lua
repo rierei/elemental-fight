@@ -48,7 +48,16 @@ function WeaponsUnlocks:RegisterVars()
         dummyExplosionEntity = nil, -- VeniceExplosionEntityData
 
         materialGridAsset = nil, -- MaterialGridData
-        weaponUnlockAssets = {} -- SoldierWeaponUnlockAsset
+
+        weaponUnlockAssets = {}, -- SoldierWeaponUnlockAsset
+        weaponBlueprints = {}, -- SoldierWeaponBlueprint
+        weaponEntities = {}, -- SoldierWeaponData
+
+        projectileEntities = {}, -- MeshProjectileEntityData
+        projectileBlueprints = {}, -- ProjectileBlueprint
+
+        projectileModifiers = {}, -- WeaponProjectileModifier
+        firingModifiers = {} -- WeaponFiringDataModifier
     }
 
     self.m_registryContainer = nil -- RegistryContainer
@@ -82,12 +91,7 @@ function WeaponsUnlocks:RegisterVars()
 
     self.m_instanceCreateFunctions = {
         emitterDocumentAssets = self._CreateEmitterDocumentAssets,
-        emitterEntities = self._CreateEmitterEntity,
-        explodeExplosionEntities = self._CreateExplodeExplosionEntities,
-        projectileEntities = self.CreateProjectileEntities,
-        projectileBlueprints = self._CreateProjectileBlueprints,
-        weaponProjectileModifiers = self._CreateWeaponProjectileModifiers,
-        weaponFiringModifiers = self._CreateWeaponFiringModifiers
+        emitterEntities = self._CreateEmitterEntity
     }
 
     self.m_verbose = 1 -- prints debug information
@@ -115,8 +119,17 @@ function WeaponsUnlocks:RegisterEvents()
     -- reading instances before level loads
     Events:Subscribe('Level:LoadingInfo', function(p_screenInfo)
         if p_screenInfo == 'Initializing entities for autoloaded sublevels' then
-            self.m_waitingInstances.weaponUnlockAssets = LoadedInstances.m_weaponUnlockAssets
-            self.m_waitingInstances.materialGridAsset = LoadedInstances.m_materialGridAsset
+            self.m_waitingInstances.materialGridAsset = LoadedInstances.m_loadedInstances.MaterialGridData
+
+            self.m_waitingInstances.weaponUnlockAssets = LoadedInstances.m_loadedInstances.SoldierWeaponUnlockAsset
+            self.m_waitingInstances.weaponBlueprints = LoadedInstances.m_loadedInstances.SoldierWeaponBlueprint
+            self.m_waitingInstances.weaponEntities = LoadedInstances.m_loadedInstances.SoldierWeaponData
+
+            self.m_waitingInstances.projectileEntities = LoadedInstances.m_loadedInstances.MeshProjectileEntityData
+            self.m_waitingInstances.projectileBlueprints = LoadedInstances.m_loadedInstances.ProjectileBlueprint
+
+            self.m_waitingInstances.projectileModifiers = LoadedInstances.m_loadedInstances.WeaponProjectileModifier
+            self.m_waitingInstances.firingModifiers = LoadedInstances.m_loadedInstances.WeaponFiringDataModifier
         end
     end)
 end
@@ -217,7 +230,16 @@ function WeaponsUnlocks:ReadInstances(p_instances)
         dummyExplosionEntity = nil, -- VeniceExplosionEntityData
 
         materialGridAsset = nil, -- MaterialGridData
-        weaponUnlockAssets = {} -- SoldierWeaponUnlockAsset
+
+        weaponUnlockAssets = {}, -- SoldierWeaponUnlockAsset
+        weaponBlueprints = {}, -- SoldierWeaponBlueprint
+        weaponEntities = {}, -- SoldierWeaponData
+
+        projectileEntities = {}, -- MeshProjectileEntityData
+        projectileBlueprints = {}, -- ProjectileBlueprint
+
+        projectileModifiers = {}, -- WeaponProjectileModifier
+        firingModifiers = {} -- WeaponFiringDataModifier
     }
 
     -- removing hanging references
@@ -257,28 +279,64 @@ function WeaponsUnlocks:CreateInstances()
     self:CreateImpactExplosionEntities(self.m_waitingInstances.dummyExplosionEntity)
     self:CreateSmokeExplosionEntities(self.m_waitingInstances.dummyExplosionEntity)
 
-    for _, l_asset in pairs(self.m_waitingInstances.weaponUnlockAssets) do
-        local s_weaponUnlockAsset = SoldierWeaponUnlockAsset(l_asset)
-        local s_weaponBlueprint = SoldierWeaponBlueprint(s_weaponUnlockAsset.weapon)
-        local s_weaponEntity = SoldierWeaponData(s_weaponBlueprint.object)
-        local s_projectileEntity = ProjectileEntityData(s_weaponEntity.weaponFiring.primaryFire.shot.projectileData)
+    --
+    -- creating projectiles
+    --
 
-        self:CreateProjectileEntities(s_projectileEntity)
-        self:CreateWeaponEntities(s_weaponEntity)
-        self:CreateWeaponBlueprints(s_weaponBlueprint)
-        self:CreateWeaponUnlockAssets(s_weaponUnlockAsset)
+    for _, l_entity in pairs(self.m_waitingInstances.projectileEntities) do
+        if l_entity:Is('MissileEntityData') then
+            l_entity = MissileEntityData(l_entity)
+        end
+
+        if l_entity.explosion ~= nil then
+            self:CreateExplodeExplosionEntities(l_entity.explosion)
+        end
+
+        if l_entity.dudExplosion ~= nil then
+            self:CreateExplodeExplosionEntities(l_entity.dudExplosion)
+        end
+
+        self:CreateProjectileEntities(l_entity)
+    end
+
+    for _, l_blueprint in pairs(self.m_waitingInstances.projectileBlueprints) do
+        self:CreateProjectileBlueprints(l_blueprint)
     end
 
     for l_key, _ in pairs(self.m_projectilePhysicsProperties) do
         self:UpdateProjectilePhysicsPropertys(l_key)
     end
 
-    for _, l_asset in pairs(self.m_waitingInstances.weaponUnlockAssets) do
-        local s_weaponUnlockAsset = SoldierWeaponUnlockAsset(l_asset)
-        local s_weaponBlueprint = SoldierWeaponBlueprint(s_weaponUnlockAsset.weapon)
-        local s_weaponEntity = SoldierWeaponData(s_weaponBlueprint.object)
+    --
+    -- creating modifiers
+    --
 
-        self:UpdateWeaponUnlockAssets(s_weaponEntity)
+    for _, l_data in pairs(self.m_waitingInstances.projectileModifiers) do
+        self:CreateWeaponProjectileModifiers(l_data)
+    end
+
+    for _, l_data in pairs(self.m_waitingInstances.firingModifiers) do
+        self:CreateWeaponFiringModifiers(l_data)
+    end
+
+    --
+    -- creating weapons
+    --
+
+    for _, l_entity in pairs(self.m_waitingInstances.weaponEntities) do
+        self:CreateWeaponEntities(l_entity)
+    end
+
+    for _, l_blueprint in pairs(self.m_waitingInstances.weaponBlueprints) do
+        self:CreateWeaponBlueprints(l_blueprint)
+    end
+
+    for _, l_asset in pairs(self.m_waitingInstances.weaponUnlockAssets) do
+        self:CreateWeaponUnlockAssets(l_asset)
+    end
+
+    for _, l_entity in pairs(self.m_waitingInstances.weaponEntities) do
+        self:UpdateWeaponUnlockAssets(l_entity)
     end
 
     ResourceManager:AddRegistry(self.m_registryContainer, ResourceCompartment.ResourceCompartment_Game)
@@ -545,7 +603,7 @@ function WeaponsUnlocks:CreateImpactExplosionEntities(p_entity)
 end
 
 -- creating VeniceExplosionEntityData for MeshProjectileEntityData
-function WeaponsUnlocks:_CreateExplodeExplosionEntities(p_entity)
+function WeaponsUnlocks:CreateExplodeExplosionEntities(p_entity)
     if self.m_verbose >= 2 then
         print('Create ExplodeExplosionEntities')
     end
@@ -623,8 +681,15 @@ function WeaponsUnlocks:CreateProjectileEntities(p_entity)
     for _, l_element in pairs(ElementalConfig.names) do
         local s_newProjectileEntity = InstanceUtils:CloneInstance(p_entity, l_element)
 
-        local s_projectileExplosionEntity = self:_GetInstance(s_newProjectileEntity.explosion, 'explodeExplosionEntities')
-        local s_missileExplosionEntity = self:_GetInstance(s_newProjectileEntity.dudExplosion, 'explodeExplosionEntities')
+        local s_projectileExplosionEntity = nil
+        if s_newProjectileEntity.explosion ~= nil then
+            s_projectileExplosionEntity = self.m_explodeExplosionEntities[s_newProjectileEntity.explosion.instanceGuid:ToString('D')]
+        end
+
+        local s_missileExplosionEntity = nil
+        if s_newProjectileEntity.dudExplosion ~= nil then
+            s_missileExplosionEntity = self.m_explodeExplosionEntities[s_newProjectileEntity.dudExplosion.instanceGuid:ToString('D')]
+        end
 
         -- non-explosive projectile
         if s_projectileExplosionEntity == nil and s_missileExplosionEntity == nil then
@@ -658,7 +723,7 @@ function WeaponsUnlocks:CreateProjectileEntities(p_entity)
 end
 
 -- creating ProjectileBlueprint for ShotData
-function WeaponsUnlocks:_CreateProjectileBlueprints(p_blueprint)
+function WeaponsUnlocks:CreateProjectileBlueprints(p_blueprint)
     if self.m_projectileBlueprints[p_blueprint.instanceGuid:ToString('D')] ~= nil then
         return
     end
@@ -670,7 +735,7 @@ function WeaponsUnlocks:_CreateProjectileBlueprints(p_blueprint)
     local s_elements = {}
     s_elements['neutral'] = p_blueprint
 
-    local s_projectileEntity = self:_GetInstance(p_blueprint.object, 'projectileEntities')
+    local s_projectileEntity = self.m_projectileEntities[p_blueprint.object.instanceGuid:ToString('D')]
 
     for _, l_element in pairs(ElementalConfig.names) do
         local s_newProjectileBlueprint = InstanceUtils:CloneInstance(p_blueprint, l_element)
@@ -687,7 +752,7 @@ function WeaponsUnlocks:_CreateProjectileBlueprints(p_blueprint)
 end
 
 -- creating WeaponProjectileModifier for SoldierWeaponEntity
-function WeaponsUnlocks:_CreateWeaponProjectileModifiers(p_data)
+function WeaponsUnlocks:CreateWeaponProjectileModifiers(p_data)
     if self.m_weaponProjectileModifiers[p_data.instanceGuid:ToString('D')] ~= nil then
         return
     end
@@ -699,7 +764,7 @@ function WeaponsUnlocks:_CreateWeaponProjectileModifiers(p_data)
     local s_elements = {}
     s_elements['neutral'] = p_data
 
-    local s_projectileEntity = self:_GetInstance(p_data.projectileData, 'projectileEntities')
+    local s_projectileEntity = self.m_projectileEntities[p_data.projectileData.instanceGuid:ToString('D')]
 
     for _, l_element in pairs(ElementalConfig.names) do
         local s_newWeaponProjectileModifier = InstanceUtils:CloneInstance(p_data, l_element)
@@ -714,7 +779,7 @@ function WeaponsUnlocks:_CreateWeaponProjectileModifiers(p_data)
 end
 
 -- creating WeaponFiringDataModifier for SoldierWeaponEntity
-function WeaponsUnlocks:_CreateWeaponFiringModifiers(p_data)
+function WeaponsUnlocks:CreateWeaponFiringModifiers(p_data)
     if self.m_weaponFiringModifiers[p_data.instanceGuid:ToString('D')] ~= nil then
         return
     end
@@ -729,8 +794,13 @@ function WeaponsUnlocks:_CreateWeaponFiringModifiers(p_data)
     local s_firingFunction = p_data.weaponFiring.primaryFire
     local s_firingData = p_data.weaponFiring
 
-    local s_projectileEntity = self:_GetInstance(s_firingFunction.shot.projectileData, 'projectileEntities')
-    local s_projectileBlueprint = self:_GetInstance(s_firingFunction.shot.projectile, 'projectileBlueprints')
+    local s_projectileEntity = self.m_projectileEntities[s_firingFunction.shot.projectileData.instanceGuid:ToString('D')]
+
+    local s_projectileBlueprint = nil
+    if s_firingFunction.shot.projectile ~= nil then
+        s_projectileBlueprint = self.m_projectileBlueprints[s_firingFunction.shot.projectile.instanceGuid:ToString('D')]
+    end
+
     for _, l_element in pairs(ElementalConfig.names) do
         local s_newFiringFunction = InstanceUtils:CloneInstance(s_firingFunction, l_element)
         local s_newModifierFiringData = InstanceUtils:CloneInstance(s_firingData, l_element)
@@ -776,26 +846,34 @@ function WeaponsUnlocks:CreateWeaponEntities(p_entity)
         for l_key, l_value in pairs(p_weaponEntity.weaponModifierData) do
             for ll_key, ll_value in pairs(l_value.modifiers) do
                 if ll_value:Is('WeaponProjectileModifier') then
-                    local s_weaponProjectileModifier = self:_GetInstance(ll_value, 'weaponProjectileModifiers')
-                    p_weaponEntity.weaponModifierData[l_key].modifiers[ll_key] = s_weaponProjectileModifier[p_element]
+                    local s_weaponProjectileModifier = self.m_weaponProjectileModifiers[ll_value.instanceGuid:ToString('D')][p_element]
+                    p_weaponEntity.weaponModifierData[l_key].modifiers[ll_key] = s_weaponProjectileModifier
                 elseif ll_value:Is('WeaponFiringDataModifier') then
-                    local s_weaponFiringModifier = self:_GetInstance(ll_value, 'weaponFiringModifiers')
-                    p_weaponEntity.weaponModifierData[l_key].modifiers[ll_key] = s_weaponFiringModifier[p_element]
+                    local s_weaponFiringModifier = self.m_weaponFiringModifiers[ll_value.instanceGuid:ToString('D')][p_element]
+                    p_weaponEntity.weaponModifierData[l_key].modifiers[ll_key] = s_weaponFiringModifier
                 end
             end
         end
     end
 
-    local s_projectileBlueprint = self:_GetInstance(s_firingFunction.shot.projectile, 'projectileBlueprints')
     local s_projectileEntity = self.m_projectileEntities[p_entity.weaponFiring.primaryFire.shot.projectileData.instanceGuid:ToString('D')]
+
+    local s_projectileBlueprint = nil
+    if s_firingFunction.shot.projectile ~= nil then
+        s_projectileBlueprint = self.m_projectileBlueprints[s_firingFunction.shot.projectile.instanceGuid:ToString('D')]
+    end
+
     for _, l_element in pairs(ElementalConfig.names) do
         local s_newFiringFunction = InstanceUtils:CloneInstance(s_firingFunction, l_element)
         local s_newFiringData = InstanceUtils:CloneInstance(s_firingData, l_element)
         local s_newWeaponEntity = InstanceUtils:CloneInstance(p_entity, l_element)
 
         -- patching FiringData
-        s_newFiringFunction.shot.projectileData = s_projectileEntity[l_element]
         s_newFiringFunction.ammo.magazineCapacity = 100 -- TESTING
+
+        if s_projectileEntity ~= nil then
+            s_newFiringFunction.shot.projectileData = s_projectileEntity[l_element]
+        end
 
         if s_projectileBlueprint ~= nil then
             s_newFiringFunction.shot.projectile = s_projectileBlueprint[l_element]

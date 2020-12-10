@@ -59,10 +59,10 @@ function WeaponsAppearances:ReadInstances(p_instances)
         print('Reading Instances')
     end
 
-    self.m_waitingInstances.meshVariationDatabase = LoadedInstances.m_meshVariationDatabase
-    self.m_waitingInstances.weaponEntities = LoadedInstances.m_weaponEntities
+    self.m_waitingInstances.meshVariationDatabase = LoadedInstances.m_loadedInstances.MeshVariationDatabase
+    self.m_waitingInstances.weaponEntities = LoadedInstances.m_loadedInstances.SoldierWeaponData
 
-    self.m_meshVariationDatabase = MeshVariationDatabase(self.m_waitingInstances.meshVariationDatabase)
+    self.m_meshVariationDatabase = self.m_waitingInstances.meshVariationDatabase
     self.m_meshVariationDatabase:MakeWritable()
 
     -- reading weapon entities
