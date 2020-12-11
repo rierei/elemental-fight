@@ -74,7 +74,7 @@ function WeaponsAppearances:ReadInstances(p_instances)
 
     -- reading weapon entities
     for _, l_value in pairs(self.m_waitingInstances.weaponEntities) do
-        local s_weaponEntity = SoldierWeaponData(l_value)
+        local s_weaponEntity = l_value
 
         self.m_skinnedMeshAsset1pWeaponGuids[s_weaponEntity.weaponStates[1].mesh1p.instanceGuid:ToString('D')] = s_weaponEntity.instanceGuid:ToString('D')
         self.m_skinnedMeshAsset3pWeaponGuids[s_weaponEntity.weaponStates[1].mesh3p.instanceGuid:ToString('D')] = s_weaponEntity.instanceGuid:ToString('D')
@@ -84,7 +84,7 @@ function WeaponsAppearances:ReadInstances(p_instances)
 
     -- reading mesh variations
     for _, l_value in pairs(self.m_meshVariationDatabase.entries) do
-        local s_meshVariationDatabaseEntry = MeshVariationDatabaseEntry(l_value)
+        local s_meshVariationDatabaseEntry = l_value
         local s_skinnedMeshAsset1pWeaponGuid = self.m_skinnedMeshAsset1pWeaponGuids[s_meshVariationDatabaseEntry.mesh.instanceGuid:ToString('D')]
         local s_skinnedMeshAsset3pWeaponGuid = self.m_skinnedMeshAsset3pWeaponGuids[s_meshVariationDatabaseEntry.mesh.instanceGuid:ToString('D')]
 
@@ -134,7 +134,7 @@ function WeaponsAppearances:CreateInstances()
     self:CreateSurfaceShaderStructs(self.m_waitingInstances.weaponShader)
 
     for _, l_value in pairs(self.m_waitingInstances.weaponEntities) do
-        local s_weaponEntity = SoldierWeaponData(l_value)
+        local s_weaponEntity = l_value
         local s_meshVariationDatabaseEntry = self.m_meshVariationDatabaseEntrys1p[s_weaponEntity.instanceGuid:ToString('D')]
 
         if s_meshVariationDatabaseEntry ~= nil then

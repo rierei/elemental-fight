@@ -326,7 +326,7 @@ end
 -- reading ObjectVariation for SkinnedSocketObject and MeshVariationDatabaseEntry
 function SoldiersAppearances:ReadObjectVariationAssets(p_class)
     for _, l_value in pairs(self.m_waitingInstances.blueprintAndVariationPairs[p_class]) do
-        local s_objectVariationAsset = ObjectVariation(l_value.variation)
+        local s_objectVariationAsset = l_value.variation
         table.insert(self.m_waitingInstances.objectVariationAssets[p_class], s_objectVariationAsset)
     end
 end
@@ -334,7 +334,7 @@ end
 -- reading MeshVariationDatabaseEntry for MeshVariationDatabaseMaterial
 function SoldiersAppearances:ReadMeshVariationDatabaseEntrys(p_class)
     for _, l_value in pairs(self.m_meshVariationDatabase.entries) do
-        local s_meshVariationDatabaseEntry = MeshVariationDatabaseEntry(l_value)
+        local s_meshVariationDatabaseEntry = l_value
         for _, ll_value in pairs(self.m_waitingInstances.objectVariationAssets[p_class]) do
             if s_meshVariationDatabaseEntry.variationAssetNameHash == ll_value.nameHash then
                 self.m_waitingInstances.meshVariationDatabaseEntrys[p_class][s_meshVariationDatabaseEntry.instanceGuid:ToString('D')] = s_meshVariationDatabaseEntry
@@ -347,10 +347,10 @@ end
 function SoldiersAppearances:ReadSkinnedSocketObjects(p_class)
     for _, l_value in pairs(self.m_waitingInstances.objectVariationAssets[p_class]) do
         for _, ll_value in pairs(self.m_waitingInstances.characterSocketListAsset.skinnedVisualSockets) do
-            local s_socketData = SocketData(ll_value)
+            local s_socketData = ll_value
 
             for _, lll_value in pairs(s_socketData.availableObjects) do
-                local s_skinnedSocketObject = SkinnedSocketObjectData(lll_value)
+                local s_skinnedSocketObject = SocketObjectData(lll_value)
 
                 for _, llll_value in pairs(s_skinnedSocketObject.variation1pGuids) do
                     if l_value.instanceGuid == llll_value then
@@ -375,7 +375,7 @@ function SoldiersAppearances:ReadMeshVariationDatabaseMaterialIndexes(p_class)
     for _, l_value in pairs(self.m_waitingInstances.meshVariationDatabaseEntrys[p_class]) do
         local s_indexes = {}
         if self.m_meshMaterialIndexes[p_class] ~= nil then
-            local s_skinnedMeshAsset = SkinnedMeshAsset(l_value.mesh)
+            local s_skinnedMeshAsset = l_value.mesh
             local s_skinnedMeshAssetNameParts = InstanceUtils:Split(s_skinnedMeshAsset.name, '/')
             local s_skinnedMeshName = s_skinnedMeshAssetNameParts[#s_skinnedMeshAssetNameParts]:gsub('_Mesh', '')
             local s_meshMaterialIndexes = self.m_meshMaterialIndexes[p_class][s_skinnedMeshName]

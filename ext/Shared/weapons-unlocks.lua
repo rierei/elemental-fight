@@ -284,10 +284,6 @@ function WeaponsUnlocks:CreateInstances()
     --
 
     for _, l_entity in pairs(self.m_waitingInstances.projectileEntities) do
-        if l_entity:Is('MissileEntityData') then
-            l_entity = MissileEntityData(l_entity)
-        end
-
         if l_entity.explosion ~= nil then
             self:CreateExplodeExplosionEntities(l_entity.explosion)
         end
