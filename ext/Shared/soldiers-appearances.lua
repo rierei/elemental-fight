@@ -39,6 +39,7 @@ function SoldiersAppearances:RegisterVars()
 
     self.m_waitingGuids = {
         CharacterSocketListAsset = {'1F5CC239-BE4F-4D03-B0B5-A0FF89976036', '8F1A9F10-6BF8-442A-909F-AF0D9F8E1608'},
+        CharacterRoot = {'869C6675-54E6-11DE-AB3A-E7780EA0F1FE', 'A8810763-C259-138B-E17F-1F9C69ACE87B'},
 
         --
         -- Gameplay Kits
@@ -196,12 +197,15 @@ function SoldiersAppearances:RegisterVars()
         linkUnlockAssets = {}, -- UnlockAsset
         blueprintAndVariationPairs = {}, -- BlueprintAndVariationPair
         objectVariationAssets = {}, -- ObjectVariationAsset
-        meshVariationDatabaseEntrys = {} -- MeshVariationDatabaseEntry
+        meshVariationDatabaseEntrys = {}, -- MeshVariationDatabaseEntry
+        characterShader = nil -- ShaderGraph
     }
 
     self.m_registryContainer = nil -- RegistryContainer
     self.m_meshVariationDatabase = nil -- MeshVariationDatabase
+
     self.m_skinnedSocketObjects = {} -- SkinnedSocketObject
+    self.m_surfaceShaderStructs = {} -- SurfaceShaderInstanceDataStruct
     self.m_databaseEntryMaterialIndexes = {} -- MeshVariationDatabaseEntry.materials
     self.m_meshMaterialVariations = {} -- MeshMaterialVariation
     self.m_meshVariationDatabaseEntrys = {} -- MeshVariationDatabaseEntry
@@ -238,6 +242,8 @@ function SoldiersAppearances:ReadInstances(p_instances)
     self.m_meshVariationDatabase = self.m_waitingInstances.meshVariationDatabase
     self.m_meshVariationDatabase:MakeWritable()
 
+    self.m_waitingInstances.characterShader = p_instances['CharacterRoot']
+
     self.m_waitingInstances.characterSocketListAsset = p_instances['CharacterSocketListAsset']
 
     self.m_waitingInstances.appearanceUnlockAssets['USAssault'] = p_instances['MP_US_Assault_Appearance01']
@@ -268,18 +274,21 @@ function SoldiersAppearances:ReadInstances(p_instances)
 
     -- removing hanging references
     self.m_waitingInstances = {
-        meshVariationDatabase = nil,
-        characterSocketListAsset = nil,
-        appearanceUnlockAssets = {},
-        linkUnlockAssets = {},
-        blueprintAndVariationPairs = {},
-        objectVariationAssets = {},
-        meshVariationDatabaseEntrys = {}
+        meshVariationDatabase = nil, -- MeshVariationDatabase
+        characterSocketListAsset = nil, -- CharacterSocketListAsset
+        appearanceUnlockAssets = {}, -- UnlockAsset
+        linkUnlockAssets = {}, -- UnlockAsset
+        blueprintAndVariationPairs = {}, -- BlueprintAndVariationPair
+        objectVariationAssets = {}, -- ObjectVariationAsset
+        meshVariationDatabaseEntrys = {}, -- MeshVariationDatabaseEntry
+        characterShader = nil -- ShaderGraph
     }
 
     -- removing hanging references
     self.m_registryContainer = nil -- RegistryContainer
     self.m_meshVariationDatabase = nil -- MeshVariationDatabase
+
+    self.m_surfaceShaderStructs = {} -- SurfaceShaderInstanceDataStruct
     self.m_skinnedSocketObjects = {} -- SkinnedSocketObject
     self.m_databaseEntryMaterialIndexes = {} -- MeshVariationDatabaseEntry.materials
     self.m_meshMaterialVariations = {} -- MeshMaterialVariation
@@ -394,6 +403,8 @@ function SoldiersAppearances:CreateInstances()
 
     self.m_registryContainer = RegistryContainer()
 
+    self:CreateSurfaceShaderStructs(self.m_waitingInstances.characterShader)
+
     for _, l_class in pairs(self.m_classNames) do
         -- processing MeshVariationDatabaseEntry
         for _, ll_value in pairs(self.m_waitingInstances.meshVariationDatabaseEntrys[l_class]) do
@@ -424,6 +435,7 @@ function SoldiersAppearances:CreateInstances()
     ResourceManager:AddRegistry(self.m_registryContainer, ResourceCompartment.ResourceCompartment_Game)
 
     if self.m_verbose >= 1 then
+        print('Created SurfaceShaderStructs: ' .. InstanceUtils:Count(self.m_surfaceShaderStructs))
         print('Created SkinnedSocketObjects: ' .. InstanceUtils:Count(self.m_skinnedSocketObjects))
         print('Created DatabaseEntryMaterialIndexes: ' .. InstanceUtils:Count(self.m_databaseEntryMaterialIndexes))
         print('Created MeshMaterialVariations: ' .. InstanceUtils:Count(self.m_meshMaterialVariations))
@@ -436,6 +448,35 @@ function SoldiersAppearances:CreateInstances()
         print('Created RegistryContainerEntities: ' .. InstanceUtils:Count(self.m_registryContainer.entityRegistry))
         print('Created RegistryContainerBlueprints: ' .. InstanceUtils:Count(self.m_registryContainer.blueprintRegistry))
     end
+end
+
+-- creating SurfaceShaderInstanceDataStruct for MeshMaterialVariation
+function SoldiersAppearances:CreateSurfaceShaderStructs(p_asset)
+    local s_elements = {}
+
+    for _, l_element in pairs(ElementalConfig.names) do
+        local s_surfaceShaderInstanceDataStruct = SurfaceShaderInstanceDataStruct()
+
+        local s_color = ElementalConfig.colors[l_element]
+
+        local s_dirtColorParameter = VectorShaderParameter()
+        s_dirtColorParameter.value = Vec4(s_color.x, s_color.y, s_color.z, 0)
+        s_dirtColorParameter.parameterName = '_DirtColor'
+        s_dirtColorParameter.parameterType = ShaderParameterType.ShaderParameterType_Color
+
+        local s_dirtScaleParameter = VectorShaderParameter()
+        s_dirtScaleParameter.value = Vec4(10, 0, 0, 0)
+        s_dirtScaleParameter.parameterName = '_DirtScaleMax'
+        s_dirtScaleParameter.parameterType = ShaderParameterType.ShaderParameterType_Scalar
+
+        s_surfaceShaderInstanceDataStruct.shader = p_asset
+        s_surfaceShaderInstanceDataStruct.vectorParameters:add(s_dirtColorParameter)
+        s_surfaceShaderInstanceDataStruct.vectorParameters:add(s_dirtScaleParameter)
+
+        s_elements[l_element] = s_surfaceShaderInstanceDataStruct
+    end
+
+    self.m_surfaceShaderStructs = s_elements
 end
 
 -- creating MeshMaterialVariation for MeshVariationDatabaseMaterial
@@ -458,28 +499,7 @@ function SoldiersAppearances:CreateMeshMaterialVariations(p_entry)
             local s_newMeshMaterialVariation = MeshMaterialVariation(InstanceUtils:GenerateGuid(p_entry.instanceGuid:ToString('D') .. ll_value .. l_element))
             p_entry.partition:AddInstance(s_newMeshMaterialVariation)
 
-            local s_surfaceShaderInstanceDataStruct = SurfaceShaderInstanceDataStruct()
-
-            local s_shaderGraph = ShaderGraph()
-            s_shaderGraph.name = 'shaders/Root/CharacterRoot'
-
-            local s_color = ElementalConfig.colors[l_element]
-
-            local s_dirtColorParameter = VectorShaderParameter()
-            s_dirtColorParameter.value = Vec4(s_color.x, s_color.y, s_color.z, 0)
-            s_dirtColorParameter.parameterName = '_DirtColor'
-            s_dirtColorParameter.parameterType = ShaderParameterType.ShaderParameterType_Color
-
-            local s_dirtScaleParameter = VectorShaderParameter()
-            s_dirtScaleParameter.value = Vec4(10, 0, 0, 0)
-            s_dirtScaleParameter.parameterName = '_DirtScaleMax'
-            s_dirtScaleParameter.parameterType = ShaderParameterType.ShaderParameterType_Scalar
-
-            s_surfaceShaderInstanceDataStruct.shader = s_shaderGraph
-            s_surfaceShaderInstanceDataStruct.vectorParameters:add(s_dirtColorParameter)
-            s_surfaceShaderInstanceDataStruct.vectorParameters:add(s_dirtScaleParameter)
-
-            s_newMeshMaterialVariation.shader = s_surfaceShaderInstanceDataStruct
+            s_newMeshMaterialVariation.shader = self.m_surfaceShaderStructs[l_element]
 
             s_variations[ll_value] = s_newMeshMaterialVariation
         end

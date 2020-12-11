@@ -15,13 +15,16 @@ function WeaponsAppearances:RegisterVars()
     self.m_currentMode = nil
 
     self.m_waitingGuids = {
+        WeaponPresetShadowFP = {'1155325D-8138-4D3C-A3D1-AB5A1D520289', '1AFD6691-9CB6-4195-A4D1-6C925C0C3C2B'},
+
         _DefaultCamo = {'07EA9024-7D81-11E1-91A4-E3E3C1704D3D', '7DE14177-6868-59B2-06B5-3C9AA2610EEC'},
         _RU_Helmet05_Navy = {'706BF6C9-0EAD-4382-A986-39D571DBFA77', '53828D27-7C4A-415A-892D-8D410136E1B6'},
     }
 
     self.m_waitingInstances = {
         meshVariationDatabase = nil, -- MeshVariationDatabase
-        weaponEntities = {} -- SoldierWeaponData
+        weaponEntities = {}, -- SoldierWeaponData
+        weaponShader = nil -- ShaderGraph
     }
 
     self.m_registryContainer = nil -- RegistryContainer
@@ -31,6 +34,8 @@ function WeaponsAppearances:RegisterVars()
     self.m_meshVariationDatabaseEntrys1p = {} -- MeshVariationDatabaseEntry
     self.m_meshVariationDatabaseEntrys3p = {} -- MeshVariationDatabaseEntry
     self.m_weaponBlueprints = {} -- SoldierWeaponBlueprint
+
+    self.m_surfaceShaderStructs = {} -- SurfaceShaderInstanceDataStruct
     self.m_meshMaterialVariations = {} -- MeshMaterialVariation
     self.m_meshVariationDatabaseEntrys = {} -- MeshVariationDatabaseEntry
     self.m_objectVariationAssets = {} -- ObjectVariationAsset
@@ -50,7 +55,7 @@ end
 function WeaponsAppearances:RegisterWait()
     -- waiting instances
     InstanceWait(self.m_waitingGuids, function(p_instances)
-        self:ReadInstances()
+        self:ReadInstances(p_instances)
     end)
 end
 
@@ -64,6 +69,8 @@ function WeaponsAppearances:ReadInstances(p_instances)
 
     self.m_meshVariationDatabase = self.m_waitingInstances.meshVariationDatabase
     self.m_meshVariationDatabase:MakeWritable()
+
+    self.m_waitingInstances.weaponShader = p_instances['WeaponPresetShadowFP']
 
     -- reading weapon entities
     for _, l_value in pairs(self.m_waitingInstances.weaponEntities) do
@@ -97,7 +104,8 @@ function WeaponsAppearances:ReadInstances(p_instances)
     -- removing hanging references
     self.m_waitingInstances = {
         meshVariationDatabase = nil, -- MeshVariationDatabase
-        weaponEntities = {} -- SoldierWeaponData
+        weaponEntities = {}, -- SoldierWeaponData
+        weaponShader = nil -- ShaderGraph
     }
 
     -- removing hanging references
@@ -108,6 +116,8 @@ function WeaponsAppearances:ReadInstances(p_instances)
     self.m_meshVariationDatabaseEntrys1p = {} -- MeshVariationDatabaseEntry
     self.m_meshVariationDatabaseEntrys3p = {} -- MeshVariationDatabaseEntry
     self.m_weaponBlueprints = {} -- SoldierWeaponBlueprint
+
+    self.m_surfaceShaderStructs = {} -- SurfaceShaderInstanceDataStruct
     self.m_meshMaterialVariations = {} -- MeshMaterialVariation
     self.m_meshVariationDatabaseEntrys = {} -- MeshVariationDatabaseEntry
     self.m_objectVariationAssets = {} -- ObjectVariationAsset
@@ -120,6 +130,8 @@ function WeaponsAppearances:CreateInstances()
     end
 
     self.m_registryContainer = RegistryContainer()
+
+    self:CreateSurfaceShaderStructs(self.m_waitingInstances.weaponShader)
 
     for _, l_value in pairs(self.m_waitingInstances.weaponEntities) do
         local s_weaponEntity = SoldierWeaponData(l_value)
@@ -137,6 +149,7 @@ function WeaponsAppearances:CreateInstances()
     ResourceManager:AddRegistry(self.m_registryContainer, ResourceCompartment.ResourceCompartment_Game)
 
     if self.m_verbose >= 1 then
+        print('Created SurfaceShaderStructs: ' .. InstanceUtils:Count(self.m_surfaceShaderStructs))
         print('Created MeshMaterialVariations: ' .. InstanceUtils:Count(self.m_meshMaterialVariations))
         print('Created VariationDatabaseEntrys: ' .. InstanceUtils:Count(self.m_meshVariationDatabaseEntrys))
         print('Created ObjectVariationAssets: ' .. InstanceUtils:Count(self.m_objectVariationAssets))
@@ -148,18 +161,12 @@ function WeaponsAppearances:CreateInstances()
     end
 end
 
--- creating MeshMaterialVariation for MeshVariationDatabaseMaterial
-function WeaponsAppearances:CreateMeshMaterialVariations(p_entry)
-    if self.m_verbose >= 2 then
-        print('Create MeshMaterialVariations')
-    end
-
+-- creating SurfaceShaderInstanceDataStruct for MeshMaterialVariation
+function WeaponsAppearances:CreateSurfaceShaderStructs(p_asset)
     local s_elements = {}
-    s_elements['neutral'] = p_entry.materials[1]
 
     for _, l_element in pairs(ElementalConfig.names) do
-        local s_shaderGraph = ShaderGraph()
-        s_shaderGraph.name = 'Weapons/Shaders/WeaponPresetShadowFP'
+        local s_surfaceShaderInstanceDataStruct = SurfaceShaderInstanceDataStruct()
 
         local s_color = ElementalConfig.colors[l_element]
 
@@ -173,11 +180,26 @@ function WeaponsAppearances:CreateMeshMaterialVariations(p_entry)
         s_emissiveParameter.parameterName = 'Emissive'
         s_emissiveParameter.parameterType = ShaderParameterType.ShaderParameterType_Color
 
-        local s_surfaceShaderInstanceDataStruct = SurfaceShaderInstanceDataStruct()
-        s_surfaceShaderInstanceDataStruct.shader = s_shaderGraph
+        s_surfaceShaderInstanceDataStruct.shader = p_asset
         s_surfaceShaderInstanceDataStruct.vectorParameters:add(s_camoDarkeningParameter)
         s_surfaceShaderInstanceDataStruct.vectorParameters:add(s_emissiveParameter)
 
+        s_elements[l_element] = s_surfaceShaderInstanceDataStruct
+    end
+
+    self.m_surfaceShaderStructs = s_elements
+end
+
+-- creating MeshMaterialVariation for MeshVariationDatabaseMaterial
+function WeaponsAppearances:CreateMeshMaterialVariations(p_entry)
+    if self.m_verbose >= 2 then
+        print('Create MeshMaterialVariations')
+    end
+
+    local s_elements = {}
+    s_elements['neutral'] = p_entry.materials[1]
+
+    for _, l_element in pairs(ElementalConfig.names) do
         local s_databaseEntryMaterials = {}
 
         -- dont customize radio beacon and c4
@@ -201,7 +223,7 @@ function WeaponsAppearances:CreateMeshMaterialVariations(p_entry)
                     local s_newMeshMaterialVariation = MeshMaterialVariation(InstanceUtils:GenerateGuid(p_entry.instanceGuid:ToString('D') .. 'MeshMaterialVariation' .. l_element .. ll_key))
                     p_entry.partition:AddInstance(s_newMeshMaterialVariation)
 
-                    s_newMeshMaterialVariation.shader = s_surfaceShaderInstanceDataStruct
+                    s_newMeshMaterialVariation.shader = self.m_surfaceShaderStructs[l_element]
 
                     s_databaseEntryMaterials[ll_key] = s_newMeshMaterialVariation
                 end
