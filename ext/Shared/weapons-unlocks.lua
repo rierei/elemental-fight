@@ -20,6 +20,11 @@ function WeaponsUnlocks:RegisterVars()
         chest = 159
     }
 
+    self.m_currentLevel = nil
+    self.m_currentMode = nil
+
+    self.m_shouldReload = false
+
     self.m_waitingCommonGuids = {
         MaterialContainer = {'B50615C2-4743-4919-9A40-A738150DEBE9', '89492CD4-F004-42B9-97FB-07FD3D436205'}, -- materialContainerAsset
 
@@ -86,6 +91,12 @@ function WeaponsUnlocks:RegisterVars()
     self.m_weaponBlueprints = {} -- SoldierWeaponBlueprint
     self.m_weaponUnlockAssets = {} -- SoldierWeaponUnlockAsset
 
+    self.m_instanceGuids = {
+        weaponUnlockAssets = {}, -- SoldierWeaponUnlockAsset.instanceGuid
+        weaponBlueprints = {}, -- SoldierWeaponBlueprint.instanceGuid
+        projectileEntities = {} -- MeshProjectileEntityData.instanceGuid
+    }
+
     self.m_instanceCreateFunctions = {
         emitterDocumentAssets = self._CreateEmitterDocumentAssets,
         emitterEntities = self._CreateEmitterEntity
@@ -102,12 +113,34 @@ function WeaponsUnlocks:RegisterEvents()
 
     -- reading instances after level load
     Events:Subscribe('Level:Loaded', function(p_level, p_mode)
-        self:RegisterWait()
+        if self.m_verbose >= 1 then
+            print('Level:Loaded')
+        end
+
+        if self.m_shouldReload then
+            self:ReloadInstances()
+        else
+            self.m_instanceGuids = {
+                weaponUnlockAssets = {}, -- SoldierWeaponUnlockAsset.instanceGuid
+                weaponBlueprints = {}, -- SoldierWeaponBlueprint.instanceGuid
+                projectileEntities = {} -- MeshProjectileEntityData.instanceGuid
+            }
+
+            self:RegisterWait()
+        end
+    end)
+
+    -- reading level state
+    Events:Subscribe('Level:LoadResources', function(p_level, p_mode, p_dedicated)
+        self.m_shouldReload = self.m_currentLevel == p_level and self.m_currentMode == p_mode
+
+        self.m_currentLevel = p_level
+        self.m_currentMode = p_mode
     end)
 
     -- reading instances before level loads
     Events:Subscribe('Level:LoadingInfo', function(p_screenInfo)
-        if p_screenInfo == 'Initializing entities for autoloaded sublevels' then
+        if not self.m_shouldReload and p_screenInfo == 'Initializing entities for autoloaded sublevels' then
             self.m_waitingInstances.materialGridAsset = LoadedInstances.m_loadedInstances.MaterialGridData
 
             self.m_waitingInstances.weaponUnlockAssets = LoadedInstances.m_loadedInstances.SoldierWeaponUnlockAsset
@@ -141,16 +174,55 @@ function WeaponsUnlocks:RegisterWait()
     end)
 end
 
--- reseting created instances
+-- reloading created instances
 function WeaponsUnlocks:ReloadInstances()
     if self.m_verbose >= 1 then
         print('Reloading Instances')
     end
 
-    self.m_registryContainer = nil -- RegistryContainer
-    self.m_weaponUnlockAssets = {} -- SoldierWeaponUnlockAsset
+    self.m_registryContainer = RegistryContainer()
 
-    self:RegisterWait()
+    local function reloadInstances(p_guids, p_registry)
+        local s_instances = {}
+
+        for _, l_value in pairs(p_guids) do
+            local s_elements = {}
+
+            for _, l_element in pairs(ElementalConfig.names) do
+                local s_guids = l_value[l_element]
+                local instance = ResourceManager:FindInstanceByGuid(s_guids.partition, s_guids.instance)
+
+                -- casting the instance
+                local s_typeName = instance.typeInfo.name
+                local s_type = _G[s_typeName]
+
+                if s_type ~= nil then
+                    instance = s_type(instance)
+                end
+
+                p_registry:add(instance)
+
+                s_elements[l_element] = instance
+            end
+
+            s_instances[l_value._key] = s_elements
+        end
+
+        return s_instances
+    end
+
+    reloadInstances(self.m_instanceGuids.projectileEntities, self.m_registryContainer.entityRegistry)
+    reloadInstances(self.m_instanceGuids.weaponBlueprints, self.m_registryContainer.blueprintRegistry)
+
+    self.m_weaponUnlockAssets = reloadInstances(self.m_instanceGuids.weaponUnlockAssets, self.m_registryContainer.assetRegistry)
+
+    ResourceManager:AddRegistry(self.m_registryContainer, ResourceCompartment.ResourceCompartment_Game)
+
+    print('Reloaded WeaponUnlockAssets: ' .. InstanceUtils:Count(self.m_weaponUnlockAssets))
+
+    print('Reloaded RegistryContainerAssets: ' .. InstanceUtils:Count(self.m_registryContainer.assetRegistry))
+    print('Reloaded RegistryContainerEntities: ' .. InstanceUtils:Count(self.m_registryContainer.entityRegistry))
+    print('Reloaded RegistryContainerBlueprints: ' .. InstanceUtils:Count(self.m_registryContainer.blueprintRegistry))
 end
 
 -- reading waiting instances
@@ -195,6 +267,35 @@ function WeaponsUnlocks:ReadInstances(p_instances)
     end
 
     self:CreateInstances()
+
+    local function getInstancesGuids(p_waiting, p_instances)
+        local s_result = {}
+
+        for _, l_value in pairs(p_waiting) do
+            local s_elements = p_instances[l_value.instanceGuid:ToString('D')]
+
+            local s_guids = {}
+            s_guids['_key'] = l_value.instanceGuid:ToString('D')
+
+            for _, l_element in pairs(ElementalConfig.names) do
+                local s_instance = s_elements[l_element]
+
+                s_guids[l_element] = {
+                    partition = s_instance.partition.guid,
+                    instance = s_instance.instanceGuid
+                }
+            end
+
+            table.insert(s_result, s_guids)
+        end
+
+        return s_result
+    end
+
+    -- getting instances guids
+    self.m_instanceGuids.projectileEntities = getInstancesGuids(self.m_waitingInstances.projectileEntities, self.m_projectileEntities)
+    self.m_instanceGuids.weaponBlueprints = getInstancesGuids(self.m_waitingInstances.weaponBlueprints, self.m_weaponBlueprints)
+    self.m_instanceGuids.weaponUnlockAssets = getInstancesGuids(self.m_waitingInstances.weaponUnlockAssets, self.m_weaponUnlockAssets)
 
     -- removing hanging references
     self.m_soldierGridPropertyIndexes = {} -- MaterialGridData.materialIndexMap
@@ -901,8 +1002,8 @@ function WeaponsUnlocks:CreateWeaponUnlockAssets(p_asset)
         print('Create WeaponUnlockAssets')
     end
 
-    local s_elementUnlocks = {}
-    -- s_elementUnlocks['neutral'] = p_asset -- hanging instance
+    local s_elements = {}
+    s_elements['neutral'] = p_asset
 
     local s_blueprintGuid = p_asset.weapon.instanceGuid:ToString('D')
     for _, l_element in pairs(ElementalConfig.names) do
@@ -914,10 +1015,10 @@ function WeaponsUnlocks:CreateWeaponUnlockAssets(p_asset)
 
         self.m_registryContainer.assetRegistry:add(s_newWeaponUnlockAsset)
 
-        s_elementUnlocks[l_element] = s_newWeaponUnlockAsset
+        s_elements[l_element] = s_newWeaponUnlockAsset
     end
 
-    self.m_weaponUnlockAssets[p_asset.instanceGuid:ToString('D')] = s_elementUnlocks
+    self.m_weaponUnlockAssets[p_asset.instanceGuid:ToString('D')] = s_elements
 end
 
 -- replacing MaterialRelationPenetrationData
