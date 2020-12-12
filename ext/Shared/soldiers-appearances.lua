@@ -597,8 +597,6 @@ function SoldiersAppearances:CreateBlueprintAndVariationPairs(p_data)
         s_newBlueprintAndVariationPair.name = s_newBlueprintAndVariationPair.name .. l_element
         s_newBlueprintAndVariationPair.variation = self.m_objectVariationAssets[s_newBlueprintAndVariationPair.variation.instanceGuid:ToString('D')][l_element]
 
-        self.m_registryContainer.assetRegistry:add(s_newBlueprintAndVariationPair)
-
         s_elements[l_element] = s_newBlueprintAndVariationPair
     end
 

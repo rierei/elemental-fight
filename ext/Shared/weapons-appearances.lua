@@ -286,8 +286,6 @@ function WeaponsAppearances:CreateObjectVariationAssets(p_entry)
         s_newObjectVariationAsset.name = p_entry.instanceGuid:ToString('D') .. l_element
         s_newObjectVariationAsset.nameHash = MathUtils:FNVHash(p_entry.instanceGuid:ToString('D') .. l_element)
 
-        self.m_registryContainer.assetRegistry:add(s_newObjectVariationAsset)
-
         s_elements[l_element] = s_newObjectVariationAsset
     end
 
@@ -313,8 +311,6 @@ function WeaponsAppearances:CreateBlueprintAndVariationPairs(p_entry)
         s_newBlueprintAndVariationPair.name = p_entry.instanceGuid:ToString('D')
         s_newBlueprintAndVariationPair.baseAsset = s_weaponBlueprint
         s_newBlueprintAndVariationPair.variation = self.m_objectVariationAssets[p_entry.instanceGuid:ToString('D')][l_element]
-
-        self.m_registryContainer.assetRegistry:add(s_newBlueprintAndVariationPair)
 
         s_elements[l_element] = s_newBlueprintAndVariationPair
     end

@@ -464,8 +464,6 @@ function WeaponsUnlocks:_CreateEmitterDocumentAssets(p_asset)
         s_newEmitterDocumentAsset.rootProcessor = s_newDocumentRootProcessor
         s_newEmitterDocumentAsset.templateData = s_newTemplateData
 
-        self.m_registryContainer.assetRegistry:add(s_newEmitterDocumentAsset)
-
         s_elements[l_element] = s_newEmitterDocumentAsset
     end
 
@@ -494,8 +492,6 @@ function WeaponsUnlocks:_CreateEmitterEntity(p_entity)
         -- patching emitter properties
         s_newEmitterEntity.emitter = emitterDocumentAsset[l_element]
 
-        self.m_registryContainer.entityRegistry:add(s_newEmitterEntity)
-
         s_elements[l_element] = s_newEmitterEntity
     end
 
@@ -523,9 +519,6 @@ function WeaponsUnlocks:_CreateEffectBlueprint(p_blueprint, p_element)
 
     -- patching blueprint properties
     s_newEffectBlueprint.object = s_newEffectEntity
-
-    self.m_registryContainer.entityRegistry:add(s_newEffectEntity)
-    self.m_registryContainer.blueprintRegistry:add(s_newEffectBlueprint)
 
     return s_newEffectBlueprint
 end
@@ -590,8 +583,6 @@ function WeaponsUnlocks:CreateImpactExplosionEntities(p_entity)
         s_newExplosionEntity.blastDamage = 0
         s_newExplosionEntity.shockwaveDamage = 0
 
-        self.m_registryContainer.entityRegistry:add(s_newExplosionEntity)
-
         s_elements[l_element] = s_newExplosionEntity
     end
 
@@ -618,8 +609,6 @@ function WeaponsUnlocks:CreateExplodeExplosionEntities(p_entity)
         -- patching explosion properties
         s_newExplosionEntity.detonationEffect = self.m_explodeEffectBlueprints[l_element]
 
-        self.m_registryContainer.entityRegistry:add(s_newExplosionEntity)
-
         s_elements[l_element] = s_newExplosionEntity
     end
 
@@ -640,8 +629,6 @@ function WeaponsUnlocks:CreateSmokeExplosionEntities(p_entity)
 
         -- patching explosion properties
         s_newExplosionEntity.detonationEffect = self.m_smokeEffectBlueprints[l_element]
-
-        self.m_registryContainer.entityRegistry:add(s_newExplosionEntity)
 
         s_elements[l_element] = s_newExplosionEntity
     end
@@ -738,8 +725,6 @@ function WeaponsUnlocks:CreateProjectileBlueprints(p_blueprint)
 
         -- patching projectile blueprint
         s_newProjectileBlueprint.object = s_projectileEntity[l_element]
-
-        self.m_registryContainer.blueprintRegistry:add(s_newProjectileBlueprint)
 
         s_elements[l_element] = s_newProjectileBlueprint
     end
@@ -884,8 +869,6 @@ function WeaponsUnlocks:CreateWeaponEntities(p_entity)
         -- patching weapon entity
         s_newWeaponEntity.weaponFiring = s_newFiringData
         s_newWeaponEntity.damageGiverName = l_element
-
-        self.m_registryContainer.entityRegistry:add(s_newWeaponEntity)
 
         s_elements[l_element] = s_newWeaponEntity
     end
