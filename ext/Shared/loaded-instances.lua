@@ -138,7 +138,7 @@ function LoadedInstances:CheckInstance(p_instance)
         local s_type = _G[p_instance.typeInfo.name]
         p_instance = s_type(p_instance)
 
-        table.insert(self.m_loadedInstances.MeshProjectileEntityData, MeshProjectileEntityData(p_instance))
+        table.insert(self.m_loadedInstances.MeshProjectileEntityData, p_instance)
     end
 end
 
