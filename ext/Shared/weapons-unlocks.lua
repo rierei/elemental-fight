@@ -138,10 +138,12 @@ function WeaponsUnlocks:RegisterWait()
     -- waiting each impact effect
     for _, l_value in pairs(ElementalConfig.names) do
         local s_effectGuid = ElementalConfig.effects[l_value]
-        local s_waitingGuids = {[l_value] = s_effectGuid}
-        InstanceWait(s_waitingGuids, function(p_instances)
-            self.m_waitingInstances.impactEffectBlueprints[l_value] = p_instances[l_value]
-        end)
+        if s_effectGuid ~= nil then
+            local s_waitingGuids = {[l_value] = s_effectGuid}
+            InstanceWait(s_waitingGuids, function(p_instances)
+                self.m_waitingInstances.impactEffectBlueprints[l_value] = p_instances[l_value]
+            end)
+        end
     end
 
     -- waiting common instances
