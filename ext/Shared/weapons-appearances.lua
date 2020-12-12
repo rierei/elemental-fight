@@ -48,11 +48,16 @@ end
 function WeaponsAppearances:RegisterEvents()
     -- reading instances before level loads
     Events:Subscribe('Level:LoadResources', function(p_level, p_mode, p_dedicated)
-            self:RegisterWait()
+        self:RegisterWait()
     end)
 end
 
 function WeaponsAppearances:RegisterWait()
+    Events:Subscribe('Level:Destroy', function()
+        self.m_unlockAssets = {}
+        self.m_registryContainer = nil
+    end)
+
     -- waiting instances
     InstanceWait(self.m_waitingGuids, function(p_instances)
         self:ReadInstances(p_instances)
@@ -109,7 +114,6 @@ function WeaponsAppearances:ReadInstances(p_instances)
     }
 
     -- removing hanging references
-    self.m_registryContainer = nil -- RegistryContainer
     self.m_meshVariationDatabase = nil -- MeshVariationDatabase
     self.m_skinnedMeshAsset1pWeaponGuids = {} -- WeaponStateData.mesh1p
     self.m_skinnedMeshAsset3pWeaponGuids = {} -- WeaponStateData.mesh3p

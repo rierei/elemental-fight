@@ -20,9 +20,6 @@ function WeaponsUnlocks:RegisterVars()
         chest = 159
     }
 
-    self.m_currentLevel = nil
-    self.m_currentMode = nil
-
     self.m_waitingCommonGuids = {
         MaterialContainer = {'B50615C2-4743-4919-9A40-A738150DEBE9', '89492CD4-F004-42B9-97FB-07FD3D436205'}, -- materialContainerAsset
 
@@ -98,22 +95,14 @@ function WeaponsUnlocks:RegisterVars()
 end
 
 function WeaponsUnlocks:RegisterEvents()
+    Events:Subscribe('Level:Destroy', function()
+        self.m_weaponUnlockAssets = {}
+        self.m_registryContainer = nil
+    end)
+
     -- reading instances after level load
     Events:Subscribe('Level:Loaded', function(p_level, p_mode)
-        if self.m_verbose >= 1 then
-            print('Level:Loaded')
-        end
-
-        if self.m_currentLevel == nil then
-            self:RegisterWait()
-        elseif self.m_currentLevel ~= p_level or self.m_currentMode ~= p_mode then
-            self:ReloadInstances()
-        else
-            ResourceManager:AddRegistry(self.m_registryContainer, ResourceCompartment.ResourceCompartment_Game)
-        end
-
-        self.m_currentLevel = p_level
-        self.m_currentMode = p_mode
+        self:RegisterWait()
     end)
 
     -- reading instances before level loads
@@ -239,15 +228,20 @@ function WeaponsUnlocks:ReadInstances(p_instances)
     -- removing hanging references
     self.m_materialContainerAsset = nil -- MaterialContainerAsset
     self.m_materialGridAsset = nil -- MaterialGridData
+
     self.m_explodeSoundEffectEntity = nil -- SoundEffectEntityData
+
     self.m_polynomialColorInterps = {} -- PolynomialColorInterpData
     self.m_emitterDocumentAssets = {} -- EmitterDocument
     self.m_emitterEntities = {} -- EmitterEntityData
+
     self.m_impactEffectBlueprints = {} -- EffectBlueprint
     self.m_explodeEffectBlueprints = {} -- EffectBlueprint
     self.m_smokeEffectBlueprints = {} -- EffectBlueprint
+
     self.m_impactExplosionEntities = {} -- VeniceExplosionEntityData
     self.m_explodeExplosionEntities = {} -- VeniceExplosionEntityData
+
     self.m_projectileEntities = {} -- MeshProjectileEntityData
     self.m_projectileBlueprints = {} -- ProjectileBlueprint
     self.m_weaponProjectileModifiers = {} -- WeaponProjectileModifier

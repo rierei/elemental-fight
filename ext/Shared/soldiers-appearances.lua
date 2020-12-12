@@ -218,6 +218,11 @@ function SoldiersAppearances:RegisterVars()
 end
 
 function SoldiersAppearances:RegisterEvents()
+    Events:Subscribe('Level:Destroy', function()
+        self.m_appearanceUnlockAssets = {}
+        self.m_registryContainer = nil
+    end)
+
     -- reading instances before level loads
     Events:Subscribe('Level:LoadResources', function(p_level, p_mode, p_dedicated)
         self:RegisterWait()
@@ -285,11 +290,10 @@ function SoldiersAppearances:ReadInstances(p_instances)
     }
 
     -- removing hanging references
-    self.m_registryContainer = nil -- RegistryContainer
     self.m_meshVariationDatabase = nil -- MeshVariationDatabase
 
-    self.m_surfaceShaderStructs = {} -- SurfaceShaderInstanceDataStruct
     self.m_skinnedSocketObjects = {} -- SkinnedSocketObject
+    self.m_surfaceShaderStructs = {} -- SurfaceShaderInstanceDataStruct
     self.m_databaseEntryMaterialIndexes = {} -- MeshVariationDatabaseEntry.materials
     self.m_meshMaterialVariations = {} -- MeshMaterialVariation
     self.m_meshVariationDatabaseEntrys = {} -- MeshVariationDatabaseEntry
