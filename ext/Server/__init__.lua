@@ -13,7 +13,14 @@ function ElementalFight:__init()
 end
 
 function ElementalFight:RegisterVars()
-    self.m_elementNames = {'neutral', 'water', 'fire', 'grass'}
+    self.m_elementNames = {
+        'neutral',
+        'water',
+        'fire',
+        'grass',
+        'gold',
+        'energy'
+    }
 
     self.m_soldierAppearances = SoldierAppearances()
     self.m_weaponAppearances = WeaponAppearances()
