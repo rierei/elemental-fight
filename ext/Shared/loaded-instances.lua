@@ -18,8 +18,6 @@ function LoadedInstances:RegisterVars()
         SoldierWeaponBlueprint = true,
         SoldierWeaponData = true,
 
-        ProjectileBlueprint = true,
-
         WeaponProjectileModifier = true,
         WeaponFiringDataModifier = true,
     }
@@ -138,7 +136,19 @@ function LoadedInstances:CheckInstance(p_instance)
         local s_type = _G[p_instance.typeInfo.name]
         p_instance = s_type(p_instance)
 
-        table.insert(self.m_loadedInstances.MeshProjectileEntityData, p_instance)
+        if string.starts(p_instance.partition.name, 'weapons/') then
+            table.insert(self.m_loadedInstances.MeshProjectileEntityData, p_instance)
+        end
+    elseif p_instance:Is('ProjectileBlueprint') then
+        if self.m_verbose >= 2 then
+            print('Found ProjectileBlueprint')
+        end
+
+        p_instance = ProjectileBlueprint(p_instance)
+
+        if string.starts(p_instance.partition.name, 'weapons/') then
+            table.insert(self.m_loadedInstances.ProjectileBlueprint, p_instance)
+        end
     end
 end
 
