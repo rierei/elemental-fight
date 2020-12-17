@@ -1,0 +1,350 @@
+local VehiclesBlueprints = class('VehiclesBlueprints')
+
+local LoadedInstances = require('__shared/loaded-instances')
+local ElementalConfig = require('__shared/elemental-config')
+local InstanceWait = require('__shared/utils/wait')
+local InstanceUtils = require('__shared/utils/instances')
+
+function VehiclesBlueprints:__init()
+    self:RegisterVars()
+    self:RegisterEvents()
+end
+
+function VehiclesBlueprints:RegisterVars()
+    self.m_waitingGuids = {
+        FX_Impact_Generic_01_S = {'AC35EF6C-108A-11DE-8A96-D77516A45310', 'AC35EF6D-108A-11DE-8A96-D77516A45310'},
+        FX_Impact_Generic_01_M = {'9C0B1F3F-0FE4-11DE-8BFA-867F957FF326', '9C0B1F40-0FE4-11DE-8BFA-867F957FF326'},
+        FX_Impact_Generic_01_L = {'6E9014B2-2E7A-11DE-A05D-865C3DEDD497', '6E9014B3-2E7A-11DE-A05D-865C3DEDD497'},
+        FX_Impact_Generic_01_Minigun = {'E8F51840-FA68-4901-A25F-4A65FC69E7A2', '1B8DD11E-D714-4C46-9159-E5BF70C7D3B7'}
+    }
+
+    self.m_waitingInstances = {
+        meshAssets = {},
+        meshVariationDatabaseEntrys = {},
+
+        effectBlueprints = {},
+
+        vehicleProjectileEntities = {},
+        vehicleProjectileBlueprints = {},
+
+        weaponComponents = {},
+
+        vehicleBlueprints = {},
+        vehicleEntities = {}
+    }
+
+    self.m_registryContainer = nil -- RegistryContainer
+
+    self.m_weaponComponentsIndexes = {}
+
+    self.m_meshAssets = {}
+    self.m_meshMaterialVariations = {}
+    self.m_meshVariationDatabaseEntrys = {}
+
+    self.m_effectBlueprints = {}
+
+    self.m_explosionEntities = {}
+    self.m_projectileEntities = {}
+    self.m_projectileBlueprints = {}
+
+    self.m_weaponComponents = {}
+
+    self.m_vehicleEntities = {}
+    self.m_vehicleBlueprints = {}
+end
+
+function VehiclesBlueprints:RegisterEvents()
+    InstanceWait(self.m_waitingGuids, function(p_instances)
+        self:ReadInstances(p_instances)
+    end)
+end
+function VehiclesBlueprints:ReadInstances(p_instances)
+    self.m_effects['small'] = p_instances['FX_Impact_Generic_01_S']
+    self.m_effects['medium'] = p_instances['FX_Impact_Generic_01_M']
+    self.m_effects['large'] = p_instances['FX_Impact_Generic_01_L']
+    self.m_effects['minigun'] = p_instances['FX_Impact_Generic_01_Minigun']
+
+    for _, l_entity in pairs(self.m_waitingInstances.vehicleEntities) do
+        table.insert(self.m_waitingInstances.meshAssets, l_entity.mesh)
+
+        self:ReadMeshVariationDatabaseEntrys(l_entity.mesh)
+        self:ReadWeaponComponents(l_entity)
+    end
+end
+
+function VehiclesBlueprints:ReadMeshVariationDatabaseEntrys(p_asset)
+    for _, l_value in pairs(self.m_meshVariationDatabase.entries) do
+        if l_value.mesh == p_asset then
+            self.m_waitingInstances.meshVariationDatabaseEntrys[p_asset.instanceGuid:ToString('D')] = l_value
+        end
+    end
+end
+
+function VehiclesBlueprints:ReadWeaponComponents(p_entity)
+    local function readWeaponComponents(p_components)
+        local s_indexes = {}
+
+        for l_key, l_value in pairs(p_components) do
+            if l_value:Is('WeaponComponentData') then
+                s_indexes[l_key] = true
+            else
+                s_indexes[l_key] = readWeaponComponents(l_value.components)
+            end
+        end
+
+        return s_indexes
+    end
+
+    local s_weaponComponentsIndexes = readWeaponComponents(p_entity.components)
+
+    self.m_weaponComponentsIndexes[p_entity.instanceGuid:ToString('D')] = s_weaponComponentsIndexes
+end
+
+function VehiclesBlueprints:CreateInstances()
+    for _, l_asset in pairs(self.m_waitingInstances.meshAssets) do
+        self:CreateMeshAssets(l_asset)
+        self:CreateMeshVariationDatabaseEntrys(l_asset)
+    end
+
+    self:CreateEffectBlueprints(self.m_waitingInstances.effectBlueprints)
+
+    for _, l_entity in pairs(self.m_waitingInstances.vehicleProjectileEntities) do
+        self:CreateExplosionEntities(l_entity)
+        self:CreateProjectileEntities(l_entity)
+    end
+
+    for _, l_blueprint in pairs(self.m_waitingInstances.vehicleProjectileBlueprints) do
+        self:CreateProjectileBleprints(l_blueprint)
+    end
+
+    for _, l_component in pairs(self.m_waitingInstances.weaponComponents) do
+        self:CreateWeaponsComponents(l_component)
+    end
+
+    for _, l_entity in pairs(self.m_waitingInstances.vehicleEntities) do
+        self:CreateVehicleEntities(l_entity)
+    end
+
+    for _, l_blueprint in pairs(self.m_waitingInstances.vehicleBlueprints) do
+        self:CreateVehicleBlueprints(l_blueprint)
+    end
+end
+
+-- creating MeshAsset
+function VehiclesBlueprints:CreateMeshAssets(p_asset)
+    if self.m_verbose >= 2 then
+        print('Create MeshAssets')
+    end
+
+    local s_elements = {}
+    s_elements['neutral'] = p_asset
+
+    for _, l_element in pairs(ElementalConfig.names) do
+        local s_newMeshAsset = InstanceUtils:CloneInstance(p_asset, l_element)
+
+        -- TODO CUSTOM MESH
+
+        s_elements[l_element] = s_newMeshAsset
+    end
+
+    self.m_meshAssets[p_asset.instanceGuid:ToString('D')] = s_elements
+end
+
+-- creating MeshMaterialVariation
+function VehiclesBlueprints:CreateMeshMaterialVariations()
+    if self.m_verbose >= 2 then
+        print('Create MeshMaterialVariations')
+    end
+
+    local s_elements = {}
+
+    for _, l_element in pairs(ElementalConfig.names) do
+        local s_newMeshMaterialVariation = MeshMaterialVariation()
+
+        -- TODO MATERIAL VARIATION
+
+        s_elements[l_element] = s_newMeshMaterialVariation
+    end
+
+    self.m_meshMaterialVariations = s_elements
+end
+
+-- creating MeshVariationDatabaseEntry
+function VehiclesBlueprints:CreateMeshVariationDatabaseEntrys(p_entry)
+    if self.m_verbose >= 2 then
+        print('Create MeshVariationEntrys')
+    end
+
+    local s_elements = {}
+    s_elements['neutral'] = p_entry
+
+    for _, l_element in pairs(ElementalConfig.names) do
+        local s_newMeshVariationDatabaseEntry = InstanceUtils:CloneInstance(p_entry, l_element)
+
+        -- TODO MESH VARIATION
+
+        s_elements[l_element] = s_newMeshVariationDatabaseEntry
+    end
+
+    self.m_meshVariationDatabaseEntrys[p_entry.instanceGuid:ToString('D')] = s_elements
+end
+
+function VehiclesBlueprints:CreateEffectBlueprints(p_blueprints)
+    for l_key, l_value in pairs(p_blueprints) do
+        local s_elements = {}
+        s_elements['neutral'] = l_value
+
+        for _, l_element in pairs(ElementalConfig.names) do
+            local s_newEffectBlueprint = InstanceUtils:CloneInstance(l_value, l_element)
+
+            -- TODO CUSTOM EFFECT
+
+            s_elements[l_element] = s_newEffectBlueprint
+        end
+
+        self.m_effectBlueprints[l_key] = s_elements
+    end
+end
+
+-- creating VeniceExplosionEntityData
+function VehiclesBlueprints:CreateExplosionEntities(p_entity)
+    if self.m_verbose >= 2 then
+        print('Create ExplosionEntities')
+    end
+
+    local s_elements = {}
+    s_elements['neutral'] = p_entity
+
+    for _, l_element in pairs(ElementalConfig.names) do
+        local s_newExplosionEntity = VeniceExplosionEntityData(InstanceUtils:GenerateGuid('explosionBlueprint' .. l_element))
+
+        -- TODO CUSTOM EXPLOSION
+
+        s_elements[l_element] = s_newExplosionEntity
+    end
+
+    self.m_explosionEntities[p_entity.instanceGuid:ToString('D')] = s_elements
+end
+
+-- creating MeshProjectileEntityData
+function VehiclesBlueprints:CreateProjectileEntities(p_entity)
+    if self.m_verbose >= 2 then
+        print('Create ProjectileEntities')
+    end
+
+    local s_elements = {}
+    s_elements['neutral'] = p_entity
+
+    for _, l_element in pairs(ElementalConfig.names) do
+        local s_newProjectileEntity = InstanceUtils:CloneInstance(p_entity, l_element)
+
+        if p_entity.physicsPropertyIndex == 77 then
+            -- BulletDamage
+        end
+
+        if p_entity.physicsPropertyIndex == 83 then
+            -- HMG
+        end
+
+        if p_entity.physicsPropertyIndex == 86 then
+            -- TankShell
+        end
+
+        if p_entity.physicsPropertyIndex == 114 then
+            -- Minigun
+        end
+
+        if p_entity.physicsPropertyIndex == 139 then
+            -- DUD
+        end
+
+        -- TODO CUSTOM EXPLOSION
+
+        s_elements[l_element] = s_newProjectileEntity
+    end
+
+    self.m_projectileEntities[p_entity.instanceGuid:ToString('D')] = s_elements
+end
+
+-- creating ProjectileBlueprint
+function VehiclesBlueprints:CreateProjectileBleprints(p_blueprint)
+    if self.m_verbose >= 2 then
+        print('Create ProjectileBlueprints')
+    end
+
+    local s_elements = {}
+    s_elements['neutral'] = p_blueprint
+
+    for _, l_element in pairs(ElementalConfig.names) do
+        local s_newProjectileBlueprint = InstanceUtils:CloneInstance(p_blueprint, l_element)
+
+        -- TODO PROJECTILE ENTITY
+
+        s_elements[l_element] = s_newProjectileBlueprint
+    end
+
+    self.m_projectileBlueprints[p_blueprint.instanceGuid:ToString('D')] = s_elements
+end
+
+-- creating WeaponComponentData
+function VehiclesBlueprints:CreateWeaponsComponents(p_component)
+    if self.m_verbose >= 2 then
+        print('Create WeaponComponents')
+    end
+
+    local s_elements = {}
+    s_elements['neutral'] = p_component
+
+    for _, l_element in pairs(ElementalConfig.names) do
+        local s_newWeaponComponent = InstanceUtils:CloneInstance(p_component, l_element)
+
+        -- TODO WEAPON FIRING
+
+        s_elements[l_element] = s_newWeaponComponent
+    end
+
+    self.m_weaponComponents[p_component.instanceGuid:ToString('D')] = s_elements
+end
+
+-- creating VehicleEntityData
+function VehiclesBlueprints:CreateVehicleEntities(p_entity)
+    if self.m_verbose >= 2 then
+        print('Create VehicleEntities')
+    end
+
+    -- TODO REPLACE WEAPON COMPONENTS
+
+    local s_elements = {}
+    s_elements['neutral'] = p_entity
+
+    for _, l_element in pairs(ElementalConfig.names) do
+        local s_newVehicleEntity = InstanceUtils:CloneInstance(p_entity, l_element)
+
+        s_elements[l_element] = s_newVehicleEntity
+    end
+
+    self.m_vehicleEntities[p_entity.instanceGuid:ToString('D')] = s_elements
+end
+
+-- creating VehicleBlueprint
+function VehiclesBlueprints:CreateVehicleBlueprints(p_blueprint)
+    if self.m_verbose >= 2 then
+        print('Create VehicleBlueprints')
+    end
+
+    -- TODO REPLACE WEAPON COMPONENTS CONNECTIONS
+
+    local s_elements = {}
+    s_elements['neutral'] = p_blueprint
+
+    local s_entityGuid = p_blueprint.object.instanceGuid:ToString('D')
+    for _, l_element in pairs(ElementalConfig.names) do
+        local s_newVehicleBlueprint = InstanceUtils:CloneInstance(p_blueprint, l_element)
+
+        s_newVehicleBlueprint.object = self.m_vehicleEntities[s_entityGuid][l_element]
+
+        s_elements[l_element] = s_newVehicleBlueprint
+    end
+
+    self.m_vehicleEntities[p_blueprint.instanceGuid:ToString('D')] = s_elements
+end
