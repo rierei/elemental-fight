@@ -407,7 +407,33 @@ function VehiclesBlueprints:CreateVehicleBlueprints(p_blueprint)
         print('Create VehicleBlueprints')
     end
 
-    -- TODO REPLACE WEAPON COMPONENTS CONNECTIONS
+    -- searching and replacing connections
+    local function updateConnections(p_connections, p_search, p_replace)
+        for _, l_connection in pairs(p_connections) do
+            if l_connection.source == p_search then
+                l_connection.source = p_replace
+            end
+
+            if l_connection.target == p_search then
+                l_connection.target = p_replace
+            end
+        end
+    end
+
+    -- replacing weapon connections
+    local function updateWeaponConnections(p_connections, p_element)
+        for _, l_connection in pairs(p_connections) do
+            local s_sourceGuid = l_connection.source.instanceGuid:ToString('D')
+            if self.m_weaponComponents[s_sourceGuid] ~= nil then
+                l_connection.source = self.m_weaponComponents[s_sourceGuid][p_element]
+            end
+
+            local s_targetGuid = l_connection.target.instanceGuid:ToString('D')
+            if self.m_weaponComponents[s_targetGuid] ~= nil then
+                l_connection.target = self.m_weaponComponents[s_targetGuid][p_element]
+            end
+        end
+    end
 
     local s_elements = {}
     s_elements['neutral'] = p_blueprint
@@ -416,7 +442,18 @@ function VehiclesBlueprints:CreateVehicleBlueprints(p_blueprint)
     for _, l_element in pairs(ElementalConfig.names) do
         local s_newVehicleBlueprint = InstanceUtils:CloneInstance(p_blueprint, l_element)
 
+        -- patching blueprint properties
         s_newVehicleBlueprint.object = self.m_vehicleEntities[s_entityGuid][l_element]
+
+        -- updating entity connections
+        updateConnections(s_newVehicleBlueprint.propertyConnections, p_blueprint.object, s_newVehicleBlueprint.object)
+        updateConnections(s_newVehicleBlueprint.linkConnections, p_blueprint.object, s_newVehicleBlueprint.object)
+        updateConnections(s_newVehicleBlueprint.eventConnections, p_blueprint.object, s_newVehicleBlueprint.object)
+
+        -- updating weapon connections
+        updateWeaponConnections(s_newVehicleBlueprint.propertyConnections, l_element)
+        updateWeaponConnections(s_newVehicleBlueprint.linkConnections, l_element)
+        updateWeaponConnections(s_newVehicleBlueprint.eventConnections, l_element)
 
         s_elements[l_element] = s_newVehicleBlueprint
     end
