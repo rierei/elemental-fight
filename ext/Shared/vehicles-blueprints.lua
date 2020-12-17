@@ -54,21 +54,59 @@ function VehiclesBlueprints:RegisterVars()
 end
 
 function VehiclesBlueprints:RegisterEvents()
-    InstanceWait(self.m_waitingGuids, function(p_instances)
-        self:ReadInstances(p_instances)
+    Events:Subscribe('Level:LoadingInfo', function(p_screenInfo)
+        if p_screenInfo == 'Initializing entities for autoloaded sublevels' then
+            self.m_waitingInstances.meshVariationDatabase = LoadedInstances.m_loadedInstances.MeshVariationDatabase
+            self.m_waitingInstances.vehicleEntities = LoadedInstances.m_loadedInstances.VehicleEntityData
+        end
+    end)
+
+    Events:Subscribe('Level:Loaded', function(p_level, p_mode)
+        InstanceWait(self.m_waitingGuids, function(p_instances)
+            self:ReadInstances(p_instances)
+        end)
     end)
 end
+
 function VehiclesBlueprints:ReadInstances(p_instances)
-    self.m_effects['small'] = p_instances['FX_Impact_Generic_01_S']
-    self.m_effects['medium'] = p_instances['FX_Impact_Generic_01_M']
-    self.m_effects['large'] = p_instances['FX_Impact_Generic_01_L']
-    self.m_effects['minigun'] = p_instances['FX_Impact_Generic_01_Minigun']
+    self.m_meshVariationDatabase = self.m_waitingInstances.meshVariationDatabase
+    self.m_meshVariationDatabase:MakeWritable()
+
+    self.m_effectBlueprints['small'] = p_instances['FX_Impact_Generic_01_S']
+    self.m_effectBlueprints['medium'] = p_instances['FX_Impact_Generic_01_M']
+    self.m_effectBlueprints['large'] = p_instances['FX_Impact_Generic_01_L']
+    self.m_effectBlueprints['minigun'] = p_instances['FX_Impact_Generic_01_Minigun']
 
     for _, l_entity in pairs(self.m_waitingInstances.vehicleEntities) do
         table.insert(self.m_waitingInstances.meshAssets, l_entity.mesh)
 
         self:ReadMeshVariationDatabaseEntrys(l_entity.mesh)
         self:ReadWeaponComponents(l_entity)
+    end
+
+    local function readComponents(p_component, p_indexes)
+        local s_component = nil
+
+        if p_component:Is('VehicleEntityData') then
+            s_component = p_component.components[p_indexes[1]]
+        else
+            s_component = ComponentData(p_component).components[p_indexes[1]]
+        end
+
+        table.remove(p_indexes, 1)
+
+        if #p_indexes == 0 then
+            return s_component
+        end
+
+        return readComponents(s_component, p_indexes)
+    end
+
+    for key, value in pairs(self.m_waitingInstances.vehicleEntities) do
+        local weaponComponentsIndexes = self.m_weaponComponentsIndexes[value.instanceGuid:ToString('D')]
+        for k, v in pairs(weaponComponentsIndexes) do
+            print(readComponents(value, v))
+        end
     end
 end
 
@@ -81,23 +119,43 @@ function VehiclesBlueprints:ReadMeshVariationDatabaseEntrys(p_asset)
 end
 
 function VehiclesBlueprints:ReadWeaponComponents(p_entity)
-    local function readWeaponComponents(p_components)
-        local s_indexes = {}
+    self.m_weaponComponentsIndexes[p_entity.instanceGuid:ToString('D')] = {}
 
-        for l_key, l_value in pairs(p_components) do
-            if l_value:Is('WeaponComponentData') then
-                s_indexes[l_key] = true
-            else
-                s_indexes[l_key] = readWeaponComponents(l_value.components)
-            end
+    local function cloneTable(p_table)
+        local s_table = {}
+
+        for l_key, l_value in pairs(p_table) do
+            s_table[l_key] = l_value
         end
 
-        return s_indexes
+        return s_table
     end
 
-    local s_weaponComponentsIndexes = readWeaponComponents(p_entity.components)
+    local function readWeaponComponents(p_components, p_keys)
+        if p_components == nil then
+            return nil
+        end
 
-    self.m_weaponComponentsIndexes[p_entity.instanceGuid:ToString('D')] = s_weaponComponentsIndexes
+        for l_key, l_value in pairs(p_components) do
+            if l_value:Is('ComponentData') then
+                l_value = ComponentData(l_value)
+            end
+
+            if l_value:Is('WeaponComponentData') then
+                local s_keys = cloneTable(p_keys)
+                table.insert(s_keys, l_key)
+
+                table.insert(self.m_weaponComponentsIndexes[p_entity.instanceGuid:ToString('D')], s_keys)
+            else
+                local s_keys = cloneTable(p_keys)
+                table.insert(s_keys, l_key)
+
+                readWeaponComponents(l_value.components, s_keys)
+            end
+        end
+    end
+
+    readWeaponComponents(p_entity.components, {})
 end
 
 function VehiclesBlueprints:CreateInstances()
@@ -348,3 +406,5 @@ function VehiclesBlueprints:CreateVehicleBlueprints(p_blueprint)
 
     self.m_vehicleEntities[p_blueprint.instanceGuid:ToString('D')] = s_elements
 end
+
+return VehiclesBlueprints

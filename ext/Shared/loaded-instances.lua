@@ -22,6 +22,9 @@ function LoadedInstances:RegisterVars()
         SoldierWeaponBlueprint = true,
         SoldierWeaponData = true,
 
+        VehicleBlueprint = true,
+        VehicleEntityData = true,
+
         WeaponProjectileModifier = true,
         WeaponFiringDataModifier = true,
     }
@@ -31,8 +34,14 @@ function LoadedInstances:RegisterVars()
         SoldierWeaponBlueprint = {},
         SoldierWeaponData = {},
 
-        MeshProjectileEntityData = {},
-        ProjectileBlueprint = {},
+        VehicleBlueprint = {},
+        VehicleEntityData = {},
+
+        WeaponMeshProjectileEntityData = {},
+        WeaponProjectileBlueprint = {},
+
+        VehicleMeshProjectileEntityData = {},
+        VehicleProjectileBlueprint = {},
 
         WeaponProjectileModifier = {},
         WeaponFiringDataModifier = {},
@@ -110,8 +119,14 @@ function LoadedInstances:RegisterEvents()
         self.m_loadedInstances.MeshProjectileEntityData = {}
         self.m_loadedInstances.ProjectileBlueprint = {}
 
-        self.m_loadedInstances.WeaponProjectileModifier = {}
-        self.m_loadedInstances.WeaponFiringDataModifier = {}
+        self.m_loadedInstances.VehicleBlueprint = {}
+        self.m_loadedInstances.VehicleEntityData = {}
+
+        self.m_loadedInstances.WeaponMeshProjectileEntityData = {}
+        self.m_loadedInstances.WeaponProjectileBlueprint = {}
+
+        self.m_loadedInstances.VehicleMeshProjectileEntityData = {}
+        self.m_loadedInstances.VehicleProjectileBlueprint = {}
 
         self.m_loadedInstances.MaterialGridData = {}
         self.m_loadedInstances.MeshVariationDatabase = {}
