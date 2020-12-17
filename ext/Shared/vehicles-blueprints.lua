@@ -83,31 +83,6 @@ function VehiclesBlueprints:ReadInstances(p_instances)
         self:ReadMeshVariationDatabaseEntrys(l_entity.mesh)
         self:ReadWeaponComponents(l_entity)
     end
-
-    local function readComponents(p_component, p_indexes)
-        local s_component = nil
-
-        if p_component:Is('VehicleEntityData') then
-            s_component = p_component.components[p_indexes[1]]
-        else
-            s_component = ComponentData(p_component).components[p_indexes[1]]
-        end
-
-        table.remove(p_indexes, 1)
-
-        if #p_indexes == 0 then
-            return s_component
-        end
-
-        return readComponents(s_component, p_indexes)
-    end
-
-    for key, value in pairs(self.m_waitingInstances.vehicleEntities) do
-        local weaponComponentsIndexes = self.m_weaponComponentsIndexes[value.instanceGuid:ToString('D')]
-        for k, v in pairs(weaponComponentsIndexes) do
-            print(readComponents(value, v))
-        end
-    end
 end
 
 function VehiclesBlueprints:ReadMeshVariationDatabaseEntrys(p_asset)
@@ -121,6 +96,7 @@ end
 function VehiclesBlueprints:ReadWeaponComponents(p_entity)
     self.m_weaponComponentsIndexes[p_entity.instanceGuid:ToString('D')] = {}
 
+    -- copying table values
     local function cloneTable(p_table)
         local s_table = {}
 
@@ -131,26 +107,30 @@ function VehiclesBlueprints:ReadWeaponComponents(p_entity)
         return s_table
     end
 
+    -- recursively reading weapon components
     local function readWeaponComponents(p_components, p_keys)
         if p_components == nil then
             return nil
         end
 
+        -- reading all components
         for l_key, l_value in pairs(p_components) do
             if l_value:Is('ComponentData') then
-                l_value = ComponentData(l_value)
-            end
-
-            if l_value:Is('WeaponComponentData') then
                 local s_keys = cloneTable(p_keys)
+
+                -- parsing current index
+                table.insert(s_keys, l_key)
+
+                readWeaponComponents(ComponentData(l_value).components, s_keys)
+            elseif l_value:Is('WeaponComponentData') then
+                local s_keys = cloneTable(p_keys)
+
+                -- parsing current index
                 table.insert(s_keys, l_key)
 
                 table.insert(self.m_weaponComponentsIndexes[p_entity.instanceGuid:ToString('D')], s_keys)
-            else
-                local s_keys = cloneTable(p_keys)
-                table.insert(s_keys, l_key)
 
-                readWeaponComponents(l_value.components, s_keys)
+                self.m_waitingInstances.weaponComponents[l_value.instanceGuid:ToString('D')] = WeaponComponentData(l_value)
             end
         end
     end
@@ -370,13 +350,50 @@ function VehiclesBlueprints:CreateVehicleEntities(p_entity)
         print('Create VehicleEntities')
     end
 
-    -- TODO REPLACE WEAPON COMPONENTS
+    -- updating components recursively
+    local function updateComponents(p_component, p_indexes, p_element)
+        local s_nextIndex = p_indexes[1]
+
+        local s_currComponent = nil
+        local s_nextComponent = nil
+
+        -- casting current component
+        if p_component:Is('VehicleEntityData') then
+            s_currComponent = p_component
+        else
+            s_currComponent = ComponentData(p_component)
+        end
+
+        s_nextComponent = s_currComponent.components[s_nextIndex]
+
+        if #p_indexes > 1 then
+            local s_newComponentData = s_nextComponent:Clone()
+
+            -- replacing components until the end
+            s_currComponent.components[s_nextIndex] = s_newComponentData
+
+            --shifting indexes array
+            table.remove(p_indexes, 1)
+
+            updateComponents(s_newComponentData, p_indexes, p_element)
+        else
+            -- replacing the weapon component
+            p_component.components[s_nextIndex] = self.m_weaponComponents[s_nextComponent.instanceGuid:ToString('D')][p_element]
+        end
+    end
+
+    local weaponComponentsIndexes = self.m_weaponComponentsIndexes[p_entity.instanceGuid:ToString('D')]
 
     local s_elements = {}
     s_elements['neutral'] = p_entity
 
     for _, l_element in pairs(ElementalConfig.names) do
         local s_newVehicleEntity = InstanceUtils:CloneInstance(p_entity, l_element)
+
+        -- replacing weapon components
+        for _, l_value in pairs(weaponComponentsIndexes) do
+            updateComponents(s_newVehicleEntity, l_value, l_element)
+        end
 
         s_elements[l_element] = s_newVehicleEntity
     end
