@@ -350,8 +350,21 @@ function VehiclesBlueprints:CreateVehicleEntities(p_entity)
         print('Create VehicleEntities')
     end
 
+    -- copying table values
+    local function cloneTable(p_table)
+        local s_table = {}
+
+        for l_key, l_value in pairs(p_table) do
+            s_table[l_key] = l_value
+        end
+
+        return s_table
+    end
+
     -- updating components recursively
     local function updateComponents(p_component, p_indexes, p_element)
+        p_indexes = cloneTable(p_indexes)
+
         local s_nextIndex = p_indexes[1]
 
         local s_currComponent = nil
@@ -378,7 +391,7 @@ function VehiclesBlueprints:CreateVehicleEntities(p_entity)
             updateComponents(s_newComponentData, p_indexes, p_element)
         else
             -- replacing the weapon component
-            p_component.components[s_nextIndex] = self.m_weaponComponents[s_nextComponent.instanceGuid:ToString('D')][p_element]
+            s_currComponent.components[s_nextIndex] = self.m_weaponComponents[s_nextComponent.instanceGuid:ToString('D')][p_element]
         end
     end
 
