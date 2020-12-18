@@ -115,14 +115,7 @@ function VehiclesBlueprints:ReadWeaponComponents(p_entity)
 
         -- reading all components
         for l_key, l_value in pairs(p_components) do
-            if l_value:Is('ComponentData') then
-                local s_keys = cloneTable(p_keys)
-
-                -- parsing current index
-                table.insert(s_keys, l_key)
-
-                readWeaponComponents(ComponentData(l_value).components, s_keys)
-            elseif l_value:Is('WeaponComponentData') then
+            if l_value:Is('WeaponComponentData') then
                 local s_keys = cloneTable(p_keys)
 
                 -- parsing current index
@@ -131,6 +124,13 @@ function VehiclesBlueprints:ReadWeaponComponents(p_entity)
                 table.insert(self.m_weaponComponentsIndexes[p_entity.instanceGuid:ToString('D')], s_keys)
 
                 self.m_waitingInstances.weaponComponents[l_value.instanceGuid:ToString('D')] = WeaponComponentData(l_value)
+            elseif l_value:Is('ComponentData') then
+                local s_keys = cloneTable(p_keys)
+
+                -- parsing current index
+                table.insert(s_keys, l_key)
+
+                readWeaponComponents(ComponentData(l_value).components, s_keys)
             end
         end
     end
