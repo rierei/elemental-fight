@@ -15,10 +15,18 @@ function VehiclesBlueprints:RegisterVars()
         FX_Impact_Generic_01_S = {'AC35EF6C-108A-11DE-8A96-D77516A45310', 'AC35EF6D-108A-11DE-8A96-D77516A45310'},
         FX_Impact_Generic_01_M = {'9C0B1F3F-0FE4-11DE-8BFA-867F957FF326', '9C0B1F40-0FE4-11DE-8BFA-867F957FF326'},
         FX_Impact_Generic_01_L = {'6E9014B2-2E7A-11DE-A05D-865C3DEDD497', '6E9014B3-2E7A-11DE-A05D-865C3DEDD497'},
-        FX_Impact_Generic_01_Minigun = {'E8F51840-FA68-4901-A25F-4A65FC69E7A2', '1B8DD11E-D714-4C46-9159-E5BF70C7D3B7'}
+        FX_Impact_Generic_01_Minigun = {'E8F51840-FA68-4901-A25F-4A65FC69E7A2', '1B8DD11E-D714-4C46-9159-E5BF70C7D3B7'},
+
+        VehiclePreset_Mud = {'A0300659-01B5-4DF5-8895-98AD28C984C2', 'FA58EF71-AD00-427B-8AA1-3B8FAD051EEF'},
+        VehiclePreset_Jet = {'C2DCC7D1-BCC6-4047-8A2B-8170E57B07B8', '6B0CDFF7-3EB6-4177-9BA0-FD686F10DF8C'},
+
+        _MP_Pilot_Gear_Heli_US = {'75CF71E3-AD39-11E0-99FA-8D9FD57D29B3', 'D75008EB-B9B4-B977-6478-04787EEFB185'}
     }
 
     self.m_waitingInstances = {
+        vehicleJetShader = nil,
+        vehicleMudShader = nil,
+
         meshAssets = {},
         meshVariationDatabaseEntrys = {},
 
@@ -36,6 +44,8 @@ function VehiclesBlueprints:RegisterVars()
     self.m_registryContainer = nil -- RegistryContainer
 
     self.m_weaponComponentsIndexes = {}
+
+    self.m_surfaceShaderStructs = {}
 
     self.m_meshAssets = {}
     self.m_meshMaterialVariations = {}
@@ -56,28 +66,25 @@ function VehiclesBlueprints:RegisterVars()
 end
 
 function VehiclesBlueprints:RegisterEvents()
-    Events:Subscribe('Level:LoadingInfo', function(p_screenInfo)
-        if p_screenInfo == 'Initializing entities for autoloaded sublevels' then
-            self.m_waitingInstances.meshVariationDatabase = LoadedInstances.m_loadedInstances.MeshVariationDatabase
+    InstanceWait(self.m_waitingGuids, function(p_instances)
+        self.m_waitingInstances.meshVariationDatabase = LoadedInstances.m_loadedInstances.MeshVariationDatabase
 
-            self.m_waitingInstances.vehicleProjectileEntities = LoadedInstances.m_loadedInstances.VehicleMeshProjectileEntityData
-            self.m_waitingInstances.vehicleProjectileBlueprints = LoadedInstances.m_loadedInstances.VehicleProjectileBlueprint
+        self.m_waitingInstances.vehicleProjectileEntities = LoadedInstances.m_loadedInstances.VehicleMeshProjectileEntityData
+        self.m_waitingInstances.vehicleProjectileBlueprints = LoadedInstances.m_loadedInstances.VehicleProjectileBlueprint
 
-            self.m_waitingInstances.vehicleEntities = LoadedInstances.m_loadedInstances.VehicleEntityData
-            self.m_waitingInstances.vehicleBlueprints = LoadedInstances.m_loadedInstances.VehicleBlueprint
-        end
-    end)
+        self.m_waitingInstances.vehicleEntities = LoadedInstances.m_loadedInstances.VehicleEntityData
+        self.m_waitingInstances.vehicleBlueprints = LoadedInstances.m_loadedInstances.VehicleBlueprint
 
-    Events:Subscribe('Level:Loaded', function(p_level, p_mode)
-        InstanceWait(self.m_waitingGuids, function(p_instances)
-            self:ReadInstances(p_instances)
-        end)
+        self:ReadInstances(p_instances)
     end)
 end
 
 function VehiclesBlueprints:ReadInstances(p_instances)
     self.m_meshVariationDatabase = self.m_waitingInstances.meshVariationDatabase
     self.m_meshVariationDatabase:MakeWritable()
+
+    self.m_waitingInstances.vehicleJetShader = p_instances['VehiclePreset_Mud']
+    self.m_waitingInstances.vehicleMudShader = p_instances['VehiclePreset_Jet']
 
     self.m_effectBlueprints['small'] = p_instances['FX_Impact_Generic_01_S']
     self.m_effectBlueprints['medium'] = p_instances['FX_Impact_Generic_01_M']
@@ -96,7 +103,7 @@ end
 
 function VehiclesBlueprints:ReadMeshVariationDatabaseEntrys(p_asset)
     for _, l_value in pairs(self.m_meshVariationDatabase.entries) do
-        if l_value.mesh == p_asset then
+        if l_value.mesh.instanceGuid == p_asset.instanceGuid then
             self.m_waitingInstances.meshVariationDatabaseEntrys[p_asset.instanceGuid:ToString('D')] = l_value
         end
     end
@@ -148,11 +155,21 @@ function VehiclesBlueprints:ReadWeaponComponents(p_entity)
 end
 
 function VehiclesBlueprints:CreateInstances()
+    if self.m_verbose >= 1 then
+        print('Creating Instances')
+    end
+
+    self.m_registryContainer = RegistryContainer()
+
     for _, l_asset in pairs(self.m_waitingInstances.meshAssets) do
         self:CreateMeshAssets(l_asset)
     end
 
+    self:CreateSurfaceShaderStructs(self.m_waitingInstances.vehicleMudShader)
+    self:CreateSurfaceShaderStructs(self.m_waitingInstances.vehicleJetShader)
+
     for _, l_entry in pairs(self.m_waitingInstances.meshVariationDatabaseEntrys) do
+        self:CreateMeshMaterialVariations(l_entry)
         self:CreateMeshVariationDatabaseEntrys(l_entry)
     end
 
@@ -182,8 +199,11 @@ function VehiclesBlueprints:CreateInstances()
         self:CreateVehicleBlueprints(l_blueprint)
     end
 
+    ResourceManager:AddRegistry(self.m_registryContainer, ResourceCompartment.ResourceCompartment_Dynamic_Begin_)
+
     if self.m_verbose >= 1 then
         print('Created WeaponComponentsIndexes: ' .. InstanceUtils:Count(self.m_weaponComponentsIndexes))
+        print('Created SurfaceShaderStructs: ' .. InstanceUtils:Count(self.m_surfaceShaderStructs))
         print('Created MeshAssets: ' .. InstanceUtils:Count(self.m_meshAssets))
         print('Created MeshMaterialVariations: ' .. InstanceUtils:Count(self.m_meshMaterialVariations))
         print('Created MeshVariationDatabaseEntrys: ' .. InstanceUtils:Count(self.m_meshVariationDatabaseEntrys))
@@ -194,6 +214,9 @@ function VehiclesBlueprints:CreateInstances()
         print('Created WeaponComponents: ' .. InstanceUtils:Count(self.m_weaponComponents))
         print('Created VehicleEntities: ' .. InstanceUtils:Count(self.m_vehicleEntities))
         print('Created VehicleBlueprints: ' .. InstanceUtils:Count(self.m_vehicleBlueprints))
+        print('Created RegistryContainerAssets: ' .. InstanceUtils:Count(self.m_registryContainer.assetRegistry))
+        print('Created RegistryContainerEntities: ' .. InstanceUtils:Count(self.m_registryContainer.entityRegistry))
+        print('Created RegistryContainerBlueprints: ' .. InstanceUtils:Count(self.m_registryContainer.blueprintRegistry))
     end
 end
 
@@ -209,7 +232,7 @@ function VehiclesBlueprints:CreateMeshAssets(p_asset)
     for _, l_element in pairs(ElementalConfig.names) do
         local s_newMeshAsset = InstanceUtils:CloneInstance(p_asset, l_element)
 
-        -- TODO CUSTOM MESH
+        s_newMeshAsset.nameHash = MathUtils:FNVHash(s_newMeshAsset.name .. l_element)
 
         s_elements[l_element] = s_newMeshAsset
     end
@@ -217,23 +240,66 @@ function VehiclesBlueprints:CreateMeshAssets(p_asset)
     self.m_meshAssets[p_asset.instanceGuid:ToString('D')] = s_elements
 end
 
+
+-- creating SurfaceShaderInstanceDataStruct
+function VehiclesBlueprints:CreateSurfaceShaderStructs(p_asset)
+    local s_elements = {}
+
+    for _, l_element in pairs(ElementalConfig.names) do
+        local s_surfaceShaderInstanceDataStruct = SurfaceShaderInstanceDataStruct()
+
+        local s_color = ElementalConfig.colors[l_element]
+
+        local s_camoDarkeningParameter = VectorShaderParameter()
+        s_camoDarkeningParameter.value = Vec4(s_color.x * 10, s_color.y * 10, s_color.z * 10, 0)
+        s_camoDarkeningParameter.parameterName = 'CamoBrightness'
+        s_camoDarkeningParameter.parameterType = ShaderParameterType.ShaderParameterType_Color
+
+        s_surfaceShaderInstanceDataStruct.shader = p_asset
+        s_surfaceShaderInstanceDataStruct.vectorParameters:add(s_camoDarkeningParameter)
+
+        s_elements[l_element] = s_surfaceShaderInstanceDataStruct
+    end
+
+    self.m_surfaceShaderStructs[p_asset.instanceGuid:ToString('D')] = s_elements
+end
+
 -- creating MeshMaterialVariation
-function VehiclesBlueprints:CreateMeshMaterialVariations()
+function VehiclesBlueprints:CreateMeshMaterialVariations(p_entry)
     if self.m_verbose >= 2 then
         print('Create MeshMaterialVariations')
     end
 
     local s_elements = {}
+    s_elements['neutral'] = p_entry.materials[1]
 
     for _, l_element in pairs(ElementalConfig.names) do
-        local s_newMeshMaterialVariation = MeshMaterialVariation()
+        local s_databaseEntryMaterials = {}
 
-        -- TODO MATERIAL VARIATION
+        for ll_key, ll_value in pairs(p_entry.materials) do
+            local s_isJet = false
+            local s_isMud = false
 
-        s_elements[l_element] = s_newMeshMaterialVariation
+            local s_shaderGraph = ll_value.material.shader.shader
+            if s_shaderGraph ~= nil then
+                s_isJet = ll_value.material.shader.shader.name == 'Vehicles/Shaders/VehiclePreset_Jet'
+                s_isMud = ll_value.material.shader.shader.name == 'Vehicles/Shaders/VehiclePreset_Mud'
+            end
+
+            if s_isJet or s_isMud then
+                local s_newMeshMaterialVariation = MeshMaterialVariation(InstanceUtils:GenerateGuid(p_entry.instanceGuid:ToString('D') .. 'MeshMaterialVariation' .. l_element .. ll_key))
+                p_entry.partition:AddInstance(s_newMeshMaterialVariation)
+
+                s_newMeshMaterialVariation.shader = self.m_surfaceShaderStructs[s_shaderGraph.instanceGuid:ToString('D')][l_element]
+
+                s_databaseEntryMaterials[ll_key] = s_newMeshMaterialVariation
+            end
+        end
+
+        s_elements[l_element] = s_databaseEntryMaterials
     end
 
-    self.m_meshMaterialVariations = s_elements
+    self.m_meshMaterialVariations[p_entry.instanceGuid:ToString('D')] = s_elements
 end
 
 -- creating MeshVariationDatabaseEntry
@@ -245,10 +311,18 @@ function VehiclesBlueprints:CreateMeshVariationDatabaseEntrys(p_entry)
     local s_elements = {}
     s_elements['neutral'] = p_entry
 
+    local s_meshMaterialVariations = self.m_meshMaterialVariations[p_entry.instanceGuid:ToString('D')]
+
     for _, l_element in pairs(ElementalConfig.names) do
         local s_newMeshVariationDatabaseEntry = InstanceUtils:CloneInstance(p_entry, l_element)
 
-        -- TODO MESH VARIATION
+        s_newMeshVariationDatabaseEntry.mesh = self.m_meshAssets[s_newMeshVariationDatabaseEntry.mesh.instanceGuid:ToString('D')][l_element]
+
+        for ll_key, ll_value in pairs(s_meshMaterialVariations[l_element]) do
+            s_newMeshVariationDatabaseEntry.materials[ll_key].materialVariation = ll_value
+        end
+
+        self.m_meshVariationDatabase.entries:add(s_newMeshVariationDatabaseEntry)
 
         s_elements[l_element] = s_newMeshVariationDatabaseEntry
     end
@@ -437,6 +511,10 @@ function VehiclesBlueprints:CreateVehicleEntities(p_entity)
             updateComponents(s_newVehicleEntity, l_value, l_element)
         end
 
+        s_newVehicleEntity.mesh = self.m_meshAssets[s_newVehicleEntity.mesh.instanceGuid:ToString('D')][l_element]
+
+        self.m_registryContainer.entityRegistry:add(s_newVehicleEntity)
+
         s_elements[l_element] = s_newVehicleEntity
     end
 
@@ -494,6 +572,7 @@ function VehiclesBlueprints:CreateVehicleBlueprints(p_blueprint)
 
         -- patching blueprint properties
         s_newVehicleBlueprint.object = self.m_vehicleEntities[s_entityGuid][l_element]
+        s_newVehicleBlueprint.name = s_newVehicleBlueprint.name .. l_element
 
         -- updating entity connections
         updateConnections(s_newVehicleBlueprint.propertyConnections, p_blueprint.object, s_newVehicleBlueprint.object)
@@ -504,6 +583,8 @@ function VehiclesBlueprints:CreateVehicleBlueprints(p_blueprint)
         updateWeaponConnections(s_newVehicleBlueprint.propertyConnections, l_element)
         updateWeaponConnections(s_newVehicleBlueprint.linkConnections, l_element)
         updateWeaponConnections(s_newVehicleBlueprint.eventConnections, l_element)
+
+        self.m_registryContainer.blueprintRegistry:add(s_newVehicleBlueprint)
 
         s_elements[l_element] = s_newVehicleBlueprint
     end
