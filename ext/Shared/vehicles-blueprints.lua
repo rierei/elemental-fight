@@ -51,6 +51,8 @@ function VehiclesBlueprints:RegisterVars()
 
     self.m_vehicleEntities = {}
     self.m_vehicleBlueprints = {}
+
+    self.m_verbose = 2
 end
 
 function VehiclesBlueprints:RegisterEvents()
@@ -58,6 +60,7 @@ function VehiclesBlueprints:RegisterEvents()
         if p_screenInfo == 'Initializing entities for autoloaded sublevels' then
             self.m_waitingInstances.meshVariationDatabase = LoadedInstances.m_loadedInstances.MeshVariationDatabase
             self.m_waitingInstances.vehicleEntities = LoadedInstances.m_loadedInstances.VehicleEntityData
+            self.m_waitingInstances.vehicleBlueprints = LoadedInstances.m_loadedInstances.VehicleBlueprint
         end
     end)
 
@@ -423,12 +426,16 @@ function VehiclesBlueprints:CreateVehicleBlueprints(p_blueprint)
     -- searching and replacing connections
     local function updateConnections(p_connections, p_search, p_replace)
         for _, l_connection in pairs(p_connections) do
-            if l_connection.source == p_search then
-                l_connection.source = p_replace
+            if l_connection.source ~= nil then
+                if l_connection.source == p_search then
+                    l_connection.source = p_replace
+                end
             end
 
-            if l_connection.target == p_search then
-                l_connection.target = p_replace
+            if l_connection.target ~= nil then
+                if l_connection.target == p_search then
+                    l_connection.target = p_replace
+                end
             end
         end
     end
@@ -436,14 +443,18 @@ function VehiclesBlueprints:CreateVehicleBlueprints(p_blueprint)
     -- replacing weapon connections
     local function updateWeaponConnections(p_connections, p_element)
         for _, l_connection in pairs(p_connections) do
-            local s_sourceGuid = l_connection.source.instanceGuid:ToString('D')
-            if self.m_weaponComponents[s_sourceGuid] ~= nil then
-                l_connection.source = self.m_weaponComponents[s_sourceGuid][p_element]
+            if l_connection.source ~= nil then
+                local s_sourceGuid = l_connection.source.instanceGuid:ToString('D')
+                if self.m_weaponComponents[s_sourceGuid] ~= nil then
+                    l_connection.source = self.m_weaponComponents[s_sourceGuid][p_element]
+                end
             end
 
-            local s_targetGuid = l_connection.target.instanceGuid:ToString('D')
-            if self.m_weaponComponents[s_targetGuid] ~= nil then
-                l_connection.target = self.m_weaponComponents[s_targetGuid][p_element]
+            if l_connection.target ~= nil then
+                local s_targetGuid = l_connection.target.instanceGuid:ToString('D')
+                if self.m_weaponComponents[s_targetGuid] ~= nil then
+                    l_connection.target = self.m_weaponComponents[s_targetGuid][p_element]
+                end
             end
         end
     end
