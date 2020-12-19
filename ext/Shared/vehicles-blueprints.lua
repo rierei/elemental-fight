@@ -52,13 +52,17 @@ function VehiclesBlueprints:RegisterVars()
     self.m_vehicleEntities = {}
     self.m_vehicleBlueprints = {}
 
-    self.m_verbose = 2
+    self.m_verbose = 1
 end
 
 function VehiclesBlueprints:RegisterEvents()
     Events:Subscribe('Level:LoadingInfo', function(p_screenInfo)
         if p_screenInfo == 'Initializing entities for autoloaded sublevels' then
             self.m_waitingInstances.meshVariationDatabase = LoadedInstances.m_loadedInstances.MeshVariationDatabase
+
+            self.m_waitingInstances.vehicleProjectileEntities = LoadedInstances.m_loadedInstances.VehicleMeshProjectileEntityData
+            self.m_waitingInstances.vehicleProjectileBlueprints = LoadedInstances.m_loadedInstances.VehicleProjectileBlueprint
+
             self.m_waitingInstances.vehicleEntities = LoadedInstances.m_loadedInstances.VehicleEntityData
             self.m_waitingInstances.vehicleBlueprints = LoadedInstances.m_loadedInstances.VehicleBlueprint
         end
@@ -86,6 +90,8 @@ function VehiclesBlueprints:ReadInstances(p_instances)
         self:ReadMeshVariationDatabaseEntrys(l_entity.mesh)
         self:ReadWeaponComponents(l_entity)
     end
+
+    self:CreateInstances()
 end
 
 function VehiclesBlueprints:ReadMeshVariationDatabaseEntrys(p_asset)
@@ -144,13 +150,19 @@ end
 function VehiclesBlueprints:CreateInstances()
     for _, l_asset in pairs(self.m_waitingInstances.meshAssets) do
         self:CreateMeshAssets(l_asset)
-        self:CreateMeshVariationDatabaseEntrys(l_asset)
+    end
+
+    for _, l_entry in pairs(self.m_waitingInstances.meshVariationDatabaseEntrys) do
+        self:CreateMeshVariationDatabaseEntrys(l_entry)
     end
 
     self:CreateEffectBlueprints(self.m_waitingInstances.effectBlueprints)
 
     for _, l_entity in pairs(self.m_waitingInstances.vehicleProjectileEntities) do
         self:CreateExplosionEntities(l_entity)
+    end
+
+    for _, l_entity in pairs(self.m_waitingInstances.vehicleProjectileEntities) do
         self:CreateProjectileEntities(l_entity)
     end
 
@@ -168,6 +180,20 @@ function VehiclesBlueprints:CreateInstances()
 
     for _, l_blueprint in pairs(self.m_waitingInstances.vehicleBlueprints) do
         self:CreateVehicleBlueprints(l_blueprint)
+    end
+
+    if self.m_verbose >= 1 then
+        print('Created WeaponComponentsIndexes: ' .. InstanceUtils:Count(self.m_weaponComponentsIndexes))
+        print('Created MeshAssets: ' .. InstanceUtils:Count(self.m_meshAssets))
+        print('Created MeshMaterialVariations: ' .. InstanceUtils:Count(self.m_meshMaterialVariations))
+        print('Created MeshVariationDatabaseEntrys: ' .. InstanceUtils:Count(self.m_meshVariationDatabaseEntrys))
+        print('Created EffectBlueprints: ' .. InstanceUtils:Count(self.m_effectBlueprints))
+        print('Created ExplosionEntities: ' .. InstanceUtils:Count(self.m_explosionEntities))
+        print('Created ProjectileEntities: ' .. InstanceUtils:Count(self.m_projectileEntities))
+        print('Created ProjectileBlueprints: ' .. InstanceUtils:Count(self.m_projectileBlueprints))
+        print('Created WeaponComponents: ' .. InstanceUtils:Count(self.m_weaponComponents))
+        print('Created VehicleEntities: ' .. InstanceUtils:Count(self.m_vehicleEntities))
+        print('Created VehicleBlueprints: ' .. InstanceUtils:Count(self.m_vehicleBlueprints))
     end
 end
 
@@ -482,7 +508,7 @@ function VehiclesBlueprints:CreateVehicleBlueprints(p_blueprint)
         s_elements[l_element] = s_newVehicleBlueprint
     end
 
-    self.m_vehicleEntities[p_blueprint.instanceGuid:ToString('D')] = s_elements
+    self.m_vehicleBlueprints[p_blueprint.instanceGuid:ToString('D')] = s_elements
 end
 
 return VehiclesBlueprints
