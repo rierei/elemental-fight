@@ -16,8 +16,8 @@ function VehiclesBlueprints:RegisterVars()
     self.m_materialPropertyEffects = {
         [77] = 'minigun', -- BulletDamage
         [78] = 'medium', -- ShellDamage
-        [82] = 'minigun', -- HMG
-        [83] = 'minigun', -- HMG
+        [82] = 'small', -- HMG
+        [83] = 'small', -- HMG
         [86] = 'large', -- TankShell
         [87] = 'large', -- Missile
         [105] = 'minigun', -- AA
@@ -37,6 +37,8 @@ function VehiclesBlueprints:RegisterVars()
         VehiclePreset_Mud = {'A0300659-01B5-4DF5-8895-98AD28C984C2', 'FA58EF71-AD00-427B-8AA1-3B8FAD051EEF'},
         VehiclePreset_Jet = {'C2DCC7D1-BCC6-4047-8A2B-8170E57B07B8', '6B0CDFF7-3EB6-4177-9BA0-FD686F10DF8C'},
 
+        Em_Impact_Generic_S_Sparks_01 = {'1F6B1EB2-86E3-473C-8E25-A24989538600', '1A0C5373-3DC4-4967-89A3-A6D53AD8A58F'}, -- dummyPolynomialColor
+
         _MP_Pilot_Gear_Heli_US = {'75CF71E3-AD39-11E0-99FA-8D9FD57D29B3', 'D75008EB-B9B4-B977-6478-04787EEFB185'}
     }
 
@@ -47,6 +49,7 @@ function VehiclesBlueprints:RegisterVars()
         meshAssets = {},
         meshVariationDatabaseEntrys = {},
 
+        dummyPolynomialColor = nil, -- PolynomialColorInterpData
         effectBlueprints = {},
 
         vehicleProjectileEntities = {},
@@ -60,6 +63,10 @@ function VehiclesBlueprints:RegisterVars()
 
     self.m_registryContainer = nil -- RegistryContainer
     self.m_materialContainerAsset = nil -- MaterialContainerAsset
+
+    self.m_polynomialColorInterps = {} -- PolynomialColorInterpData
+    self.m_emitterDocumentAssets = {} -- EmitterDocument
+    self.m_emitterEntities = {} -- EmitterEntityData
 
     self.m_weaponComponentsIndexes = {}
 
@@ -79,6 +86,11 @@ function VehiclesBlueprints:RegisterVars()
 
     self.m_vehicleEntities = {}
     self.m_vehicleBlueprints = {}
+
+    self.m_instanceCreateFunctions = {
+        emitterDocumentAssets = self._CreateEmitterDocumentAssets,
+        emitterEntities = self._CreateEmitterEntity
+    }
 
     self.m_verbose = 1
 end
@@ -105,6 +117,8 @@ function VehiclesBlueprints:ReadInstances(p_instances)
 
     self.m_waitingInstances.vehicleJetShader = p_instances['VehiclePreset_Mud']
     self.m_waitingInstances.vehicleMudShader = p_instances['VehiclePreset_Jet']
+
+    self.m_waitingInstances.dummyPolynomialColor = p_instances['Em_Impact_Generic_S_Sparks_01']
 
     self.m_waitingInstances.effectBlueprints['small'] = p_instances['FX_Impact_Generic_01_S']
     self.m_waitingInstances.effectBlueprints['medium'] = p_instances['FX_Impact_Generic_01_M']
@@ -193,6 +207,8 @@ function VehiclesBlueprints:CreateInstances()
         self:CreateMeshVariationDatabaseEntrys(l_entry)
     end
 
+    self:CreatePolynomialColorInterps(self.m_waitingInstances.dummyPolynomialColor)
+
     self:CreateEffectBlueprints(self.m_waitingInstances.effectBlueprints)
 
     for _, l_entity in pairs(self.m_waitingInstances.vehicleProjectileEntities) do
@@ -227,6 +243,9 @@ function VehiclesBlueprints:CreateInstances()
         print('Created MeshAssets: ' .. InstanceUtils:Count(self.m_meshAssets))
         print('Created MeshMaterialVariations: ' .. InstanceUtils:Count(self.m_meshMaterialVariations))
         print('Created MeshVariationDatabaseEntrys: ' .. InstanceUtils:Count(self.m_meshVariationDatabaseEntrys))
+        print('Created PolynomialColorInterps: ' .. InstanceUtils:Count(self.m_polynomialColorInterps))
+        print('Created EmitterDocumentAssets: ' .. InstanceUtils:Count(self.m_emitterDocumentAssets))
+        print('Created EmitterEntities: ' .. InstanceUtils:Count(self.m_emitterEntities))
         print('Created EffectBlueprints: ' .. InstanceUtils:Count(self.m_effectBlueprints))
         print('Created ExplosionEntities: ' .. InstanceUtils:Count(self.m_explosionEntities))
         print('Created ProjectileEntities: ' .. InstanceUtils:Count(self.m_projectileEntities))
@@ -350,15 +369,154 @@ function VehiclesBlueprints:CreateMeshVariationDatabaseEntrys(p_entry)
     self.m_meshVariationDatabaseEntrys[p_entry.instanceGuid:ToString('D')] = s_elements
 end
 
+-- creating PolynomialColorInterpData for EmitterDocument
+function VehiclesBlueprints:CreatePolynomialColorInterps(p_data)
+    if self.m_verbose >= 2 then
+        print('Create PolynomialColorInterps')
+    end
+
+    local s_elements = {}
+    s_elements['neutral'] = p_data
+
+    for _, l_element in pairs(ElementalConfig.names) do
+        local s_newPolynomialColor = InstanceUtils:CloneInstance(p_data, l_element)
+
+        s_newPolynomialColor.color0 = ElementalConfig.colors[l_element]
+        s_newPolynomialColor.color1 = ElementalConfig.colors[l_element]
+
+        s_elements[l_element] = s_newPolynomialColor
+    end
+
+    self.m_polynomialColorInterps = s_elements
+end
+
+-- creating EmitterDocument for EmitterEntityData
+function VehiclesBlueprints:_CreateEmitterDocumentAssets(p_asset)
+    if self.m_verbose >= 2 then
+        print('Create EmitterDocumentAsset')
+    end
+
+    local s_elements = {}
+    s_elements['neutral'] = p_asset
+
+    for _, l_element in pairs(ElementalConfig.names) do
+        local s_newEmitterDocumentAsset = InstanceUtils:CloneInstance(p_asset, l_element)
+        local s_newTemplateData = InstanceUtils:CloneInstance(p_asset.templateData, l_element)
+
+        local s_updateColor = nil
+        local function createProcessorData(p_data)
+            local s_newProcessorData = p_data:Clone()
+
+            if s_newProcessorData.nextProcessor ~= nil then
+                s_newProcessorData.nextProcessor = createProcessorData(s_newProcessorData.nextProcessor)
+            end
+
+            if s_newProcessorData.pre ~= nil then
+                s_newProcessorData.pre = createProcessorData(s_newProcessorData.pre)
+            end
+
+            if s_newProcessorData:Is('UpdateColorData') then
+                local s_color = ElementalConfig.colors[l_element]
+
+                -- increment color visibility
+                s_color = Vec3(s_color.x * 8, s_color.y * 8, s_color.z * 8)
+
+                local polynomialColorInterp = nil
+
+                -- dont use incremented visibility for smoke
+                if s_newProcessorData.pre ~= nil and not s_newEmitterDocumentAsset.name:lower():match('smoke') then
+                    polynomialColorInterp = PolynomialColorInterpData(s_newProcessorData.pre)
+                    polynomialColorInterp:MakeWritable()
+
+                    polynomialColorInterp.color0 = s_color
+                    polynomialColorInterp.color1 = s_color
+                else
+                    polynomialColorInterp = self.m_polynomialColorInterps[l_element]
+                end
+
+                s_newProcessorData.pre = polynomialColorInterp
+            end
+
+            return s_newProcessorData
+        end
+
+        -- creating processor with recursion
+        local s_newTemplateRootProcessor = createProcessorData(s_newTemplateData.rootProcessor)
+        local s_newDocumentRootProcessor = s_newTemplateRootProcessor
+
+        -- low graphics processor
+        if not s_newEmitterDocumentAsset.rootProcessor:Eq(s_newTemplateData.rootProcessor) then
+            s_newDocumentRootProcessor = createProcessorData(s_newEmitterDocumentAsset.rootProcessor)
+        end
+
+        -- non emissive smoke
+        local s_emissive = true
+        if s_newTemplateData.name:lower():match('smoke') then
+            s_emissive = false
+        end
+
+        -- patching template properties
+        s_newTemplateData.name = s_newTemplateData.name .. l_element
+        s_newTemplateData.rootProcessor = s_newTemplateRootProcessor
+        s_newTemplateData.emissive = s_emissive
+        s_newTemplateData.actAsPointLight = true
+        s_newTemplateData.pointLightRadius = 10
+        s_newTemplateData.pointLightColor = ElementalConfig.colors[l_element]
+        s_newTemplateData.maxSpawnDistance = 0
+        s_newTemplateData.repeatParticleSpawning = false
+
+        -- patching document properties
+        s_newEmitterDocumentAsset.name = s_newEmitterDocumentAsset.name .. l_element
+        s_newEmitterDocumentAsset.rootProcessor = s_newDocumentRootProcessor
+        s_newEmitterDocumentAsset.templateData = s_newTemplateData
+
+        s_elements[l_element] = s_newEmitterDocumentAsset
+    end
+
+    self.m_emitterDocumentAssets[p_asset.instanceGuid:ToString('D')] = s_elements
+end
+
+-- creating EmitterEntityData for EffectBlueprint
+function VehiclesBlueprints:_CreateEmitterEntity(p_entity)
+    if self.m_verbose >= 2 then
+        print('Create EmitterEntity')
+    end
+
+    local s_elements = {}
+    s_elements['neutral'] = p_entity
+
+    local emitterDocumentAsset = self:_GetInstance(p_entity.emitter, 'emitterDocumentAssets')
+
+    for _, l_element in pairs(ElementalConfig.names) do
+        local s_newEmitterEntity = InstanceUtils:CloneInstance(p_entity, l_element)
+
+        -- patching emitter properties
+        s_newEmitterEntity.emitter = emitterDocumentAsset[l_element]
+
+        s_elements[l_element] = s_newEmitterEntity
+    end
+
+    self.m_emitterEntities[p_entity.instanceGuid:ToString('D')] = s_elements
+end
+
 function VehiclesBlueprints:CreateEffectBlueprints(p_blueprints)
-    for l_key, l_value in pairs(p_blueprints) do
+    for l_key, l_blueprint in pairs(p_blueprints) do
         local s_elements = {}
-        s_elements['neutral'] = l_value
+        s_elements['neutral'] = l_blueprint
 
         for _, l_element in pairs(ElementalConfig.names) do
-            local s_newEffectBlueprint = InstanceUtils:CloneInstance(l_value, l_element)
+            local s_newEffectBlueprint = InstanceUtils:CloneInstance(l_blueprint, l_element)
+            local s_newEffectEntity = InstanceUtils:CloneInstance(s_newEffectBlueprint.object, l_element)
 
-            -- TODO CUSTOM EFFECT
+            for l_k, l_v in pairs(s_newEffectEntity.components) do
+                if l_v:Is('EmitterEntityData') then
+                    -- patching effect components
+                    s_newEffectEntity.components[l_k] = self:_GetInstance(l_v, 'emitterEntities')[l_element]
+                end
+            end
+
+            -- patching blueprint properties
+            s_newEffectBlueprint.object = s_newEffectEntity
 
             s_elements[l_element] = s_newEffectBlueprint
         end
@@ -655,6 +813,31 @@ function VehiclesBlueprints:CreateVehicleBlueprints(p_blueprint)
     end
 
     self.m_vehicleBlueprints[p_blueprint.instanceGuid:ToString('D')] = s_elements
+end
+
+-- creating missing instances
+function VehiclesBlueprints:_GetInstance(p_instance, p_type)
+    if p_instance == nil then
+        return nil
+    end
+
+    if self['m_' .. p_type][p_instance.instanceGuid:ToString('D')] == nil then
+        if self.m_verbose >= 2 then
+            print('Missing Instance: ' .. p_type)
+        end
+
+        -- casting the instance
+        local s_typeName = p_instance.typeInfo.name
+        local s_type = _G[s_typeName]
+
+        if s_type ~= nil then
+            p_instance = s_type(p_instance)
+        end
+
+        self.m_instanceCreateFunctions[p_type](self, p_instance)
+    end
+
+    return self['m_' .. p_type][p_instance.instanceGuid:ToString('D')]
 end
 
 return VehiclesBlueprints
