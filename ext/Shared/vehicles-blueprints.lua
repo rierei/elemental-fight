@@ -5,13 +5,30 @@ local ElementalConfig = require('__shared/elemental-config')
 local InstanceWait = require('__shared/utils/wait')
 local InstanceUtils = require('__shared/utils/instances')
 
+local MaterialPairs = require('__shared/utils/consts').materialPairs
+
 function VehiclesBlueprints:__init()
     self:RegisterVars()
     self:RegisterEvents()
 end
 
 function VehiclesBlueprints:RegisterVars()
+    self.m_materialPropertyEffects = {
+        [77] = 'minigun', -- BulletDamage
+        [78] = 'medium', -- ShellDamage
+        [82] = 'minigun', -- HMG
+        [83] = 'minigun', -- HMG
+        [86] = 'large', -- TankShell
+        [87] = 'large', -- Missile
+        [105] = 'minigun', -- AA
+        [114] = 'minigun', -- Minigun
+        [-117] = 'medium' -- DUD
+    }
+
     self.m_waitingGuids = {
+
+        MaterialContainer = {'B50615C2-4743-4919-9A40-A738150DEBE9', '89492CD4-F004-42B9-97FB-07FD3D436205'}, -- materialContainerAsset
+
         FX_Impact_Generic_01_S = {'AC35EF6C-108A-11DE-8A96-D77516A45310', 'AC35EF6D-108A-11DE-8A96-D77516A45310'},
         FX_Impact_Generic_01_M = {'9C0B1F3F-0FE4-11DE-8BFA-867F957FF326', '9C0B1F40-0FE4-11DE-8BFA-867F957FF326'},
         FX_Impact_Generic_01_L = {'6E9014B2-2E7A-11DE-A05D-865C3DEDD497', '6E9014B3-2E7A-11DE-A05D-865C3DEDD497'},
@@ -42,6 +59,7 @@ function VehiclesBlueprints:RegisterVars()
     }
 
     self.m_registryContainer = nil -- RegistryContainer
+    self.m_materialContainerAsset = nil -- MaterialContainerAsset
 
     self.m_weaponComponentsIndexes = {}
 
@@ -83,13 +101,15 @@ function VehiclesBlueprints:ReadInstances(p_instances)
     self.m_meshVariationDatabase = self.m_waitingInstances.meshVariationDatabase
     self.m_meshVariationDatabase:MakeWritable()
 
+    self.m_materialContainerAsset = p_instances['MaterialContainer']
+
     self.m_waitingInstances.vehicleJetShader = p_instances['VehiclePreset_Mud']
     self.m_waitingInstances.vehicleMudShader = p_instances['VehiclePreset_Jet']
 
-    self.m_effectBlueprints['small'] = p_instances['FX_Impact_Generic_01_S']
-    self.m_effectBlueprints['medium'] = p_instances['FX_Impact_Generic_01_M']
-    self.m_effectBlueprints['large'] = p_instances['FX_Impact_Generic_01_L']
-    self.m_effectBlueprints['minigun'] = p_instances['FX_Impact_Generic_01_Minigun']
+    self.m_waitingInstances.effectBlueprints['small'] = p_instances['FX_Impact_Generic_01_S']
+    self.m_waitingInstances.effectBlueprints['medium'] = p_instances['FX_Impact_Generic_01_M']
+    self.m_waitingInstances.effectBlueprints['large'] = p_instances['FX_Impact_Generic_01_L']
+    self.m_waitingInstances.effectBlueprints['minigun'] = p_instances['FX_Impact_Generic_01_Minigun']
 
     for _, l_entity in pairs(self.m_waitingInstances.vehicleEntities) do
         table.insert(self.m_waitingInstances.meshAssets, l_entity.mesh)
@@ -184,7 +204,7 @@ function VehiclesBlueprints:CreateInstances()
     end
 
     for _, l_blueprint in pairs(self.m_waitingInstances.vehicleProjectileBlueprints) do
-        self:CreateProjectileBleprints(l_blueprint)
+        self:CreateProjectileBlueprints(l_blueprint)
     end
 
     for _, l_component in pairs(self.m_waitingInstances.weaponComponents) do
@@ -356,10 +376,35 @@ function VehiclesBlueprints:CreateExplosionEntities(p_entity)
     local s_elements = {}
     s_elements['neutral'] = p_entity
 
-    for _, l_element in pairs(ElementalConfig.names) do
-        local s_newExplosionEntity = VeniceExplosionEntityData(InstanceUtils:GenerateGuid('explosionBlueprint' .. l_element))
+    local s_materialPropertyEffect = nil
+    if p_entity.materialPair ~= nil then
+        local s_physicsPropertyIndex = MaterialContainerPair(p_entity.materialPair).physicsPropertyIndex
+        s_materialPropertyEffect = self.m_materialPropertyEffects[s_physicsPropertyIndex]
+    end
 
-        -- TODO CUSTOM EXPLOSION
+    if s_materialPropertyEffect == nil then
+        s_materialPropertyEffect = 'small'
+    end
+
+    for _, l_element in pairs(ElementalConfig.names) do
+        local s_newExplosionEntity = nil
+        if p_entity.explosion == nil then
+            s_newExplosionEntity = VeniceExplosionEntityData(InstanceUtils:GenerateGuid(p_entity.instanceGuid:ToString('D') .. l_element))
+            s_newExplosionEntity.blastDamage = 0
+            s_newExplosionEntity.shockwaveDamage = 0
+        else
+            s_newExplosionEntity = InstanceUtils:CloneInstance(p_entity.explosion, l_element)
+        end
+
+        if s_newExplosionEntity.materialPair ~= nil then
+            local s_physicsPropertyIndex = MaterialContainerPair(s_newExplosionEntity.materialPair).physicsPropertyIndex
+            local s_materialContainerPairIndex = MaterialPairs[s_physicsPropertyIndex]
+
+            s_newExplosionEntity.materialPair = self.m_materialContainerAsset.materialPairs[s_materialContainerPairIndex]
+        end
+
+        -- patching explosion entity
+        s_newExplosionEntity.detonationEffect = self.m_effectBlueprints[s_materialPropertyEffect][l_element]
 
         s_elements[l_element] = s_newExplosionEntity
     end
@@ -379,27 +424,17 @@ function VehiclesBlueprints:CreateProjectileEntities(p_entity)
     for _, l_element in pairs(ElementalConfig.names) do
         local s_newProjectileEntity = InstanceUtils:CloneInstance(p_entity, l_element)
 
-        if p_entity.physicsPropertyIndex == 77 then
-            -- BulletDamage
+        if s_newProjectileEntity.materialPair ~= nil then
+            local s_physicsPropertyIndex = MaterialContainerPair(p_entity.materialPair).physicsPropertyIndex
+            local s_materialContainerPairIndex = MaterialPairs[s_physicsPropertyIndex]
+
+            s_newProjectileEntity.materialPair = self.m_materialContainerAsset.materialPairs[s_materialContainerPairIndex]
         end
 
-        if p_entity.physicsPropertyIndex == 83 then
-            -- HMG
-        end
+        -- patching projectile entity
+        s_newProjectileEntity.explosion = self.m_explosionEntities[p_entity.instanceGuid:ToString('D')][l_element]
 
-        if p_entity.physicsPropertyIndex == 86 then
-            -- TankShell
-        end
-
-        if p_entity.physicsPropertyIndex == 114 then
-            -- Minigun
-        end
-
-        if p_entity.physicsPropertyIndex == 139 then
-            -- DUD
-        end
-
-        -- TODO CUSTOM EXPLOSION
+        self.m_registryContainer.entityRegistry:add(s_newProjectileEntity)
 
         s_elements[l_element] = s_newProjectileEntity
     end
@@ -408,7 +443,7 @@ function VehiclesBlueprints:CreateProjectileEntities(p_entity)
 end
 
 -- creating ProjectileBlueprint
-function VehiclesBlueprints:CreateProjectileBleprints(p_blueprint)
+function VehiclesBlueprints:CreateProjectileBlueprints(p_blueprint)
     if self.m_verbose >= 2 then
         print('Create ProjectileBlueprints')
     end
@@ -416,10 +451,15 @@ function VehiclesBlueprints:CreateProjectileBleprints(p_blueprint)
     local s_elements = {}
     s_elements['neutral'] = p_blueprint
 
+    local s_projectileEntity = self.m_projectileEntities[p_blueprint.object.instanceGuid:ToString('D')]
+
     for _, l_element in pairs(ElementalConfig.names) do
         local s_newProjectileBlueprint = InstanceUtils:CloneInstance(p_blueprint, l_element)
 
-        -- TODO PROJECTILE ENTITY
+        -- patching projectile blueprint
+        s_newProjectileBlueprint.object = s_projectileEntity[l_element]
+
+        self.m_registryContainer.blueprintRegistry:add(s_newProjectileBlueprint)
 
         s_elements[l_element] = s_newProjectileBlueprint
     end
@@ -436,10 +476,35 @@ function VehiclesBlueprints:CreateWeaponsComponents(p_component)
     local s_elements = {}
     s_elements['neutral'] = p_component
 
+    local s_firingFunction = p_component.weaponFiring.primaryFire
+    local s_firingData = p_component.weaponFiring
+
+    local s_projectileEntity = self.m_projectileEntities[p_component.weaponFiring.primaryFire.shot.projectileData.instanceGuid:ToString('D')]
+
+    local s_projectileBlueprint = nil
+    if s_firingFunction.shot.projectile ~= nil then
+        s_projectileBlueprint = self.m_projectileBlueprints[s_firingFunction.shot.projectile.instanceGuid:ToString('D')]
+    end
+
     for _, l_element in pairs(ElementalConfig.names) do
+        local s_newFiringFunction = InstanceUtils:CloneInstance(s_firingFunction, l_element)
+        local s_newFiringData = InstanceUtils:CloneInstance(s_firingData, l_element)
         local s_newWeaponComponent = InstanceUtils:CloneInstance(p_component, l_element)
 
-        -- TODO WEAPON FIRING
+        -- patching firing function
+        if s_projectileEntity ~= nil then
+            s_newFiringFunction.shot.projectileData = s_projectileEntity[l_element]
+        end
+
+        if s_projectileBlueprint ~= nil then
+            s_newFiringFunction.shot.projectile = s_projectileBlueprint[l_element]
+        end
+
+        -- patching firing data
+        s_newFiringData.primaryFire = s_newFiringFunction
+
+        -- patching weapon component
+        s_newWeaponComponent.weaponFiring = s_newFiringData
 
         s_elements[l_element] = s_newWeaponComponent
     end
