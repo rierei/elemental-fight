@@ -82,6 +82,7 @@ function VehiclesBlueprints:RegisterVars()
     self.m_projectileEntities = {}
     self.m_projectileBlueprints = {}
 
+    self.m_weaponFirings = {}
     self.m_weaponComponents = {}
 
     self.m_vehicleEntities = {}
@@ -224,6 +225,7 @@ function VehiclesBlueprints:CreateInstances()
     end
 
     for _, l_component in pairs(self.m_waitingInstances.weaponComponents) do
+        self:CreateWeaponFirings(l_component.weaponFiring)
         self:CreateWeaponsComponents(l_component)
     end
 
@@ -250,6 +252,7 @@ function VehiclesBlueprints:CreateInstances()
         print('Created ExplosionEntities: ' .. InstanceUtils:Count(self.m_explosionEntities))
         print('Created ProjectileEntities: ' .. InstanceUtils:Count(self.m_projectileEntities))
         print('Created ProjectileBlueprints: ' .. InstanceUtils:Count(self.m_projectileBlueprints))
+        print('Created WeaponFirings: ' .. InstanceUtils:Count(self.m_weaponFirings))
         print('Created WeaponComponents: ' .. InstanceUtils:Count(self.m_weaponComponents))
         print('Created VehicleEntities: ' .. InstanceUtils:Count(self.m_vehicleEntities))
         print('Created VehicleBlueprints: ' .. InstanceUtils:Count(self.m_vehicleBlueprints))
@@ -625,19 +628,22 @@ function VehiclesBlueprints:CreateProjectileBlueprints(p_blueprint)
     self.m_projectileBlueprints[p_blueprint.instanceGuid:ToString('D')] = s_elements
 end
 
--- creating WeaponComponentData
-function VehiclesBlueprints:CreateWeaponsComponents(p_component)
+-- creating FiringData
+function VehiclesBlueprints:CreateWeaponFirings(p_data)
+    if self.m_weaponFirings[p_data.instanceGuid:ToString('D')] ~= nil then
+        return
+    end
+
     if self.m_verbose >= 2 then
-        print('Create WeaponComponents')
+        print('Create FiringDatas')
     end
 
     local s_elements = {}
-    s_elements['neutral'] = p_component
+    s_elements['neutral'] = p_data
 
-    local s_firingFunction = p_component.weaponFiring.primaryFire
-    local s_firingData = p_component.weaponFiring
+    local s_firingFunction = p_data.primaryFire
 
-    local s_projectileEntity = self.m_projectileEntities[p_component.weaponFiring.primaryFire.shot.projectileData.instanceGuid:ToString('D')]
+    local s_projectileEntity = self.m_projectileEntities[s_firingFunction.shot.projectileData.instanceGuid:ToString('D')]
 
     local s_projectileBlueprint = nil
     if s_firingFunction.shot.projectile ~= nil then
@@ -646,8 +652,7 @@ function VehiclesBlueprints:CreateWeaponsComponents(p_component)
 
     for _, l_element in pairs(ElementalConfig.names) do
         local s_newFiringFunction = InstanceUtils:CloneInstance(s_firingFunction, l_element)
-        local s_newFiringData = InstanceUtils:CloneInstance(s_firingData, l_element)
-        local s_newWeaponComponent = InstanceUtils:CloneInstance(p_component, l_element)
+        local s_newFiringData = InstanceUtils:CloneInstance(p_data, l_element)
 
         -- patching firing function
         if s_projectileEntity ~= nil then
@@ -661,8 +666,28 @@ function VehiclesBlueprints:CreateWeaponsComponents(p_component)
         -- patching firing data
         s_newFiringData.primaryFire = s_newFiringFunction
 
+        s_elements[l_element] = s_newFiringData
+    end
+
+    self.m_weaponFirings[p_data.instanceGuid:ToString('D')] = s_elements
+end
+
+-- creating WeaponComponentData
+function VehiclesBlueprints:CreateWeaponsComponents(p_component)
+    if self.m_verbose >= 2 then
+        print('Create WeaponComponents')
+    end
+
+    local s_elements = {}
+    s_elements['neutral'] = p_component
+
+    local s_weaponFiring = self.m_weaponFirings[p_component.weaponFiring.instanceGuid:ToString('D')]
+
+    for _, l_element in pairs(ElementalConfig.names) do
+        local s_newWeaponComponent = InstanceUtils:CloneInstance(p_component, l_element)
+
         -- patching weapon component
-        s_newWeaponComponent.weaponFiring = s_newFiringData
+        s_newWeaponComponent.weaponFiring = s_weaponFiring[l_element]
 
         s_elements[l_element] = s_newWeaponComponent
     end
