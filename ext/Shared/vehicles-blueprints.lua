@@ -14,7 +14,7 @@ end
 
 function VehiclesBlueprints:RegisterVars()
     self.m_materialPropertyEffects = {
-        [77] = 'minigun', -- BulletDamage
+        [77] = 'small', -- BulletDamage
         [78] = 'medium', -- ShellDamage
         [82] = 'small', -- HMG
         [83] = 'small', -- HMG
@@ -382,12 +382,22 @@ function VehiclesBlueprints:CreatePolynomialColorInterps(p_data)
     s_elements['neutral'] = p_data
 
     for _, l_element in pairs(ElementalConfig.names) do
-        local s_newPolynomialColor = InstanceUtils:CloneInstance(p_data, l_element)
+        s_elements[l_element] = {}
 
-        s_newPolynomialColor.color0 = ElementalConfig.colors[l_element]
-        s_newPolynomialColor.color1 = ElementalConfig.colors[l_element]
+        local s_newRegularPolynomialColor = InstanceUtils:CloneInstance(p_data, l_element .. 'regular')
+        local s_newSaturatedPolynomialColor = InstanceUtils:CloneInstance(p_data, l_element .. 'saturated')
 
-        s_elements[l_element] = s_newPolynomialColor
+        local s_color = ElementalConfig.colors[l_element]
+        local s_saturated = Vec3(s_color.x * 8, s_color.y * 8, s_color.z * 8)
+
+        s_newRegularPolynomialColor.color0 = s_color
+        s_newRegularPolynomialColor.color1 = s_color
+
+        s_newSaturatedPolynomialColor.color0 = s_saturated
+        s_newSaturatedPolynomialColor.color1 = s_saturated
+
+        s_elements[l_element]['regular'] = s_newRegularPolynomialColor
+        s_elements[l_element]['saturated'] = s_newSaturatedPolynomialColor
     end
 
     self.m_polynomialColorInterps = s_elements
@@ -402,60 +412,55 @@ function VehiclesBlueprints:_CreateEmitterDocumentAssets(p_asset)
     local s_elements = {}
     s_elements['neutral'] = p_asset
 
+    local function createProcessorData(p_data, p_element, p_emissive)
+        local s_newProcessorData = InstanceUtils:CloneInstance(p_data, p_element)
+
+        if s_newProcessorData.nextProcessor ~= nil then
+            s_newProcessorData.nextProcessor = createProcessorData(s_newProcessorData.nextProcessor, p_element, p_emissive)
+        end
+
+        if s_newProcessorData:Is('UpdateColorData') then
+            local s_polynomialColorInterp = self.m_polynomialColorInterps[p_element]['regular']
+            if p_emissive then
+                s_polynomialColorInterp = self.m_polynomialColorInterps[p_element]['saturated']
+            end
+
+            s_newProcessorData.pre = s_polynomialColorInterp
+        end
+
+        return s_newProcessorData
+    end
+
     for _, l_element in pairs(ElementalConfig.names) do
         local s_newEmitterDocumentAsset = InstanceUtils:CloneInstance(p_asset, l_element)
         local s_newTemplateData = InstanceUtils:CloneInstance(p_asset.templateData, l_element)
 
-        local s_updateColor = nil
-        local function createProcessorData(p_data)
-            local s_newProcessorData = p_data:Clone()
+        -- non emissive smoke
+        local s_emissive = true
+        if
+            s_newTemplateData.name:lower():match('smoke') or
+            s_newTemplateData.name:lower():match('shockwave') or
+            s_newTemplateData.name:lower():match('spike') or
+            s_newTemplateData.name:lower():match('debris')
+        then
+            s_emissive = false
+        end
 
-            if s_newProcessorData.nextProcessor ~= nil then
-                s_newProcessorData.nextProcessor = createProcessorData(s_newProcessorData.nextProcessor)
-            end
+        local s_color = ElementalConfig.colors[l_element]
 
-            if s_newProcessorData.pre ~= nil then
-                s_newProcessorData.pre = createProcessorData(s_newProcessorData.pre)
-            end
-
-            if s_newProcessorData:Is('UpdateColorData') then
-                local s_color = ElementalConfig.colors[l_element]
-
-                -- increment color visibility
-                s_color = Vec3(s_color.x * 8, s_color.y * 8, s_color.z * 8)
-
-                local polynomialColorInterp = nil
-
-                -- dont use incremented visibility for smoke
-                if s_newProcessorData.pre ~= nil and not s_newEmitterDocumentAsset.name:lower():match('smoke') then
-                    polynomialColorInterp = PolynomialColorInterpData(s_newProcessorData.pre)
-                    polynomialColorInterp:MakeWritable()
-
-                    polynomialColorInterp.color0 = s_color
-                    polynomialColorInterp.color1 = s_color
-                else
-                    polynomialColorInterp = self.m_polynomialColorInterps[l_element]
-                end
-
-                s_newProcessorData.pre = polynomialColorInterp
-            end
-
-            return s_newProcessorData
+        -- explode light radius
+        local s_pointLightRadius = 10
+        if s_newTemplateData.name:match('Em_Impact_Generic_M') or s_newTemplateData.name:match('Em_Impact_Generic_L') then
+            s_pointLightRadius = 30
         end
 
         -- creating processor with recursion
-        local s_newTemplateRootProcessor = createProcessorData(s_newTemplateData.rootProcessor)
+        local s_newTemplateRootProcessor = createProcessorData(s_newTemplateData.rootProcessor, l_element, s_emissive)
         local s_newDocumentRootProcessor = s_newTemplateRootProcessor
 
         -- low graphics processor
         if not s_newEmitterDocumentAsset.rootProcessor:Eq(s_newTemplateData.rootProcessor) then
-            s_newDocumentRootProcessor = createProcessorData(s_newEmitterDocumentAsset.rootProcessor)
-        end
-
-        -- non emissive smoke
-        local s_emissive = true
-        if s_newTemplateData.name:lower():match('smoke') then
-            s_emissive = false
+            s_newDocumentRootProcessor = createProcessorData(s_newEmitterDocumentAsset.rootProcessor, l_element, s_emissive)
         end
 
         -- patching template properties
@@ -463,7 +468,7 @@ function VehiclesBlueprints:_CreateEmitterDocumentAssets(p_asset)
         s_newTemplateData.rootProcessor = s_newTemplateRootProcessor
         s_newTemplateData.emissive = s_emissive
         s_newTemplateData.actAsPointLight = true
-        s_newTemplateData.pointLightRadius = 10
+        s_newTemplateData.pointLightRadius = s_pointLightRadius
         s_newTemplateData.pointLightColor = ElementalConfig.colors[l_element]
         s_newTemplateData.maxSpawnDistance = 0
         s_newTemplateData.repeatParticleSpawning = false
@@ -553,6 +558,8 @@ function VehiclesBlueprints:CreateExplosionEntities(p_entity)
             s_newExplosionEntity = VeniceExplosionEntityData(InstanceUtils:GenerateGuid(p_entity.instanceGuid:ToString('D') .. l_element))
             s_newExplosionEntity.blastDamage = 0
             s_newExplosionEntity.shockwaveDamage = 0
+            s_newExplosionEntity.blastImpulse = 0
+            s_newExplosionEntity.shockwaveImpulse = 0
         else
             s_newExplosionEntity = InstanceUtils:CloneInstance(p_entity.explosion, l_element)
         end
