@@ -36,16 +36,19 @@ function VehiclesBlueprints:RegisterVars()
         FX_Impact_Generic_01_S = {'AC35EF6C-108A-11DE-8A96-D77516A45310', 'AC35EF6D-108A-11DE-8A96-D77516A45310'},
         FX_Impact_Generic_01_M = {'9C0B1F3F-0FE4-11DE-8BFA-867F957FF326', '9C0B1F40-0FE4-11DE-8BFA-867F957FF326'},
         FX_Impact_Generic_01_L = {'6E9014B2-2E7A-11DE-A05D-865C3DEDD497', '6E9014B3-2E7A-11DE-A05D-865C3DEDD497'},
-        FX_Impact_Generic_01_Minigun = {'E8F51840-FA68-4901-A25F-4A65FC69E7A2', '1B8DD11E-D714-4C46-9159-E5BF70C7D3B7'},
 
         VehiclePreset_Mud = {'A0300659-01B5-4DF5-8895-98AD28C984C2', 'FA58EF71-AD00-427B-8AA1-3B8FAD051EEF'},
-        VehiclePreset_Jet = {'C2DCC7D1-BCC6-4047-8A2B-8170E57B07B8', '6B0CDFF7-3EB6-4177-9BA0-FD686F10DF8C'},
 
         Em_Impact_Generic_S_Sparks_01 = {'1F6B1EB2-86E3-473C-8E25-A24989538600', '1A0C5373-3DC4-4967-89A3-A6D53AD8A58F'}, -- dummyPolynomialColor
 
         ColorSwatchesWhite = {'A4E6AD23-C88B-11DE-8670-931164D2932F', '2009988C-D664-75BB-F68D-92844483C9A7'},
 
         _RU_Helmet05_Navy = {'706BF6C9-0EAD-4382-A986-39D571DBFA77', '53828D27-7C4A-415A-892D-8D410136E1B6'}
+    }
+
+    self.m_optionalGuids = {
+        FX_Impact_Generic_01_Minigun = {'E8F51840-FA68-4901-A25F-4A65FC69E7A2', '1B8DD11E-D714-4C46-9159-E5BF70C7D3B7'},
+        VehiclePreset_Jet = {'C2DCC7D1-BCC6-4047-8A2B-8170E57B07B8', '6B0CDFF7-3EB6-4177-9BA0-FD686F10DF8C'},
     }
 
     self.m_waitingInstances = {
@@ -124,6 +127,12 @@ function VehiclesBlueprints:RegisterWait()
 
         self:ReadInstances(p_instances)
     end)
+
+    InstanceWait(self.m_optionalGuids, function(p_instances)
+        self.m_waitingInstances.effectBlueprints['minigun'] = p_instances['FX_Impact_Generic_01_Minigun']
+
+        self.m_waitingInstances.vehicleJetShader = p_instances['VehiclePreset_Jet']
+    end)
 end
 
 function VehiclesBlueprints:ReadInstances(p_instances)
@@ -132,15 +141,13 @@ function VehiclesBlueprints:ReadInstances(p_instances)
 
     self.m_materialContainerAsset = p_instances['MaterialContainer']
 
-    self.m_waitingInstances.vehicleJetShader = p_instances['VehiclePreset_Mud']
-    self.m_waitingInstances.vehicleMudShader = p_instances['VehiclePreset_Jet']
+    self.m_waitingInstances.vehicleMudShader = p_instances['VehiclePreset_Mud']
 
     self.m_waitingInstances.dummyPolynomialColor = p_instances['Em_Impact_Generic_S_Sparks_01']
 
     self.m_waitingInstances.effectBlueprints['small'] = p_instances['FX_Impact_Generic_01_S']
     self.m_waitingInstances.effectBlueprints['medium'] = p_instances['FX_Impact_Generic_01_M']
     self.m_waitingInstances.effectBlueprints['large'] = p_instances['FX_Impact_Generic_01_L']
-    self.m_waitingInstances.effectBlueprints['minigun'] = p_instances['FX_Impact_Generic_01_Minigun']
 
     self.m_waitingInstances.colorSwatch = p_instances['ColorSwatchesWhite']
 
@@ -154,6 +161,14 @@ function VehiclesBlueprints:ReadInstances(p_instances)
     end
 
     self:CreateInstances()
+
+    if self.m_verbose >= 1 then
+        print('Using VehicleBlueprint: ' .. #self.m_waitingInstances.vehicleBlueprints)
+        print('Using VehicleEntityData: ' .. #self.m_waitingInstances.vehicleEntities)
+        print('Using VehicleProjectileBlueprint: ' .. #self.m_waitingInstances.vehicleProjectileBlueprints)
+        print('Using VehicleMeshProjectileEntityData: ' .. #self.m_waitingInstances.vehicleProjectileEntities)
+        print('Using MeshVariationDatabase: ' .. tostring(self.m_waitingInstances.meshVariationDatabase ~= nil))
+    end
 
     self.m_waitingInstances = {
         vehicleJetShader = nil,
@@ -267,7 +282,10 @@ function VehiclesBlueprints:CreateInstances()
     end
 
     self:CreateSurfaceShaderStructs(self.m_waitingInstances.vehicleMudShader)
-    self:CreateSurfaceShaderStructs(self.m_waitingInstances.vehicleJetShader)
+
+    if self.m_waitingInstances.vehicleJetShader ~= nil then
+        self:CreateSurfaceShaderStructs(self.m_waitingInstances.vehicleJetShader)
+    end
 
     for _, l_entry in pairs(self.m_waitingInstances.meshVariationDatabaseEntrys) do
         self:CreateMeshMaterialVariations(l_entry)
