@@ -25,8 +25,12 @@ function VehiclesBlueprints:RegisterVars()
         [-117] = 'medium' -- DUD
     }
 
-    self.m_waitingGuids = {
+    self.m_filteredPartitions = {
+        ['vehicles/common/weapondata/coax_hmg_firing'] = true,
+        ['vehicles/common/weapondata/laserdesignator_firing'] = true
+    }
 
+    self.m_waitingGuids = {
         MaterialContainer = {'B50615C2-4743-4919-9A40-A738150DEBE9', '89492CD4-F004-42B9-97FB-07FD3D436205'}, -- materialContainerAsset
 
         FX_Impact_Generic_01_S = {'AC35EF6C-108A-11DE-8A96-D77516A45310', 'AC35EF6D-108A-11DE-8A96-D77516A45310'},
@@ -127,10 +131,12 @@ function VehiclesBlueprints:ReadInstances(p_instances)
     self.m_waitingInstances.effectBlueprints['minigun'] = p_instances['FX_Impact_Generic_01_Minigun']
 
     for _, l_entity in pairs(self.m_waitingInstances.vehicleEntities) do
-        table.insert(self.m_waitingInstances.meshAssets, l_entity.mesh)
+        if not self.m_filteredPartitions[l_entity.partition.name] then
+            table.insert(self.m_waitingInstances.meshAssets, l_entity.mesh)
 
-        self:ReadMeshVariationDatabaseEntrys(l_entity.mesh)
-        self:ReadWeaponComponents(l_entity)
+            self:ReadMeshVariationDatabaseEntrys(l_entity.mesh)
+            self:ReadWeaponComponents(l_entity)
+        end
     end
 
     self:CreateInstances()
@@ -213,11 +219,15 @@ function VehiclesBlueprints:CreateInstances()
     self:CreateEffectBlueprints(self.m_waitingInstances.effectBlueprints)
 
     for _, l_entity in pairs(self.m_waitingInstances.vehicleProjectileEntities) do
-        self:CreateExplosionEntities(l_entity)
+        if not self.m_filteredPartitions[l_entity.partition.name] then
+            self:CreateExplosionEntities(l_entity)
+        end
     end
 
     for _, l_entity in pairs(self.m_waitingInstances.vehicleProjectileEntities) do
-        self:CreateProjectileEntities(l_entity)
+        if not self.m_filteredPartitions[l_entity.partition.name] then
+            self:CreateProjectileEntities(l_entity)
+        end
     end
 
     for _, l_blueprint in pairs(self.m_waitingInstances.vehicleProjectileBlueprints) do

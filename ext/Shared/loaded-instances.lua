@@ -22,9 +22,6 @@ function LoadedInstances:RegisterVars()
         SoldierWeaponBlueprint = true,
         SoldierWeaponData = true,
 
-        VehicleBlueprint = true,
-        VehicleEntityData = true,
-
         WeaponProjectileModifier = true,
         WeaponFiringDataModifier = true,
     }
@@ -113,11 +110,21 @@ function LoadedInstances:RegisterEvents()
             print('Level:Loaded')
         end
 
+        if self.m_verbose >= 1 then
+            print('Loaded SoldierWeaponUnlockAssets: ' .. #self.m_loadedInstances.SoldierWeaponUnlockAsset)
+            print('Loaded SoldierWeaponBlueprints: ' .. #self.m_loadedInstances.SoldierWeaponBlueprint)
+            print('Loaded VehicleBlueprints: ' .. #self.m_loadedInstances.VehicleBlueprint)
+            print('Loaded VehicleEntityDatas: ' .. #self.m_loadedInstances.VehicleEntityData)
+            print('Loaded WeaponMeshProjectileEntityDatas: ' .. #self.m_loadedInstances.WeaponMeshProjectileEntityData)
+            print('Loaded WeaponProjectileBlueprints: ' .. #self.m_loadedInstances.WeaponProjectileBlueprint)
+            print('Loaded VehicleMeshProjectileEntityDatas: ' .. #self.m_loadedInstances.VehicleMeshProjectileEntityData)
+            print('Loaded VehicleProjectileBlueprints: ' .. #self.m_loadedInstances.VehicleProjectileBlueprint)
+            print('Loaded MaterialGridData: ' .. tostring(self.m_loadedInstances.MaterialGridData ~= nil))
+            print('Loaded MeshVariationDatabase: ' .. tostring(self.m_loadedInstances.MeshVariationDatabase ~= nil))
+        end
+
         self.m_loadedInstances.SoldierWeaponUnlockAsset = {}
         self.m_loadedInstances.SoldierWeaponBlueprint = {}
-
-        self.m_loadedInstances.MeshProjectileEntityData = {}
-        self.m_loadedInstances.ProjectileBlueprint = {}
 
         self.m_loadedInstances.VehicleBlueprint = {}
         self.m_loadedInstances.VehicleEntityData = {}
@@ -189,6 +196,26 @@ function LoadedInstances:CheckInstance(p_instance)
 
         if string.starts(p_instance.partition.name, 'weapons/') then
             self:SaveInstance(self.m_loadedInstances.ProjectileBlueprint, p_instance)
+        end
+    elseif p_instance:Is('VehicleEntityData') then
+        if self.m_verbose >= 2 then
+            print('Found VehicleEntityData')
+        end
+
+        if string.starts(p_instance.partition.name, 'vehicles/') then
+            p_instance = VehicleEntityData(p_instance)
+
+            table.insert(self.m_loadedInstances.VehicleEntityData, p_instance)
+        end
+    elseif p_instance:Is('VehicleBlueprint') then
+        if self.m_verbose >= 2 then
+            print('Found VehicleBlueprint')
+        end
+
+        if string.starts(p_instance.partition.name, 'vehicles/') then
+            p_instance = VehicleBlueprint(p_instance)
+
+            table.insert(self.m_loadedInstances.VehicleBlueprint, p_instance)
         end
     end
 end
