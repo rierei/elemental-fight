@@ -43,7 +43,7 @@ function VehiclesBlueprints:RegisterVars()
 
         Em_Impact_Generic_S_Sparks_01 = {'1F6B1EB2-86E3-473C-8E25-A24989538600', '1A0C5373-3DC4-4967-89A3-A6D53AD8A58F'}, -- dummyPolynomialColor
 
-        _MP_Pilot_Gear_Heli_US = {'75CF71E3-AD39-11E0-99FA-8D9FD57D29B3', 'D75008EB-B9B4-B977-6478-04787EEFB185'}
+        _RU_Helmet05_Navy = {'706BF6C9-0EAD-4382-A986-39D571DBFA77', '53828D27-7C4A-415A-892D-8D410136E1B6'}
     }
 
     self.m_waitingInstances = {
@@ -92,6 +92,13 @@ function VehiclesBlueprints:RegisterVars()
     self.m_vehicleEntities = {}
     self.m_vehicleBlueprints = {}
 
+    self.m_instanceGuids = {
+        projectileEntities = {},
+        projectileBlueprints = {},
+        vehicleEntities = {},
+        vehicleBlueprints = {}
+    }
+
     self.m_instanceCreateFunctions = {
         emitterDocumentAssets = self._CreateEmitterDocumentAssets,
         emitterEntities = self._CreateEmitterEntity
@@ -101,6 +108,16 @@ function VehiclesBlueprints:RegisterVars()
 end
 
 function VehiclesBlueprints:RegisterEvents()
+    Events:Subscribe('Level:Destroy', function()
+        self.m_vehicleBlueprints = {}
+    end)
+
+    Events:Subscribe('Level:LoadResources', function(p_level, p_mode, p_dedicated)
+        self:RegisterWait()
+    end)
+end
+
+function VehiclesBlueprints:RegisterWait()
     InstanceWait(self.m_waitingGuids, function(p_instances)
         self.m_waitingInstances.meshVariationDatabase = LoadedInstances.m_loadedInstances.MeshVariationDatabase
 
@@ -140,6 +157,52 @@ function VehiclesBlueprints:ReadInstances(p_instances)
     end
 
     self:CreateInstances()
+
+    self.m_waitingInstances = {
+        vehicleJetShader = nil,
+        vehicleMudShader = nil,
+
+        meshAssets = {},
+        meshVariationDatabaseEntrys = {},
+
+        dummyPolynomialColor = nil, -- PolynomialColorInterpData
+        effectBlueprints = {},
+
+        vehicleProjectileEntities = {},
+        vehicleProjectileBlueprints = {},
+
+        weaponComponents = {},
+
+        vehicleBlueprints = {},
+        vehicleEntities = {}
+    }
+
+    self.m_registryContainer = nil -- RegistryContainer
+    self.m_materialContainerAsset = nil -- MaterialContainerAsset
+
+    self.m_polynomialColorInterps = {} -- PolynomialColorInterpData
+    self.m_emitterDocumentAssets = {} -- EmitterDocument
+    self.m_emitterEntities = {} -- EmitterEntityData
+
+    self.m_weaponComponentsIndexes = {}
+
+    self.m_surfaceShaderStructs = {}
+
+    self.m_meshAssets = {}
+    self.m_meshMaterialVariations = {}
+    self.m_meshVariationDatabaseEntrys = {}
+
+    self.m_effectBlueprints = {}
+
+    self.m_explosionEntities = {}
+    self.m_projectileEntities = {}
+    self.m_projectileBlueprints = {}
+
+    self.m_weaponFirings = {}
+    self.m_weaponComponents = {}
+
+    self.m_vehicleEntities = {}
+    -- self.m_vehicleBlueprints = {}
 end
 
 function VehiclesBlueprints:ReadMeshVariationDatabaseEntrys(p_asset)
@@ -279,7 +342,7 @@ function VehiclesBlueprints:CreateMeshAssets(p_asset)
     end
 
     local s_elements = {}
-    s_elements['neutral'] = p_asset
+    -- s_elements['neutral'] = p_asset
 
     for _, l_element in pairs(ElementalConfig.names) do
         local s_newMeshAsset = InstanceUtils:CloneInstance(p_asset, l_element)
@@ -323,7 +386,7 @@ function VehiclesBlueprints:CreateMeshMaterialVariations(p_entry)
     end
 
     local s_elements = {}
-    s_elements['neutral'] = p_entry.materials[1]
+    -- s_elements['neutral'] = p_entry.materials[1]
 
     for _, l_element in pairs(ElementalConfig.names) do
         local s_databaseEntryMaterials = {}
@@ -361,7 +424,7 @@ function VehiclesBlueprints:CreateMeshVariationDatabaseEntrys(p_entry)
     end
 
     local s_elements = {}
-    s_elements['neutral'] = p_entry
+    -- s_elements['neutral'] = p_entry
 
     local s_meshMaterialVariations = self.m_meshMaterialVariations[p_entry.instanceGuid:ToString('D')]
 
@@ -389,7 +452,7 @@ function VehiclesBlueprints:CreatePolynomialColorInterps(p_data)
     end
 
     local s_elements = {}
-    s_elements['neutral'] = p_data
+    -- s_elements['neutral'] = p_data
 
     for _, l_element in pairs(ElementalConfig.names) do
         s_elements[l_element] = {}
@@ -420,7 +483,7 @@ function VehiclesBlueprints:_CreateEmitterDocumentAssets(p_asset)
     end
 
     local s_elements = {}
-    s_elements['neutral'] = p_asset
+    -- s_elements['neutral'] = p_asset
 
     local function createProcessorData(p_data, p_element, p_emissive)
         local s_newProcessorData = InstanceUtils:CloneInstance(p_data, p_element)
@@ -460,7 +523,7 @@ function VehiclesBlueprints:_CreateEmitterDocumentAssets(p_asset)
 
         -- explode light radius
         local s_pointLightRadius = 10
-        if s_newTemplateData.name:match('Em_Impact_Generic_M') or s_newTemplateData.name:match('Em_Impact_Generic_L') then
+        if s_newTemplateData.name:match('Emitter_M/') or s_newTemplateData.name:match('Emitter_L/') then
             s_pointLightRadius = 30
         end
 
@@ -501,7 +564,7 @@ function VehiclesBlueprints:_CreateEmitterEntity(p_entity)
     end
 
     local s_elements = {}
-    s_elements['neutral'] = p_entity
+    -- s_elements['neutral'] = p_entity
 
     local emitterDocumentAsset = self:_GetInstance(p_entity.emitter, 'emitterDocumentAssets')
 
@@ -520,7 +583,7 @@ end
 function VehiclesBlueprints:CreateEffectBlueprints(p_blueprints)
     for l_key, l_blueprint in pairs(p_blueprints) do
         local s_elements = {}
-        s_elements['neutral'] = l_blueprint
+        -- s_elements['neutral'] = l_blueprint
 
         for _, l_element in pairs(ElementalConfig.names) do
             local s_newEffectBlueprint = InstanceUtils:CloneInstance(l_blueprint, l_element)
@@ -550,7 +613,7 @@ function VehiclesBlueprints:CreateExplosionEntities(p_entity)
     end
 
     local s_elements = {}
-    s_elements['neutral'] = p_entity
+    -- s_elements['neutral'] = p_entity
 
     local s_materialPropertyEffect = nil
     if p_entity.materialPair ~= nil then
@@ -597,7 +660,7 @@ function VehiclesBlueprints:CreateProjectileEntities(p_entity)
     end
 
     local s_elements = {}
-    s_elements['neutral'] = p_entity
+    -- s_elements['neutral'] = p_entity
 
     for _, l_element in pairs(ElementalConfig.names) do
         local s_newProjectileEntity = InstanceUtils:CloneInstance(p_entity, l_element)
@@ -627,7 +690,7 @@ function VehiclesBlueprints:CreateProjectileBlueprints(p_blueprint)
     end
 
     local s_elements = {}
-    s_elements['neutral'] = p_blueprint
+    -- s_elements['neutral'] = p_blueprint
 
     local s_projectileEntity = self.m_projectileEntities[p_blueprint.object.instanceGuid:ToString('D')]
 
@@ -656,7 +719,7 @@ function VehiclesBlueprints:CreateWeaponFirings(p_data)
     end
 
     local s_elements = {}
-    s_elements['neutral'] = p_data
+    -- s_elements['neutral'] = p_data
 
     local s_firingFunction = p_data.primaryFire
 
@@ -696,7 +759,7 @@ function VehiclesBlueprints:CreateWeaponsComponents(p_component)
     end
 
     local s_elements = {}
-    s_elements['neutral'] = p_component
+    -- s_elements['neutral'] = p_component
 
     local s_weaponFiring = self.m_weaponFirings[p_component.weaponFiring.instanceGuid:ToString('D')]
 
@@ -766,7 +829,7 @@ function VehiclesBlueprints:CreateVehicleEntities(p_entity)
     local weaponComponentsIndexes = self.m_weaponComponentsIndexes[p_entity.instanceGuid:ToString('D')]
 
     local s_elements = {}
-    s_elements['neutral'] = p_entity
+    -- s_elements['neutral'] = p_entity
 
     for _, l_element in pairs(ElementalConfig.names) do
         local s_newVehicleEntity = InstanceUtils:CloneInstance(p_entity, l_element)
@@ -829,7 +892,7 @@ function VehiclesBlueprints:CreateVehicleBlueprints(p_blueprint)
     end
 
     local s_elements = {}
-    s_elements['neutral'] = p_blueprint
+    -- s_elements['neutral'] = p_blueprint
 
     local s_entityGuid = p_blueprint.object.instanceGuid:ToString('D')
     for _, l_element in pairs(ElementalConfig.names) do
