@@ -43,6 +43,8 @@ function VehiclesBlueprints:RegisterVars()
 
         Em_Impact_Generic_S_Sparks_01 = {'1F6B1EB2-86E3-473C-8E25-A24989538600', '1A0C5373-3DC4-4967-89A3-A6D53AD8A58F'}, -- dummyPolynomialColor
 
+        ColorSwatchesWhite = {'A4E6AD23-C88B-11DE-8670-931164D2932F', '2009988C-D664-75BB-F68D-92844483C9A7'},
+
         _RU_Helmet05_Navy = {'706BF6C9-0EAD-4382-A986-39D571DBFA77', '53828D27-7C4A-415A-892D-8D410136E1B6'}
     }
 
@@ -92,13 +94,6 @@ function VehiclesBlueprints:RegisterVars()
     self.m_vehicleEntities = {}
     self.m_vehicleBlueprints = {}
 
-    self.m_instanceGuids = {
-        projectileEntities = {},
-        projectileBlueprints = {},
-        vehicleEntities = {},
-        vehicleBlueprints = {}
-    }
-
     self.m_instanceCreateFunctions = {
         emitterDocumentAssets = self._CreateEmitterDocumentAssets,
         emitterEntities = self._CreateEmitterEntity
@@ -146,6 +141,8 @@ function VehiclesBlueprints:ReadInstances(p_instances)
     self.m_waitingInstances.effectBlueprints['medium'] = p_instances['FX_Impact_Generic_01_M']
     self.m_waitingInstances.effectBlueprints['large'] = p_instances['FX_Impact_Generic_01_L']
     self.m_waitingInstances.effectBlueprints['minigun'] = p_instances['FX_Impact_Generic_01_Minigun']
+
+    self.m_waitingInstances.colorSwatch = p_instances['ColorSwatchesWhite']
 
     for _, l_entity in pairs(self.m_waitingInstances.vehicleEntities) do
         if not self.m_filteredPartitions[l_entity.partition.name] then
@@ -274,7 +271,7 @@ function VehiclesBlueprints:CreateInstances()
 
     for _, l_entry in pairs(self.m_waitingInstances.meshVariationDatabaseEntrys) do
         self:CreateMeshMaterialVariations(l_entry)
-        self:CreateMeshVariationDatabaseEntrys(l_entry)
+        self:CreateMeshVariationDatabaseEntrys(l_entry, self.m_waitingInstances.colorSwatch)
     end
 
     self:CreatePolynomialColorInterps(self.m_waitingInstances.dummyPolynomialColor)
@@ -418,7 +415,7 @@ function VehiclesBlueprints:CreateMeshMaterialVariations(p_entry)
 end
 
 -- creating MeshVariationDatabaseEntry
-function VehiclesBlueprints:CreateMeshVariationDatabaseEntrys(p_entry)
+function VehiclesBlueprints:CreateMeshVariationDatabaseEntrys(p_entry, p_texture)
     if self.m_verbose >= 2 then
         print('Create MeshVariationEntrys')
     end
@@ -435,6 +432,14 @@ function VehiclesBlueprints:CreateMeshVariationDatabaseEntrys(p_entry)
 
         for ll_key, ll_value in pairs(s_meshMaterialVariations[l_element]) do
             s_newMeshVariationDatabaseEntry.materials[ll_key].materialVariation = ll_value
+        end
+
+        for key, value in pairs(s_newMeshVariationDatabaseEntry.materials) do
+            for k, v in pairs(value.textureParameters) do
+                if v.parameterName == 'Camo' then
+                    s_newMeshVariationDatabaseEntry.materials[key].textureParameters[k].value = p_texture
+                end
+            end
         end
 
         self.m_meshVariationDatabase.entries:add(s_newMeshVariationDatabaseEntry)
