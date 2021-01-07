@@ -71,6 +71,8 @@ function VehiclesBlueprints:RegisterVars()
     }
 
     self.m_registryContainer = nil -- RegistryContainer
+
+    self.m_meshVariationDatabase = nil
     self.m_materialContainerAsset = nil -- MaterialContainerAsset
 
     self.m_polynomialColorInterps = {} -- PolynomialColorInterpData
@@ -190,6 +192,8 @@ function VehiclesBlueprints:ReadInstances(p_instances)
     }
 
     self.m_registryContainer = nil -- RegistryContainer
+
+    self.m_meshVariationDatabase = nil
     self.m_materialContainerAsset = nil -- MaterialContainerAsset
 
     self.m_polynomialColorInterps = {} -- PolynomialColorInterpData

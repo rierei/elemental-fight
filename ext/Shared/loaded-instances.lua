@@ -135,6 +135,9 @@ function LoadedInstances:RegisterEvents()
         self.m_loadedInstances.VehicleMeshProjectileEntityData = {}
         self.m_loadedInstances.VehicleProjectileBlueprint = {}
 
+        self.m_loadedInstances.WeaponProjectileModifier = {}
+        self.m_loadedInstances.WeaponFiringDataModifier = {}
+
         self.m_loadedInstances.MaterialGridData = {}
         self.m_loadedInstances.MeshVariationDatabase = {}
 
