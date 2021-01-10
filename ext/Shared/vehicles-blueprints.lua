@@ -76,7 +76,8 @@ function VehiclesBlueprints:RegisterVars()
         vehicleEntities = {}
     }
 
-    self.m_registryContainer = nil -- RegistryContainer
+    self.m_registryContainerGame = nil -- RegistryContainer
+    self.m_registryContainerDynamic = nil -- RegistryContainer
 
     self.m_meshVariationDatabase = nil
     self.m_materialContainerAsset = nil -- MaterialContainerAsset
@@ -197,7 +198,8 @@ function VehiclesBlueprints:ReadInstances(p_instances)
         vehicleEntities = {}
     }
 
-    self.m_registryContainer = nil -- RegistryContainer
+    self.m_registryContainerDynamic = nil -- RegistryContainer
+    self.m_registryContainerGame = nil -- RegistryContainer
 
     self.m_meshVariationDatabase = nil
     self.m_materialContainerAsset = nil -- MaterialContainerAsset
@@ -285,7 +287,8 @@ function VehiclesBlueprints:CreateInstances()
         print('Creating Instances')
     end
 
-    self.m_registryContainer = RegistryContainer()
+    self.m_registryContainerGame = RegistryContainer()
+    self.m_registryContainerDynamic = RegistryContainer()
 
     for _, l_asset in pairs(self.m_waitingInstances.meshAssets) do
         self:CreateMeshAssets(l_asset)
@@ -339,7 +342,8 @@ function VehiclesBlueprints:CreateInstances()
         end
     end
 
-    ResourceManager:AddRegistry(self.m_registryContainer, ResourceCompartment.ResourceCompartment_Dynamic_Begin_)
+    ResourceManager:AddRegistry(self.m_registryContainerGame, ResourceCompartment.ResourceCompartment_Game)
+    ResourceManager:AddRegistry(self.m_registryContainerDynamic, ResourceCompartment.ResourceCompartment_Dynamic_Begin_)
 
     if self.m_verbose >= 1 then
         print('Created WeaponComponentsIndexes: ' .. InstanceUtils:Count(self.m_weaponComponentsIndexes))
@@ -358,9 +362,9 @@ function VehiclesBlueprints:CreateInstances()
         print('Created WeaponComponents: ' .. InstanceUtils:Count(self.m_weaponComponents))
         print('Created VehicleEntities: ' .. InstanceUtils:Count(self.m_vehicleEntities))
         print('Created VehicleBlueprints: ' .. InstanceUtils:Count(self.m_vehicleBlueprints))
-        print('Created RegistryContainerAssets: ' .. InstanceUtils:Count(self.m_registryContainer.assetRegistry))
-        print('Created RegistryContainerEntities: ' .. InstanceUtils:Count(self.m_registryContainer.entityRegistry))
-        print('Created RegistryContainerBlueprints: ' .. InstanceUtils:Count(self.m_registryContainer.blueprintRegistry))
+        print('Created GameRegistryContainerAssets: ' .. InstanceUtils:Count(self.m_registryContainerGame.assetRegistry))
+        print('Created GameRegistryContainerEntities: ' .. InstanceUtils:Count(self.m_registryContainerGame.entityRegistry))
+        print('Created DynamicRegistryContainerBlueprints: ' .. InstanceUtils:Count(self.m_registryContainerDynamic.blueprintRegistry))
     end
 end
 
@@ -712,7 +716,7 @@ function VehiclesBlueprints:CreateProjectileEntities(p_entity)
         -- patching projectile entity
         s_newProjectileEntity.explosion = self.m_explosionEntities[p_entity.instanceGuid:ToString('D')][l_element]
 
-        self.m_registryContainer.entityRegistry:add(s_newProjectileEntity)
+        self.m_registryContainerGame.entityRegistry:add(s_newProjectileEntity)
 
         s_elements[l_element] = s_newProjectileEntity
     end
@@ -737,7 +741,7 @@ function VehiclesBlueprints:CreateProjectileBlueprints(p_blueprint)
         -- patching projectile blueprint
         s_newProjectileBlueprint.object = s_projectileEntity[l_element]
 
-        self.m_registryContainer.blueprintRegistry:add(s_newProjectileBlueprint)
+        self.m_registryContainerGame.blueprintRegistry:add(s_newProjectileBlueprint)
 
         s_elements[l_element] = s_newProjectileBlueprint
     end
@@ -878,7 +882,7 @@ function VehiclesBlueprints:CreateVehicleEntities(p_entity)
 
         s_newVehicleEntity.mesh = self.m_meshAssets[s_newVehicleEntity.mesh.instanceGuid:ToString('D')][l_element]
 
-        self.m_registryContainer.entityRegistry:add(s_newVehicleEntity)
+        self.m_registryContainerGame.entityRegistry:add(s_newVehicleEntity)
 
         s_elements[l_element] = s_newVehicleEntity
     end
@@ -949,7 +953,7 @@ function VehiclesBlueprints:CreateVehicleBlueprints(p_blueprint)
         updateWeaponConnections(s_newVehicleBlueprint.linkConnections, l_element)
         updateWeaponConnections(s_newVehicleBlueprint.eventConnections, l_element)
 
-        self.m_registryContainer.blueprintRegistry:add(s_newVehicleBlueprint)
+        self.m_registryContainerDynamic.blueprintRegistry:add(s_newVehicleBlueprint)
 
         s_elements[l_element] = s_newVehicleBlueprint
     end
