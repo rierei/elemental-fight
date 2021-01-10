@@ -139,7 +139,7 @@ function LoadedInstances:CheckInstance(p_instance)
         if string.starts(p_instance.partition.name, 'weapons/') then
             table.insert(self.m_loadedInstances.MeshProjectileEntityData, p_instance)
         end
-    elseif p_instance:Is('ProjectileBlueprint') then
+    elseif p_instance.typeInfo.name == 'ProjectileBlueprint' then
         if self.m_verbose >= 2 then
             print('Found ProjectileBlueprint')
         end

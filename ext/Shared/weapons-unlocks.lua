@@ -85,6 +85,8 @@ function WeaponsUnlocks:RegisterVars()
 
     self.m_projectileEntities = {} -- MeshProjectileEntityData
     self.m_projectileBlueprints = {} -- ProjectileBlueprint
+    self.m_weaponFiringFunctions = {}
+    self.m_weaponFirings = {}
     self.m_weaponProjectileModifiers = {} -- WeaponProjectileModifier
     self.m_weaponFiringModifiers = {} -- WeaponFiringDataModifier
     self.m_weaponEntities = {} -- SoldierWeaponData
@@ -345,6 +347,8 @@ function WeaponsUnlocks:ReadInstances(p_instances)
 
     self.m_projectileEntities = {} -- MeshProjectileEntityData
     self.m_projectileBlueprints = {} -- ProjectileBlueprint
+    self.m_weaponFiringFunctions = {}
+    self.m_weaponFirings = {}
     self.m_weaponProjectileModifiers = {} -- WeaponProjectileModifier
     self.m_weaponFiringModifiers = {} -- WeaponFiringDataModifier
     self.m_weaponEntities = {} -- SoldierWeaponData
@@ -401,6 +405,8 @@ function WeaponsUnlocks:CreateInstances()
     end
 
     for _, l_data in pairs(self.m_waitingInstances.firingModifiers) do
+        self:CreateWeaponFiringFunctions(l_data.weaponFiring.primaryFire)
+        self:CreateWeaponFirings(l_data.weaponFiring)
         self:CreateWeaponFiringModifiers(l_data)
     end
 
@@ -409,6 +415,8 @@ function WeaponsUnlocks:CreateInstances()
     --
 
     for _, l_entity in pairs(self.m_waitingInstances.weaponEntities) do
+        self:CreateWeaponFiringFunctions(l_entity.weaponFiring.primaryFire)
+        self:CreateWeaponFirings(l_entity.weaponFiring)
         self:CreateWeaponEntities(l_entity)
     end
 
@@ -436,6 +444,8 @@ function WeaponsUnlocks:CreateInstances()
         print('Created ExplodeExplosionEntities: ' .. InstanceUtils:Count(self.m_explodeExplosionEntities))
         print('Created ProjectileEntities: ' .. InstanceUtils:Count(self.m_projectileEntities))
         print('Created ProjectileBlueprints: ' .. InstanceUtils:Count(self.m_projectileBlueprints))
+        print('Created WeaponFiringFunctions: ' .. InstanceUtils:Count(self.m_weaponFiringFunctions))
+        print('Created WeaponFirings: ' .. InstanceUtils:Count(self.m_weaponFirings))
         print('Created WeaponProjectileModifiers: ' .. InstanceUtils:Count(self.m_weaponProjectileModifiers))
         print('Created WeaponFiringModifiers: ' .. InstanceUtils:Count(self.m_weaponFiringModifiers))
         print('Created WeaponEntities: ' .. InstanceUtils:Count(self.m_weaponEntities))
@@ -670,7 +680,9 @@ function WeaponsUnlocks:CreateImpactExplosionEntities(p_entity)
         -- patching explosion properties
         s_newExplosionEntity.detonationEffect = self.m_impactEffectBlueprints[l_element]
         s_newExplosionEntity.blastDamage = 0
+        s_newExplosionEntity.blastImpulse = 0
         s_newExplosionEntity.shockwaveDamage = 0
+        s_newExplosionEntity.shockwaveImpulse = 0
 
         s_elements[l_element] = s_newExplosionEntity
     end
@@ -821,6 +833,71 @@ function WeaponsUnlocks:CreateProjectileBlueprints(p_blueprint)
     self.m_projectileBlueprints[p_blueprint.instanceGuid:ToString('D')] = s_elements
 end
 
+-- creating FiringFunctionData
+function WeaponsUnlocks:CreateWeaponFiringFunctions(p_data)
+    if self.m_weaponFiringFunctions[p_data.instanceGuid:ToString('D')] ~= nil then
+        return
+    end
+
+    if self.m_verbose >= 2 then
+        print('Create FiringFunctions')
+    end
+
+    local s_elements = {}
+    -- s_elements['neutral'] = p_data
+
+    local s_projectileEntity = self.m_projectileEntities[p_data.shot.projectileData.instanceGuid:ToString('D')]
+
+    local s_projectileBlueprint = nil
+    if p_data.shot.projectile ~= nil then
+        s_projectileBlueprint = self.m_projectileBlueprints[p_data.shot.projectile.instanceGuid:ToString('D')]
+    end
+
+    for _, l_element in pairs(ElementalConfig.names) do
+        local s_newFiringFunction = InstanceUtils:CloneInstance(p_data, l_element)
+
+        -- patching firing function
+        if s_projectileEntity ~= nil then
+            s_newFiringFunction.shot.projectileData = s_projectileEntity[l_element]
+        end
+
+        if s_projectileBlueprint ~= nil then
+            s_newFiringFunction.shot.projectile = s_projectileBlueprint[l_element]
+        end
+
+        s_elements[l_element] = s_newFiringFunction
+    end
+
+    self.m_weaponFiringFunctions[p_data.instanceGuid:ToString('D')] = s_elements
+end
+
+-- creating FiringData
+function WeaponsUnlocks:CreateWeaponFirings(p_data)
+    if self.m_weaponFirings[p_data.instanceGuid:ToString('D')] ~= nil then
+        return
+    end
+
+    if self.m_verbose >= 2 then
+        print('Create FiringDatas')
+    end
+
+    local s_elements = {}
+    -- s_elements['neutral'] = p_data
+
+    local s_firingFunction = self.m_weaponFiringFunctions[p_data.primaryFire.instanceGuid:ToString('D')]
+
+    for _, l_element in pairs(ElementalConfig.names) do
+        local s_newFiringData = InstanceUtils:CloneInstance(p_data, l_element)
+
+        -- patching firing data
+        s_newFiringData.primaryFire = s_firingFunction[l_element]
+
+        s_elements[l_element] = s_newFiringData
+    end
+
+    self.m_weaponFirings[p_data.instanceGuid:ToString('D')] = s_elements
+end
+
 -- creating WeaponProjectileModifier for SoldierWeaponEntity
 function WeaponsUnlocks:CreateWeaponProjectileModifiers(p_data)
     if self.m_weaponProjectileModifiers[p_data.instanceGuid:ToString('D')] ~= nil then
@@ -861,34 +938,13 @@ function WeaponsUnlocks:CreateWeaponFiringModifiers(p_data)
     local s_elements = {}
     s_elements['neutral'] = p_data
 
-    local s_firingFunction = p_data.weaponFiring.primaryFire
-    local s_firingData = p_data.weaponFiring
-
-    local s_projectileEntity = self.m_projectileEntities[s_firingFunction.shot.projectileData.instanceGuid:ToString('D')]
-
-    local s_projectileBlueprint = nil
-    if s_firingFunction.shot.projectile ~= nil then
-        s_projectileBlueprint = self.m_projectileBlueprints[s_firingFunction.shot.projectile.instanceGuid:ToString('D')]
-    end
+    local s_weaponFiring = self.m_weaponFirings[p_data.weaponFiring.instanceGuid:ToString('D')]
 
     for _, l_element in pairs(ElementalConfig.names) do
-        local s_newFiringFunction = InstanceUtils:CloneInstance(s_firingFunction, l_element)
-        local s_newModifierFiringData = InstanceUtils:CloneInstance(s_firingData, l_element)
         local s_newFiringModifier = InstanceUtils:CloneInstance(p_data, l_element)
 
-        -- patching firing function
-        s_newFiringFunction.shot.projectileData = s_projectileEntity[l_element]
-        s_newFiringFunction.ammo.magazineCapacity = 100 -- TESTING
-
-        if s_projectileBlueprint ~= nil then
-            s_newFiringFunction.shot.projectile = s_projectileBlueprint[l_element]
-        end
-
-        -- patching firing data
-        s_newModifierFiringData.primaryFire = s_newFiringFunction
-
         -- patching firing modifier
-        s_newFiringModifier.weaponFiring = s_newModifierFiringData
+        s_newFiringModifier.weaponFiring = s_weaponFiring[l_element]
 
         s_elements[l_element] = s_newFiringModifier
     end
@@ -905,9 +961,6 @@ function WeaponsUnlocks:CreateWeaponEntities(p_entity)
     if self.m_verbose >= 2 then
         print('Create WeaponEntities')
     end
-
-    local s_firingFunction = p_entity.weaponFiring.primaryFire
-    local s_firingData = p_entity.weaponFiring
 
     local s_elements = {}
     s_elements['neutral'] = p_entity
@@ -926,37 +979,16 @@ function WeaponsUnlocks:CreateWeaponEntities(p_entity)
         end
     end
 
-    local s_projectileEntity = self.m_projectileEntities[p_entity.weaponFiring.primaryFire.shot.projectileData.instanceGuid:ToString('D')]
-
-    local s_projectileBlueprint = nil
-    if s_firingFunction.shot.projectile ~= nil then
-        s_projectileBlueprint = self.m_projectileBlueprints[s_firingFunction.shot.projectile.instanceGuid:ToString('D')]
-    end
+    local s_weaponFiring = self.m_weaponFirings[p_entity.weaponFiring.instanceGuid:ToString('D')]
 
     for _, l_element in pairs(ElementalConfig.names) do
-        local s_newFiringFunction = InstanceUtils:CloneInstance(s_firingFunction, l_element)
-        local s_newFiringData = InstanceUtils:CloneInstance(s_firingData, l_element)
         local s_newWeaponEntity = InstanceUtils:CloneInstance(p_entity, l_element)
-
-        -- patching FiringData
-        s_newFiringFunction.ammo.magazineCapacity = 100 -- TESTING
-
-        if s_projectileEntity ~= nil then
-            s_newFiringFunction.shot.projectileData = s_projectileEntity[l_element]
-        end
-
-        if s_projectileBlueprint ~= nil then
-            s_newFiringFunction.shot.projectile = s_projectileBlueprint[l_element]
-        end
 
         -- patching weapon modifiers
         patchModifiers(s_newWeaponEntity, l_element)
 
-        -- patching firing data
-        s_newFiringData.primaryFire = s_newFiringFunction
-
         -- patching weapon entity
-        s_newWeaponEntity.weaponFiring = s_newFiringData
+        s_newWeaponEntity.weaponFiring = s_weaponFiring[l_element]
         s_newWeaponEntity.damageGiverName = l_element
 
         s_elements[l_element] = s_newWeaponEntity
