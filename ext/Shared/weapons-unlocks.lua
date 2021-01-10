@@ -1032,7 +1032,7 @@ function WeaponsUnlocks:CreateWeaponUnlockAssets(p_asset)
     end
 
     local s_elements = {}
-    s_elements['neutral'] = p_asset
+    -- s_elements['neutral'] = p_asset
 
     local s_blueprintGuid = p_asset.weapon.instanceGuid:ToString('D')
     for _, l_element in pairs(ElementalConfig.names) do

@@ -329,7 +329,7 @@ function WeaponsAppearances:CreateUnlockAssets(p_entry)
     end
 
     local s_elements = {}
-    s_elements['neutral'] = p_entry.materials
+    -- s_elements['neutral'] = p_entry.materials
 
     local s_skinnedMeshAsset1pWeaponGuid = self.m_skinnedMeshAsset1pWeaponGuids[p_entry.mesh.instanceGuid:ToString('D')]
 
