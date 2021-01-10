@@ -27,7 +27,13 @@ function VehiclesBlueprints:RegisterVars()
 
     self.m_filteredPartitions = {
         ['vehicles/common/weapondata/coax_hmg_firing'] = true,
-        ['vehicles/common/weapondata/laserdesignator_firing'] = true
+        ['vehicles/common/weapondata/laserdesignator_firing'] = true,
+        ['vehicles/common/weapondata/agm-144_hellfire_tv'] = true,
+
+        ['vehicles/centurion_c-ram/centurion_c-ram'] = true,
+        ['vehicles/pantsir/pantsir-s1'] = true,
+        ['vehicles/tow2/tow2'] = true,
+        ['vehicles/kornet/kornet'] = true,
     }
 
     self.m_waitingGuids = {
@@ -322,11 +328,15 @@ function VehiclesBlueprints:CreateInstances()
     end
 
     for _, l_entity in pairs(self.m_waitingInstances.vehicleEntities) do
-        self:CreateVehicleEntities(l_entity)
+        if not self.m_filteredPartitions[l_entity.partition.name] then
+            self:CreateVehicleEntities(l_entity)
+        end
     end
 
     for _, l_blueprint in pairs(self.m_waitingInstances.vehicleBlueprints) do
-        self:CreateVehicleBlueprints(l_blueprint)
+        if not self.m_filteredPartitions[l_blueprint.partition.name] then
+            self:CreateVehicleBlueprints(l_blueprint)
+        end
     end
 
     ResourceManager:AddRegistry(self.m_registryContainer, ResourceCompartment.ResourceCompartment_Dynamic_Begin_)
