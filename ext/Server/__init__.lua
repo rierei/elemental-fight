@@ -4,6 +4,7 @@ local ElementalConfig = require('__shared/elemental-config')
 local SoldierAppearances = require('__shared/soldiers-appearances')
 local WeaponAppearances = require('__shared/weapons-appearances')
 local WeaponUnlocks = require('__shared/weapons-unlocks')
+local VehicleBlueprints = require('__shared/vehicles-blueprints')
 
 function ElementalFight:__init()
     self:RegisterVars()
@@ -14,6 +15,7 @@ function ElementalFight:RegisterVars()
     self.m_soldierAppearances = SoldierAppearances()
     self.m_weaponAppearances = WeaponAppearances()
     self.m_weaponUnlocks = WeaponUnlocks()
+    self.m_vehicleBlueprints = VehicleBlueprints()
 
     self.m_verbose = 0 -- prints debug information
 end
@@ -86,6 +88,47 @@ function ElementalFight:_SoldierDamage(p_hook, p_soldier, p_info, p_giver)
 
     p_info.damage = p_info.damage * s_damageMultiplier
     p_hook:Pass(p_soldier, p_info)
+end
+
+-- replacing vehicle entity
+function ElementalFight:_VehicleEnter(p_vehicle, p_player)
+    local s_soldierElement = UnlockAsset(p_player.visualUnlocks[1]).debugUnlockId
+    if s_soldierElement == nil or ElementalConfig.damages[s_soldierElement] == nil then
+        s_soldierElement = 'neutral'
+    end
+
+    if s_soldierElement == 'neutral' then
+        return
+    end
+
+    local s_vehicleBlueprint = self.m_vehicleBlueprints:GetVehicleBlueprint(p_vehicle.data, s_soldierElement)
+    if s_vehicleBlueprint == nil then
+        return
+    end
+
+    local s_transform = SpatialEntity(p_vehicle).transform
+
+    p_vehicle:Destroy()
+
+    local s_params = EntityCreationParams()
+    s_params.transform = s_transform
+    s_params.networked = true
+
+    local s_bus = EntityManager:CreateEntitiesFromBlueprint(s_vehicleBlueprint, s_params)
+
+    local s_vehicle = nil
+    for _, l_entity in pairs(s_bus.entities) do
+        if l_entity:Is('ServerVehicleEntity') then
+            s_vehicle = l_entity
+        end
+
+        l_entity:Init(Realm.Realm_ClientAndServer, true)
+    end
+
+    -- todo: fix abandoned vehicle not unspawing
+    -- s_vehicle:PropertyChanged('Team', p_player.teamId)
+
+    p_player:EnterVehicle(s_vehicle, 0)
 end
 
 -- customising player appearance and weapons

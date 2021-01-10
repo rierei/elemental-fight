@@ -31,6 +31,7 @@ function VehiclesBlueprints:RegisterVars()
         ['vehicles/common/weapondata/agm-144_hellfire_tv'] = true,
 
         ['vehicles/centurion_c-ram/centurion_c-ram'] = true,
+        ['vehicles/centurion_c-ram/centurion_c-ram_carrier'] = true,
         ['vehicles/pantsir/pantsir-s1'] = true,
         ['vehicles/tow2/tow2'] = true,
         ['vehicles/kornet/kornet'] = true,
@@ -49,7 +50,7 @@ function VehiclesBlueprints:RegisterVars()
 
         ColorSwatchesWhite = {'A4E6AD23-C88B-11DE-8670-931164D2932F', '2009988C-D664-75BB-F68D-92844483C9A7'},
 
-        _RU_Helmet05_Navy = {'706BF6C9-0EAD-4382-A986-39D571DBFA77', '53828D27-7C4A-415A-892D-8D410136E1B6'}
+        _US_Lowerbody02_DrPepper = {'084FF485-CAD3-4B26-B4C0-73A6FB195799', ' 430E9A35-20CD-4898-9EBC-E48CB7402B59'}
     }
 
     self.m_optionalGuids = {
@@ -87,6 +88,7 @@ function VehiclesBlueprints:RegisterVars()
     self.m_emitterEntities = {} -- EmitterEntityData
 
     self.m_weaponComponentsIndexes = {}
+    self.m_vehicleEntityBlueprintGuids = {}
 
     self.m_surfaceShaderStructs = {}
 
@@ -399,7 +401,7 @@ function VehiclesBlueprints:CreateSurfaceShaderStructs(p_asset)
         local s_color = ElementalConfig.colors[l_element]
 
         local s_camoDarkeningParameter = VectorShaderParameter()
-        s_camoDarkeningParameter.value = Vec4(s_color.x * 10, s_color.y * 10, s_color.z * 10, 0)
+        s_camoDarkeningParameter.value = Vec4(s_color.x, s_color.y, s_color.z, 0)
         s_camoDarkeningParameter.parameterName = 'CamoBrightness'
         s_camoDarkeningParameter.parameterType = ShaderParameterType.ShaderParameterType_Color
 
@@ -958,7 +960,21 @@ function VehiclesBlueprints:CreateVehicleBlueprints(p_blueprint)
         s_elements[l_element] = s_newVehicleBlueprint
     end
 
+    self.m_vehicleEntityBlueprintGuids[p_blueprint.object.instanceGuid:ToString('D')] = p_blueprint.instanceGuid:ToString('D')
+
     self.m_vehicleBlueprints[p_blueprint.instanceGuid:ToString('D')] = s_elements
+end
+
+
+function VehiclesBlueprints:GetVehicleBlueprint(p_entity, p_element)
+    local s_blueprintGuid = self.m_vehicleEntityBlueprintGuids[p_entity.instanceGuid:ToString('D')]
+
+    local s_vehicleBlueprint = self.m_vehicleBlueprints[s_blueprintGuid]
+    if s_vehicleBlueprint ~= nil then
+        s_vehicleBlueprint = s_vehicleBlueprint[p_element]
+    end
+
+    return s_vehicleBlueprint
 end
 
 -- creating missing instances
