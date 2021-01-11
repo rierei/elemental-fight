@@ -349,16 +349,22 @@ function WeaponsAppearances:CreateUnlockAssets(p_entry)
 end
 
 -- getting custom unlocks
-function WeaponsAppearances:GetUnlockAssets(p_player, p_element)
+function WeaponsAppearances:GetUnlockAssets(p_weapons, p_element, p_secondary)
     local s_unlocks = {}
 
-    for l_key, l_value in pairs(p_player.weapons) do
+    for l_key, l_value in pairs(p_weapons) do
         local s_unlockAsset = nil
 
         if l_value ~= nil then
             local s_weaponUnlockAsset = SoldierWeaponUnlockAsset(l_value)
             local s_weaponEntity = s_weaponUnlockAsset.weapon.object
-            s_unlockAsset = self.m_unlockAssets[s_weaponEntity.instanceGuid:ToString('D')][p_element]
+            s_unlockAsset = self.m_unlockAssets[s_weaponEntity.instanceGuid:ToString('D')]
+
+            if l_key ~= 2 then
+                s_unlockAsset = s_unlockAsset[p_element]
+            else
+                s_unlockAsset = s_unlockAsset[p_secondary]
+            end
         end
 
         s_unlocks[l_key] = s_unlockAsset

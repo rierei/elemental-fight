@@ -23,14 +23,14 @@ function ElementalFight:RegisterEvents()
         self:_SoldierDamage(p_hook, p_soldier, p_info, p_giver)
     end)
 
-    Events:Subscribe('ElementalFight:Customize', function(p_guid, p_element)
+    Events:Subscribe('ElementalFight:Customize', function(p_guid, p_element, p_secondary)
         local s_player = PlayerManager:GetPlayerByGuid(p_guid)
 
         if s_player == nil then
             return
         end
 
-        self:CustomizePlayer(s_player, p_element)
+        self:CustomizePlayer(s_player, p_element, p_secondary)
     end)
 end
 
@@ -89,7 +89,7 @@ function ElementalFight:_SoldierDamage(p_hook, p_soldier, p_info, p_giver)
 end
 
 -- customising player appearance and weapons
-function ElementalFight:CustomizePlayer(p_player, p_element)
+function ElementalFight:CustomizePlayer(p_player, p_element, p_secondary)
     if p_element == 'neutral' then
         return
     end
@@ -116,10 +116,10 @@ function ElementalFight:CustomizePlayer(p_player, p_element)
     end
 
     -- custom weapon appearances
-    local s_weaponVisualUnlockAssets = self.m_weaponAppearances:GetUnlockAssets(p_player, p_element)
+    local s_weaponVisualUnlockAssets = self.m_weaponAppearances:GetUnlockAssets(p_player.weapons, p_element, p_secondary)
 
     -- custom weapon unlock assets
-    local s_weaponUnlockAssets = self.m_weaponUnlocks:GetUnlockAssets(p_player, p_element)
+    local s_weaponUnlockAssets = self.m_weaponUnlocks:GetUnlockAssets(p_player.weapons, p_element, p_secondary)
 
     -- adding custom weapons and appearances
     for i = #p_player.weapons, 1, -1 do
