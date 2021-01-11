@@ -11,52 +11,27 @@ function ElementalFight:__init()
 end
 
 function ElementalFight:RegisterVars()
-    self.m_elementNames = {
-        'neutral',
-        'water',
-        'fire',
-        'grass',
-        'gold',
-        'energy'
-    }
-
     self.m_soldierAppearances = SoldierAppearances()
     self.m_weaponAppearances = WeaponAppearances()
     self.m_weaponUnlocks = WeaponUnlocks()
-
-    self.m_elementCounter = 2
 
     self.m_verbose = 2 -- prints debug information
 end
 
 function ElementalFight:RegisterEvents()
-    Events:Subscribe('Player:Respawn', function (p_player)
-        self:_PlayerRespawn(p_player)
-    end)
-
     Hooks:Install('Soldier:Damage', 1, function (p_hook, p_soldier, p_info, p_giver)
         self:_SoldierDamage(p_hook, p_soldier, p_info, p_giver)
     end)
-end
-
--- customising player on respawn
-function ElementalFight:_PlayerRespawn(p_player)
-    if self.m_verbose >= 1 then
-        print('Event Player:Respawn')
-    end
-
-    local s_element = self.m_elementNames[self.m_elementCounter]
-    print(s_element)
-
-    self:CustomizePlayer(p_player, s_element)
-
-    self.m_elementCounter = self.m_elementCounter % #self.m_elementNames + 1
 end
 
 -- applying elemental damage multipliers
 function ElementalFight:_SoldierDamage(p_hook, p_soldier, p_info, p_giver)
     if self.m_verbose >= 2 then
         print('Event Soldier:Damage')
+    end
+
+    if p_soldier == nil or p_soldier.player == nil or p_giver == nil then
+        return
     end
 
     -- soldier healing
@@ -164,14 +139,6 @@ function ElementalFight:CustomizePlayer(p_player, p_element)
     end
 
     p_player.soldier:ApplyCustomization(s_customizeSoldier)
-end
-
--- getting sequential element
-function ElementalFight:GetElement()
-    local s_element = self.m_elementNames[self.m_elementCounter]
-    self.m_elementCounter = self.m_elementCounter % #self.m_elementNames + 1
-
-    return s_element
 end
 
 g_elementalFight = ElementalFight()
