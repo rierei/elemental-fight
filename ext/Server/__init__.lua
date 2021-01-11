@@ -15,18 +15,28 @@ function ElementalFight:RegisterVars()
     self.m_weaponAppearances = WeaponAppearances()
     self.m_weaponUnlocks = WeaponUnlocks()
 
-    self.m_verbose = 2 -- prints debug information
+    self.m_verbose = 1 -- prints debug information
 end
 
 function ElementalFight:RegisterEvents()
     Hooks:Install('Soldier:Damage', 1, function (p_hook, p_soldier, p_info, p_giver)
         self:_SoldierDamage(p_hook, p_soldier, p_info, p_giver)
     end)
+
+    Events:Subscribe('ElementalFight:Customize', function(p_guid, p_element)
+        local s_player = PlayerManager:GetPlayerByGuid(p_guid)
+
+        if s_player == nil then
+            return
+        end
+
+        self:CustomizePlayer(s_player, p_element)
+    end)
 end
 
 -- applying elemental damage multipliers
 function ElementalFight:_SoldierDamage(p_hook, p_soldier, p_info, p_giver)
-    if self.m_verbose >= 2 then
+    if self.m_verbose >= 1 then
         print('Event Soldier:Damage')
     end
 
@@ -69,7 +79,7 @@ function ElementalFight:_SoldierDamage(p_hook, p_soldier, p_info, p_giver)
     local s_elementDamage = ElementalConfig.damages[s_weaponElement]
     local s_damageMultiplier = s_elementDamage[s_soldierElement]
 
-    if self.m_verbose >= 2 then
+    if self.m_verbose >= 1 then
         print(s_weaponElement .. ' x ' .. s_soldierElement .. ' = ' .. s_damageMultiplier)
         print(p_info.damage .. ' ' .. p_info.damage * s_damageMultiplier)
     end
