@@ -90,29 +90,28 @@ end
 
 -- customising player appearance and weapons
 function ElementalFight:CustomizePlayer(p_player, p_element, p_secondary)
-    if p_element == 'neutral' then
-        return
-    end
-
     local s_customizeSoldier = CustomizeSoldierData()
     s_customizeSoldier.activeSlot = 0
     s_customizeSoldier.removeAllExistingWeapons = true
-    s_customizeSoldier.clearVisualState = true
-    s_customizeSoldier.restoreToOriginalVisualState = true
 
-    -- custom soldier appearance
-    local s_soldierVisualUnlockAsset = self.m_soldierAppearances:GetUnlockAsset(p_player, p_element)
+    if p_element ~= 'neutral' then
+        s_customizeSoldier.clearVisualState = true
+        s_customizeSoldier.restoreToOriginalVisualState = true
 
-    -- adding soldier visual unlock
-    p_player:SelectUnlockAssets(p_player.customization, { s_soldierVisualUnlockAsset })
-    s_customizeSoldier.unlocks:add(s_soldierVisualUnlockAsset)
+        -- custom soldier appearance
+        local s_soldierVisualUnlockAsset = self.m_soldierAppearances:GetUnlockAsset(p_player, p_element)
 
-    -- applying custom soldier appearance
-    for _, l_value in pairs(s_soldierVisualUnlockAsset.linkedTo) do
-    	local s_customizeVisual = CustomizeVisual()
-    	s_customizeVisual.visual:add(UnlockAsset(l_value))
+        -- adding soldier visual unlock
+        p_player:SelectUnlockAssets(p_player.customization, { s_soldierVisualUnlockAsset })
+        s_customizeSoldier.unlocks:add(s_soldierVisualUnlockAsset)
 
-    	s_customizeSoldier.visualGroups:add(s_customizeVisual)
+        -- applying custom soldier appearance
+        for _, l_value in pairs(s_soldierVisualUnlockAsset.linkedTo) do
+            local s_customizeVisual = CustomizeVisual()
+            s_customizeVisual.visual:add(UnlockAsset(l_value))
+
+            s_customizeSoldier.visualGroups:add(s_customizeVisual)
+        end
     end
 
     -- custom weapon appearances
@@ -136,7 +135,9 @@ function ElementalFight:CustomizePlayer(p_player, p_element, p_secondary)
             s_unlockWeaponAndSlot.weapon = s_weaponUnlockAsset
             s_unlockWeaponAndSlot.slot = i - 1
 
-            s_unlockWeaponAndSlot.unlockAssets:add(s_weaponVisualUnlockAsset)
+            if s_weaponVisualUnlockAsset ~= nil then
+                s_unlockWeaponAndSlot.unlockAssets:add(s_weaponVisualUnlockAsset)
+            end
 
             for l_key, l_value in pairs(s_weaponUnlockAssets) do
                 if not Asset(l_value).name:lower():match('camo') then

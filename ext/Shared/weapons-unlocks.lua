@@ -35,7 +35,7 @@ function WeaponsUnlocks:RegisterVars()
         M224_Projectile_Smoke = {'7C592ADA-6915-4969-BFF2-A875027A9962', 'A7E5A920-FA8C-4511-AA6C-CAF00C967C3E'}, -- dummyPolynomialColor
 
         FX_Grenade_Frag_01_Sound = {'A6C980C2-1578-4169-81CB-C62AC369590E', '41A352A8-783E-41E6-9B3E-989D473DB953'}, -- explodeSoundEffectEntity
-        FX_40mm_Smoke = {' 6A2C27D9-D455-458D-A542-C212C6F8F69C', '00C3D2F9-1346-47B8-956D-10CC23AD8B4D'}, -- smokeEffectBlueprint
+        FX_40mm_Smoke = {'6A2C27D9-D455-458D-A542-C212C6F8F69C', '00C3D2F9-1346-47B8-956D-10CC23AD8B4D'}, -- smokeEffectBlueprint
         FX_Impact_Metal_01_M = {'67CBADED-34D0-11DE-A494-8B723B09CADF', '67CBADEE-34D0-11DE-A494-8B723B09CADF'} -- explodeEffectBlueprint
     }
 
@@ -1111,14 +1111,19 @@ function WeaponsUnlocks:GetUnlockAssets(p_weapons, p_element, p_secondary)
     for l_key, l_value in pairs(p_weapons) do
         local s_unlockAsset = nil
 
+        local s_element = p_element
+        if l_key == 2 then
+            s_element = p_secondary
+        end
+
         if l_value ~= nil then
             local s_weaponUnlockAsset = SoldierWeaponUnlockAsset(l_value)
             s_unlockAsset = self.m_weaponUnlockAssets[s_weaponUnlockAsset.instanceGuid:ToString('D')]
 
-            if l_key ~= 2 then
-                s_unlockAsset = s_unlockAsset[p_element]
+            if s_element == 'neutral' then
+                s_unlockAsset = s_weaponUnlockAsset
             else
-                s_unlockAsset = s_unlockAsset[p_secondary]
+                s_unlockAsset = s_unlockAsset[s_element]
             end
         end
 

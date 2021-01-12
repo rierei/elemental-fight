@@ -18,7 +18,7 @@ function WeaponsAppearances:RegisterVars()
         WeaponPresetShadowFP = {'1155325D-8138-4D3C-A3D1-AB5A1D520289', '1AFD6691-9CB6-4195-A4D1-6C925C0C3C2B'},
 
         _DefaultCamo = {'07EA9024-7D81-11E1-91A4-E3E3C1704D3D', '7DE14177-6868-59B2-06B5-3C9AA2610EEC'},
-        _RU_Helmet05_Navy = {'706BF6C9-0EAD-4382-A986-39D571DBFA77', '53828D27-7C4A-415A-892D-8D410136E1B6'},
+        _RU_Helmet05_Navy = {'706BF6C9-0EAD-4382-A986-39D571DBFA77', '53828D27-7C4A-415A-892D-8D410136E1B6'}
     }
 
     self.m_waitingInstances = {
@@ -355,15 +355,20 @@ function WeaponsAppearances:GetUnlockAssets(p_weapons, p_element, p_secondary)
     for l_key, l_value in pairs(p_weapons) do
         local s_unlockAsset = nil
 
+        local s_element = p_element
+        if l_key == 2 then
+            s_element = p_secondary
+        end
+
         if l_value ~= nil then
             local s_weaponUnlockAsset = SoldierWeaponUnlockAsset(l_value)
             local s_weaponEntity = s_weaponUnlockAsset.weapon.object
             s_unlockAsset = self.m_unlockAssets[s_weaponEntity.instanceGuid:ToString('D')]
 
-            if l_key ~= 2 then
-                s_unlockAsset = s_unlockAsset[p_element]
+            if s_element == 'neutral' then
+                s_unlockAsset = nil
             else
-                s_unlockAsset = s_unlockAsset[p_secondary]
+                s_unlockAsset = s_unlockAsset[s_element]
             end
         end
 
