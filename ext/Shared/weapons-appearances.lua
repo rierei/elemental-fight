@@ -46,6 +46,11 @@ function WeaponsAppearances:RegisterVars()
 end
 
 function WeaponsAppearances:RegisterEvents()
+    Events:Subscribe('Level:Destroy', function()
+        self.m_unlockAssets = {}
+        self.m_registryContainer = nil
+    end)
+
     -- reading instances before level loads
     Events:Subscribe('Level:LoadResources', function(p_level, p_mode, p_dedicated)
         self:RegisterWait()
@@ -53,11 +58,6 @@ function WeaponsAppearances:RegisterEvents()
 end
 
 function WeaponsAppearances:RegisterWait()
-    Events:Subscribe('Level:Destroy', function()
-        self.m_unlockAssets = {}
-        self.m_registryContainer = nil
-    end)
-
     -- waiting instances
     InstanceWait(self.m_waitingGuids, function(p_instances)
         self:ReadInstances(p_instances)

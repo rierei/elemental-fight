@@ -121,7 +121,10 @@ function LoadedInstances:CheckInstance(p_instance)
             print('Found MeshVariationDatabase')
         end
 
-        self.m_loadedInstances.MeshVariationDatabase = MeshVariationDatabase(p_instance)
+        p_instance = MeshVariationDatabase(p_instance)
+        if #p_instance.entries > 900 then
+            self.m_loadedInstances.MeshVariationDatabase = p_instance
+        end
     elseif p_instance:Is('MaterialGridData') then
         if self.m_verbose >= 2 then
             print('Found MaterialGridData')
