@@ -70,7 +70,7 @@ function WeaponsAppearances:ReadInstances(p_instances)
     end
 
     self.m_waitingInstances.meshVariationDatabase = LoadedInstances.m_loadedInstances.MeshVariationDatabase
-    self.m_waitingInstances.weaponEntities = LoadedInstances.m_loadedInstances.SoldierWeaponData
+    self.m_waitingInstances.weaponEntities = LoadedInstances:GetInstances('SoldierWeaponData')
 
     self.m_meshVariationDatabase = self.m_waitingInstances.meshVariationDatabase
     self.m_meshVariationDatabase:MakeWritable()

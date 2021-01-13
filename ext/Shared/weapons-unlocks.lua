@@ -145,15 +145,15 @@ function WeaponsUnlocks:RegisterEvents()
         if not self.m_shouldReload and p_screenInfo == 'Initializing entities for autoloaded sublevels' then
             self.m_waitingInstances.materialGridAsset = LoadedInstances.m_loadedInstances.MaterialGridData
 
-            self.m_waitingInstances.weaponUnlockAssets = LoadedInstances.m_loadedInstances.SoldierWeaponUnlockAsset
-            self.m_waitingInstances.weaponBlueprints = LoadedInstances.m_loadedInstances.SoldierWeaponBlueprint
-            self.m_waitingInstances.weaponEntities = LoadedInstances.m_loadedInstances.SoldierWeaponData
+            self.m_waitingInstances.weaponUnlockAssets = LoadedInstances:GetInstances('SoldierWeaponUnlockAsset')
+            self.m_waitingInstances.weaponBlueprints = LoadedInstances:GetInstances('SoldierWeaponBlueprint')
+            self.m_waitingInstances.weaponEntities = LoadedInstances:GetInstances('SoldierWeaponData')
 
-            self.m_waitingInstances.projectileEntities = LoadedInstances.m_loadedInstances.MeshProjectileEntityData
-            self.m_waitingInstances.projectileBlueprints = LoadedInstances.m_loadedInstances.ProjectileBlueprint
+            self.m_waitingInstances.projectileEntities = LoadedInstances:GetInstances('MeshProjectileEntityData')
+            self.m_waitingInstances.projectileBlueprints = LoadedInstances:GetInstances('ProjectileBlueprint')
 
-            self.m_waitingInstances.projectileModifiers = LoadedInstances.m_loadedInstances.WeaponProjectileModifier
-            self.m_waitingInstances.firingModifiers = LoadedInstances.m_loadedInstances.WeaponFiringDataModifier
+            self.m_waitingInstances.projectileModifiers = LoadedInstances:GetInstances('WeaponProjectileModifier')
+            self.m_waitingInstances.firingModifiers = LoadedInstances:GetInstances('WeaponFiringDataModifier')
         end
     end)
 end

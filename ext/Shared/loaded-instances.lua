@@ -57,7 +57,7 @@ function LoadedInstances:RegisterEvents()
                         l_instance = s_type(l_instance)
                     end
 
-                    table.insert(self.m_loadedInstances[s_typeName], l_instance)
+                    self:SaveInstance(self.m_loadedInstances[s_typeName], l_instance)
                 else
                     self:CheckInstance(l_instance)
                 end
@@ -140,7 +140,7 @@ function LoadedInstances:CheckInstance(p_instance)
         p_instance = s_type(p_instance)
 
         if string.starts(p_instance.partition.name, 'weapons/') then
-            table.insert(self.m_loadedInstances.MeshProjectileEntityData, p_instance)
+            self:SaveInstance(self.m_loadedInstances.MeshProjectileEntityData, p_instance)
         end
     elseif p_instance.typeInfo.name == 'ProjectileBlueprint' then
         if self.m_verbose >= 2 then
@@ -150,9 +150,33 @@ function LoadedInstances:CheckInstance(p_instance)
         p_instance = ProjectileBlueprint(p_instance)
 
         if string.starts(p_instance.partition.name, 'weapons/') then
-            table.insert(self.m_loadedInstances.ProjectileBlueprint, p_instance)
+            self:SaveInstance(self.m_loadedInstances.ProjectileBlueprint, p_instance)
         end
     end
+end
+
+function LoadedInstances:SaveInstance(p_table, p_instance)
+    local s_key = MathUtils:FNVHash(p_instance.instanceGuid:ToString('D'))
+
+    p_table[s_key] = p_instance
+end
+
+function LoadedInstances:GetInstances(p_type)
+    local s_instances = self.m_loadedInstances[p_type]
+
+    local s_keys = {}
+    for l_key, _ in pairs(s_instances) do
+        table.insert(s_keys, l_key)
+    end
+
+    table.sort(s_keys)
+
+    local s_result = {}
+    for _, l_value in pairs(s_keys) do
+        table.insert(s_result, s_instances[l_value])
+    end
+
+    return s_result
 end
 
 return LoadedInstances()
