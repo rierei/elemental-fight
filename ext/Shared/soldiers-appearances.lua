@@ -41,6 +41,8 @@ function SoldiersAppearances:RegisterVars()
         CharacterSocketListAsset = {'1F5CC239-BE4F-4D03-B0B5-A0FF89976036', '8F1A9F10-6BF8-442A-909F-AF0D9F8E1608'},
         CharacterRoot = {'869C6675-54E6-11DE-AB3A-E7780EA0F1FE', 'A8810763-C259-138B-E17F-1F9C69ACE87B'},
 
+        _WeaponPresetShadowFP = {'1155325D-8138-4D3C-A3D1-AB5A1D520289', '1AFD6691-9CB6-4195-A4D1-6C925C0C3C2B'},
+
         --
         -- Gameplay Kits
         --
