@@ -58,26 +58,23 @@ function InstanceWait:RegisterVars(p_guids, p_callback)
     self.m_waitingRefs = 0 -- waiting count
     self.m_totalRefs = 0 -- refs count
 
-    self.m_shouldDestroy = SharedUtils:IsServerModule()
     self.m_verbose = 2 -- prints waiting state
 end
 
 -- resetings counters on level destroy
 function InstanceWait:RegisterEvents()
     self.m_event = Events:Subscribe('Level:Destroy', function()
-        if self.m_shouldDestroy then
-            print('Level:Destroy')
-            self:DeregisterWait()
-        else
-            -- skips joining event
-            self.m_shouldDestroy = true
+        if self.m_verbose >= 1 then
+            print('Wait: Destroy')
         end
+
+        self:DeregisterWait()
     end)
 end
 
 function InstanceWait:DeregisterWait()
-    if self.m_verbose >= 2 then
-        print('Wait: Done')
+    if self.m_verbose >= 1 then
+        print('Wait: Deregister')
     end
 
     for l_key, l_value in pairs(self.m_instanceRefs) do
@@ -119,7 +116,7 @@ end
 
 -- returning the loaded instances
 function InstanceWait:ProcessRef(p_key, p_instance)
-    if self.m_verbose >= 1 then
+    if self.m_verbose >= 2 then
         print('Found: ' .. p_instance.typeInfo.name)
     end
 
