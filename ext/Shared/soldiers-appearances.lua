@@ -686,8 +686,6 @@ function SoldiersAppearances:GetUnlockAsset(p_player, p_element)
     local s_appearanceGuid = self.m_kitAppearanceGuids[s_kitName]
     local s_appearanceUnlockAsset = self.m_appearanceUnlockAssets[s_appearanceGuid][p_element]
 
-    print(s_kitName)
-
     return s_appearanceUnlockAsset
 end
 

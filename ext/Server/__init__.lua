@@ -15,7 +15,7 @@ function ElementalFight:RegisterVars()
     self.m_weaponAppearances = WeaponAppearances()
     self.m_weaponUnlocks = WeaponUnlocks()
 
-    self.m_verbose = 1 -- prints debug information
+    self.m_verbose = 0 -- prints debug information
 end
 
 function ElementalFight:RegisterEvents()

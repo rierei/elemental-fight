@@ -115,10 +115,6 @@ function WeaponsUnlocks:RegisterEvents()
 
     -- reading instances after level load
     Events:Subscribe('Level:Loaded', function(p_level, p_mode)
-        if self.m_verbose >= 1 then
-            print('Level:Loaded')
-        end
-
         if self.m_shouldReload then
             self:ReloadInstances()
         else
@@ -220,11 +216,12 @@ function WeaponsUnlocks:ReloadInstances()
 
     ResourceManager:AddRegistry(self.m_registryContainer, ResourceCompartment.ResourceCompartment_Game)
 
-    print('Reloaded WeaponUnlockAssets: ' .. InstanceUtils:Count(self.m_weaponUnlockAssets))
-
-    print('Reloaded RegistryContainerAssets: ' .. InstanceUtils:Count(self.m_registryContainer.assetRegistry))
-    print('Reloaded RegistryContainerEntities: ' .. InstanceUtils:Count(self.m_registryContainer.entityRegistry))
-    print('Reloaded RegistryContainerBlueprints: ' .. InstanceUtils:Count(self.m_registryContainer.blueprintRegistry))
+    if self.m_verbose >= 1 then
+        print('Reloaded WeaponUnlockAssets: ' .. InstanceUtils:Count(self.m_weaponUnlockAssets))
+        print('Reloaded RegistryContainerAssets: ' .. InstanceUtils:Count(self.m_registryContainer.assetRegistry))
+        print('Reloaded RegistryContainerEntities: ' .. InstanceUtils:Count(self.m_registryContainer.entityRegistry))
+        print('Reloaded RegistryContainerBlueprints: ' .. InstanceUtils:Count(self.m_registryContainer.blueprintRegistry))
+    end
 end
 
 -- reading waiting instances

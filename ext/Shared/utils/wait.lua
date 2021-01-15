@@ -58,7 +58,7 @@ function InstanceWait:RegisterVars(p_guids, p_callback)
     self.m_waitingRefs = 0 -- waiting count
     self.m_totalRefs = 0 -- refs count
 
-    self.m_verbose = 2 -- prints waiting state
+    self.m_verbose = 0 -- prints waiting state
 end
 
 -- resetings counters on level destroy
