@@ -277,7 +277,11 @@ function SoldiersAppearances:ReadInstances(p_instances)
         self:ReadMeshVariationDatabaseMaterialIndexes(l_class)
     end
 
-    self:CreateInstances()
+    if InstanceUtils:Count(self.m_databaseEntryMaterialIndexes) == 0 and SharedUtils:IsClientModule() then
+        ResourceManager:DestroyDynamicCompartment(ResourceCompartment.ResourceCompartment_Game)
+    else
+        self:CreateInstances()
+    end
 
     -- removing hanging references
     self.m_waitingInstances = {

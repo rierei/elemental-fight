@@ -186,7 +186,11 @@ function WeaponsAppearances:ReadInstances(p_instances)
         end
     end
 
-    self:CreateInstances()
+    if InstanceUtils:Count(self.m_meshVariationDatabaseEntrys1p) == 0 and SharedUtils:IsClientModule() then
+        ResourceManager:DestroyDynamicCompartment(ResourceCompartment.ResourceCompartment_Game)
+    else
+        self:CreateInstances()
+    end
 
     -- removing hanging references
     self.m_waitingInstances = {
