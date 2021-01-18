@@ -225,8 +225,8 @@ function SoldiersAppearances:RegisterEvents()
         self.m_registryContainer = nil
     end)
 
-    -- reading instances before level loads
-    Events:Subscribe('Level:LoadResources', function(p_level, p_mode, p_dedicated)
+    -- reading instances when MeshVariationDatabase loads
+    Events:Subscribe('LoadedInstances:MeshVariationDatabase', function()
         self:RegisterWait()
     end)
 end

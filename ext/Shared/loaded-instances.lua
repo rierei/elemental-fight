@@ -12,6 +12,7 @@ function LoadedInstances:RegisterVars()
     self.m_currentMode = nil
 
     self.m_isLevelLoaded = false
+    self.m_isMeshVariationDatabaseLoaded = false
 
     self.m_instanceTypes = {
         SoldierWeaponUnlockAsset = true,
@@ -72,6 +73,7 @@ function LoadedInstances:RegisterEvents()
         end
 
         self.m_isLevelLoaded = false
+        self.m_isMeshVariationDatabaseLoaded = false
     end)
 
     -- removing instances on level load
@@ -116,14 +118,25 @@ function LoadedInstances:RegisterEvents()
 end
 
 function LoadedInstances:CheckInstance(p_instance)
-    if p_instance:Is('MeshVariationDatabase') and Asset(p_instance).name:match('Levels') then
-        if self.m_verbose >= 2 then
-            print('Found MeshVariationDatabase')
+    if p_instance:Is('MeshVariationDatabase') then
+        if
+            not string.starts(p_instance.partition.name, 'levels/') or
+            string.starts(p_instance.partition.name, self.m_currentLevel:lower()) or
+            self.m_isMeshVariationDatabaseLoaded
+        then
+            return
         end
 
         p_instance = MeshVariationDatabase(p_instance)
-        if #p_instance.entries > 900 then
+        if #p_instance.entries > 800 then
+            if self.m_verbose >= 1 then
+                print('LoadedInstances:MeshVariationDatabase')
+            end
+
             self.m_loadedInstances.MeshVariationDatabase = p_instance
+            self.m_isMeshVariationDatabaseLoaded = true
+
+            Events:DispatchLocal('LoadedInstances:MeshVariationDatabase')
         end
     elseif p_instance:Is('MaterialGridData') then
         if self.m_verbose >= 2 then
