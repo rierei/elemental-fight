@@ -670,6 +670,10 @@ function SoldiersAppearances:GetUnlockAsset(p_player, p_element)
         s_appearanceGuids = self.m_appearanceXp4Guids
     end
 
+    if string.ends(s_kitName, 'GM') then
+        s_kitName = s_kitName:sub(0, -4)
+    end
+
     local s_appearanceGuid = s_appearanceGuids[s_kitName]
     local s_appearanceUnlockAsset = self.m_appearanceUnlockAssets[s_appearanceGuid][p_element]
 
