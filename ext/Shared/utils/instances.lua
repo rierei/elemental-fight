@@ -58,4 +58,13 @@ function InstanceUtils:Split(p_string, p_separator)
     return s_parts
 end
 
+-- merging tables
+function InstanceUtils:MergeTables(p_source, p_merge)
+    for _, l_value in pairs(p_merge) do
+        table.insert(p_source, l_value)
+    end
+
+    return p_source
+end
+
 return InstanceUtils()
