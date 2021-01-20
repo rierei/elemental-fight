@@ -63,9 +63,9 @@ end
 
 -- resetings counters on level destroy
 function InstanceWait:RegisterEvents()
-    self.m_event = Events:Subscribe('Level:Destroy', function()
+    self.m_event = Events:Subscribe('Level:Loaded', function()
         if self.m_verbose >= 1 then
-            print('Wait: Destroy')
+            print('Wait: Loaded')
         end
 
         self:DeregisterWait()
@@ -109,6 +109,10 @@ end
 
 -- starts finding the instances
 function InstanceWait:FindInstances()
+    if self.m_verbose >= 1 then
+        print('Wait: Counter ' .. self.m_totalRefs)
+    end
+
     for _, l_ref in pairs(self.m_instanceRefs) do
         l_ref:FindInstance()
     end
