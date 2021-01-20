@@ -2,11 +2,7 @@ local SoldiersAppearances = class('SoldiersAppearances')
 
 local LoadedInstances = require('__shared/loaded-instances')
 local ElementalConfig = require('__shared/elemental-config')
-local InstanceWait = require('__shared/utils/wait')
 local InstanceUtils = require('__shared/utils/instances')
-
-local BaseAppearancePartsGuids = require('__shared/utils/consts').baseAppearancePartsGuids
-local Xp4AppearancePartsGuids = require('__shared/utils/consts').xp4AppearancePartsGuids
 
 function SoldiersAppearances:__init()
     self:RegisterVars()
@@ -51,39 +47,6 @@ function SoldiersAppearances:RegisterVars()
     }
 
     self.m_currentLevel = nil
-
-    self.m_waitingBaseGuids = {
-        MP_US_Assault_Appearance_Wood01 = {'51728E34-6D48-4E1E-8E37-EE7072DC900D', 'B3C3FB3F-0283-4AE2-B0BD-DF9C984364AE'},
-        MP_US_Engi_Appearance_Wood01 = {'FA825024-20C0-4207-9037-CE25CC5FBA38', 'F2ADB1BC-466F-4B51-90D1-E8F8670C7BE7'},
-        MP_US_Recon_Appearance_Wood01 = {'E3BE172B-C32F-4ECF-A85C-E9F9796610FF', '4BE86DA1-0229-448D-A5E2-934E5490E11C'},
-        MP_US_Support_Appearance_Wood01 = {'9D8C49AB-0E01-4FA6-9127-5FCCDB110B2C', '23CFF61F-F1E2-4306-AECE-2819E35484D2'},
-
-        MP_RU_Assault_Appearance_Wood01 = {'D3A8FF62-AE56-46B7-B4E7-0670E211742C', '8DBC539E-B7E4-4486-BB58-056A3EEB551F'},
-        MP_RU_Engi_Appearance_Wood01 = {'AB8B5EEF-E29C-40D1-BF72-3E740B39DFD2', 'FDC67EE7-3DC8-411D-9E92-AD14DC9B9E09'},
-        MP_RU_Recon_Appearance_Wood01 = {'A9168184-ACD1-4871-B2DE-CB0A8E7B54D5', '220DDA48-89DA-4AE9-BCDA-54FC578FDB6F'},
-        MP_RU_Support_Appearance_Wood01 = {'E93558C0-54FB-4882-8DF7-293D97590BDD', '7AAAC9FD-0DB7-4766-B084-159E735942CA'},
-    }
-
-    InstanceUtils:MergeTables(self.m_waitingBaseGuids, BaseAppearancePartsGuids)
-
-    self.m_waitingXp4Guids = {
-        MP_US_Assault_Appearance_Wood01 = {'3257A52D-0E66-45D5-8326-BB3D2BB4F0D1', '0C078E08-F658-48AD-A450-C50120EBD28A'},
-        MP_US_Engi_Appearance_Wood01 = {'EEC45BF2-0321-4045-9DA0-F08FC68FF83A', 'D7952F77-2F1B-42FD-9C3B-24333E1B91AF'},
-        MP_US_Recon_Appearance_Wood01 = {'16F5D99A-4496-485A-9602-1B27505A632D', '673D8B19-8B3E-4AE8-91D8-E8801D3E558B'},
-        MP_US_Support_Appearance_Wood01 = {'1ECFCA33-5A5F-4C95-B9F6-B02384DADC4F', '81042258-9909-4DD1-AC33-50364E6CD73F'},
-
-        MP_RU_Assault_Appearance_Wood01 = {'50FC529C-0498-4590-9960-F5590C1F4888', '7A72B71B-2A65-43EB-BA9E-77F0CCE26828'},
-        MP_RU_Engi_Appearance_Wood01 = {'278A7EBA-2E73-48EF-88D9-1E6501AA5CBB', '46F907B9-08C5-46DD-9C8B-4B69401E797E'},
-        MP_RU_Recon_Appearance_Wood01 = {'AE5584D6-9EAF-4056-877C-DEB98F72DF79', 'AEA00E34-8091-494F-8B0A-FCCB5ED45249'},
-        MP_RU_Support_Appearance_Wood01 = {'E1302DAF-2B5A-41D2-B6CD-E98D52F3F148', '72993D80-275F-444C-93DF-EE3384A86F72'}
-    }
-
-    InstanceUtils:MergeTables(self.m_waitingXp4Guids, Xp4AppearancePartsGuids)
-
-    self.m_waitingCommonGuids = {
-        CharacterSocketListAsset = {'1F5CC239-BE4F-4D03-B0B5-A0FF89976036', '8F1A9F10-6BF8-442A-909F-AF0D9F8E1608'},
-        CharacterRoot = {'869C6675-54E6-11DE-AB3A-E7780EA0F1FE', 'A8810763-C259-138B-E17F-1F9C69ACE87B'}
-    }
 
     self.m_meshMaterialIndexes = {
         USAssault = {
@@ -195,25 +158,7 @@ function SoldiersAppearances:RegisterEvents()
     end)
 
     -- reading instances when MeshVariationDatabase loads
-    Events:Subscribe('LoadedInstances:MeshVariationDatabase', function()
-        self:RegisterWait()
-    end)
-end
-
-function SoldiersAppearances:RegisterWait()
-    -- waiting instances
-    InstanceWait(self.m_waitingCommonGuids, function(p_instances)
-        self.m_waitingInstances.characterShader = p_instances['CharacterRoot']
-        self.m_waitingInstances.characterSocketListAsset = p_instances['CharacterSocketListAsset']
-    end)
-
-    -- waiting appearance instances
-    InstanceWait(self.m_waitingBaseGuids, function(p_instances)
-        self:ReadInstances(p_instances)
-    end)
-
-    -- waiting appearance instances
-    InstanceWait(self.m_waitingXp4Guids, function(p_instances)
+    Events:Subscribe('LoadedInstances:MeshVariationDatabase', function(p_instances)
         self:ReadInstances(p_instances)
     end)
 end
@@ -228,6 +173,9 @@ function SoldiersAppearances:ReadInstances(p_instances)
 
     self.m_meshVariationDatabase = self.m_waitingInstances.meshVariationDatabase
     self.m_meshVariationDatabase:MakeWritable()
+
+    self.m_waitingInstances.characterShader = p_instances['CharacterRoot']
+    self.m_waitingInstances.characterSocketListAsset = p_instances['CharacterSocketListAsset']
 
     self.m_waitingInstances.appearanceUnlockAssets['USAssault'] = p_instances['MP_US_Assault_Appearance_Wood01']
     self.m_waitingInstances.appearanceUnlockAssets['USEngineer'] = p_instances['MP_US_Engi_Appearance_Wood01']

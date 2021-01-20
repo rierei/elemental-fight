@@ -2,7 +2,6 @@ local WeaponsAppearances = class('WeaponsAppearances')
 
 local LoadedInstances = require('__shared/loaded-instances')
 local ElementalConfig = require('__shared/elemental-config')
-local InstanceWait = require('__shared/utils/wait')
 local InstanceUtils = require('__shared/utils/instances')
 
 function WeaponsAppearances:__init()
@@ -13,10 +12,6 @@ end
 function WeaponsAppearances:RegisterVars()
     self.m_currentLevel = nil
     self.m_currentMode = nil
-
-    self.m_waitingGuids = {
-        WeaponPresetShadowFP = {'1155325D-8138-4D3C-A3D1-AB5A1D520289', '1AFD6691-9CB6-4195-A4D1-6C925C0C3C2B'}
-    }
 
     self.m_waitingInstances = {
         meshVariationDatabase = nil, -- MeshVariationDatabase
@@ -49,14 +44,7 @@ function WeaponsAppearances:RegisterEvents()
     end)
 
     -- reading instances when MeshVariationDatabase loads
-    Events:Subscribe('LoadedInstances:MeshVariationDatabase', function()
-        self:RegisterWait()
-    end)
-end
-
-function WeaponsAppearances:RegisterWait()
-    -- waiting instances
-    InstanceWait(self.m_waitingGuids, function(p_instances)
+    Events:Subscribe('LoadedInstances:MeshVariationDatabase', function(p_instances)
         self:ReadInstances(p_instances)
     end)
 end

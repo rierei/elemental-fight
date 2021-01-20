@@ -1,6 +1,9 @@
 local LoadedInstances = class('LoadedInstances')
 
 local ElementalConfig = require('__shared/elemental-config')
+local InstanceWait = require('__shared/utils/wait')
+
+local ConstsUtils = require('__shared/utils/consts')
 
 function LoadedInstances:__init()
     self:RegisterVars()
@@ -129,14 +132,21 @@ function LoadedInstances:CheckInstance(p_instance)
 
         p_instance = MeshVariationDatabase(p_instance)
         if #p_instance.entries > 800 then
-            if self.m_verbose >= 1 then
-                print('LoadedInstances:MeshVariationDatabase')
-            end
-
             self.m_loadedInstances.MeshVariationDatabase = p_instance
             self.m_isMeshVariationDatabaseLoaded = true
 
-            Events:DispatchLocal('LoadedInstances:MeshVariationDatabase')
+            local s_waitingGuids = ConstsUtils.baseAppearanceGuids
+            if self.m_currentLevel:match('XP4') then
+                s_waitingGuids = ConstsUtils.xp4AppearanceGuids
+            end
+
+            InstanceWait(s_waitingGuids, function (p_instances)
+                if self.m_verbose >= 1 then
+                    print('LoadedInstances:MeshVariationDatabase')
+                end
+
+                Events:DispatchLocal('LoadedInstances:MeshVariationDatabase', p_instances)
+            end)
         end
     elseif p_instance:Is('MaterialGridData') then
         if self.m_verbose >= 2 then
