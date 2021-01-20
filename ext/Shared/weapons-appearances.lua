@@ -40,7 +40,6 @@ end
 function WeaponsAppearances:RegisterEvents()
     Events:Subscribe('Level:Destroy', function()
         self.m_unlockAssets = {}
-        self.m_registryContainer = nil
     end)
 
     -- reading instances when MeshVariationDatabase loads
@@ -103,7 +102,9 @@ function WeaponsAppearances:ReadInstances(p_instances)
     }
 
     -- removing hanging references
+    self.m_registryContainer = nil
     self.m_meshVariationDatabase = nil -- MeshVariationDatabase
+
     self.m_skinnedMeshAsset1pWeaponGuids = {} -- WeaponStateData.mesh1p
     self.m_skinnedMeshAsset3pWeaponGuids = {} -- WeaponStateData.mesh3p
     self.m_meshVariationDatabaseEntrys1p = {} -- MeshVariationDatabaseEntry

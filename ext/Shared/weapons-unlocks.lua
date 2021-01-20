@@ -110,7 +110,6 @@ end
 function WeaponsUnlocks:RegisterEvents()
     Events:Subscribe('Level:Destroy', function()
         self.m_weaponUnlockAssets = {}
-        self.m_registryContainer = nil
     end)
 
     -- reading instances after level load
@@ -222,6 +221,8 @@ function WeaponsUnlocks:ReloadInstances()
         print('Reloaded RegistryContainerEntities: ' .. InstanceUtils:Count(self.m_registryContainer.entityRegistry))
         print('Reloaded RegistryContainerBlueprints: ' .. InstanceUtils:Count(self.m_registryContainer.blueprintRegistry))
     end
+
+    self.m_registryContainer = nil
 end
 
 -- reading waiting instances
@@ -326,6 +327,7 @@ function WeaponsUnlocks:ReadInstances(p_instances)
     }
 
     -- removing hanging references
+    self.m_registryContainer = nil
     self.m_materialContainerAsset = nil -- MaterialContainerAsset
     self.m_materialGridAsset = nil -- MaterialGridData
 

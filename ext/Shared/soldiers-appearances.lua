@@ -154,7 +154,6 @@ end
 function SoldiersAppearances:RegisterEvents()
     Events:Subscribe('Level:Destroy', function()
         self.m_appearanceUnlockAssets = {}
-        self.m_registryContainer = nil
     end)
 
     -- reading instances when MeshVariationDatabase loads
@@ -220,6 +219,7 @@ function SoldiersAppearances:ReadInstances(p_instances)
     }
 
     -- removing hanging references
+    self.m_registryContainer = nil
     self.m_meshVariationDatabase = nil -- MeshVariationDatabase
 
     self.m_skinnedSocketObjects = {} -- SkinnedSocketObject
