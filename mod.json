@@ -1,8 +1,8 @@
 {
     "Name": "Elemental Fight",
     "Description": "Custom weapons and appearances",
-	"Authors": ["Reirei"],
-    "Version": "1.0.0",
+    "Authors": ["Reirei"],
+    "Version": "1.0.1",
     "HasVeniceEXT": true,
     "Dependencies": {
         "veniceext": "^1.0.0"
