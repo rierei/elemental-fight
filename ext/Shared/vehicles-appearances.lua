@@ -23,14 +23,7 @@ function VehiclesAppearances:RegisterVars()
         ['vehicles/kornet/kornet'] = true,
     }
 
-    self.m_optionalGuids = {
-        VehiclePreset_Jet = {'C2DCC7D1-BCC6-4047-8A2B-8170E57B07B8', '6B0CDFF7-3EB6-4177-9BA0-FD686F10DF8C'},
-    }
-
     self.m_waitingInstances = {
-        vehicleJetShader = nil,
-        vehicleMudShader = nil,
-
         meshAssets = {},
         meshVariationDatabaseEntrys = {},
 
@@ -53,10 +46,6 @@ function VehiclesAppearances:RegisterEvents()
         self.m_meshAssets = {}
     end)
 
-    InstanceWait(self.m_optionalGuids, function(p_instances)
-        self.m_waitingInstances.vehicleJetShader = p_instances['VehiclePreset_Jet']
-    end)
-
     Events:Subscribe('LoadedInstances:MeshVariationDatabase', function(p_instances)
         self:ReadInstances(p_instances)
     end)
@@ -69,7 +58,6 @@ function VehiclesAppearances:ReadInstances(p_instances)
     self.m_meshVariationDatabase = self.m_waitingInstances.meshVariationDatabase
     self.m_meshVariationDatabase:MakeWritable()
 
-    self.m_waitingInstances.vehicleMudShader = p_instances['VehiclePreset_Mud']
     self.m_waitingInstances.colorSwatch = p_instances['ColorSwatchesWhite']
 
     for _, l_entity in pairs(self.m_waitingInstances.vehicleEntities) do
@@ -83,9 +71,6 @@ function VehiclesAppearances:ReadInstances(p_instances)
     self:CreateInstances()
 
     self.m_waitingInstances = {
-        vehicleJetShader = nil,
-        vehicleMudShader = nil,
-
         meshAssets = {},
         meshVariationDatabaseEntrys = {},
 
@@ -118,11 +103,8 @@ function VehiclesAppearances:CreateInstances()
         self:CreateMeshAssets(l_asset)
     end
 
-    self:CreateSurfaceShaderStructs(self.m_waitingInstances.vehicleMudShader)
-
-    if self.m_waitingInstances.vehicleJetShader ~= nil then
-        self:CreateSurfaceShaderStructs(self.m_waitingInstances.vehicleJetShader)
-    end
+    self:CreateSurfaceShaderStructs('Vehicles/Shaders/VehiclePreset_Jet')
+    self:CreateSurfaceShaderStructs('Vehicles/Shaders/VehiclePreset_Mud')
 
     for _, l_entry in pairs(self.m_waitingInstances.meshVariationDatabaseEntrys) do
         self:CreateMeshMaterialVariations(l_entry)
@@ -159,7 +141,7 @@ end
 
 
 -- creating SurfaceShaderInstanceDataStruct
-function VehiclesAppearances:CreateSurfaceShaderStructs(p_asset)
+function VehiclesAppearances:CreateSurfaceShaderStructs(p_name)
     local s_elements = {}
 
     for _, l_element in pairs(ElementalConfig.names) do
@@ -167,18 +149,21 @@ function VehiclesAppearances:CreateSurfaceShaderStructs(p_asset)
 
         local s_color = ElementalConfig.colors[l_element]
 
+        local s_shaderGraph = ShaderGraph()
+        s_shaderGraph.name = p_name
+
         local s_camoDarkeningParameter = VectorShaderParameter()
         s_camoDarkeningParameter.value = Vec4(s_color.x, s_color.y, s_color.z, 0)
         s_camoDarkeningParameter.parameterName = 'CamoBrightness'
         s_camoDarkeningParameter.parameterType = ShaderParameterType.ShaderParameterType_Color
 
-        s_surfaceShaderInstanceDataStruct.shader = p_asset
+        s_surfaceShaderInstanceDataStruct.shader = s_shaderGraph
         s_surfaceShaderInstanceDataStruct.vectorParameters:add(s_camoDarkeningParameter)
 
         s_elements[l_element] = s_surfaceShaderInstanceDataStruct
     end
 
-    self.m_surfaceShaderStructs[p_asset.instanceGuid:ToString('D')] = s_elements
+    self.m_surfaceShaderStructs[p_name] = s_elements
 end
 
 -- creating MeshMaterialVariation
@@ -207,7 +192,7 @@ function VehiclesAppearances:CreateMeshMaterialVariations(p_entry)
                 local s_newMeshMaterialVariation = MeshMaterialVariation(InstanceUtils:GenerateGuid(p_entry.instanceGuid:ToString('D') .. 'MeshMaterialVariation' .. l_element .. ll_key))
                 p_entry.partition:AddInstance(s_newMeshMaterialVariation)
 
-                s_newMeshMaterialVariation.shader = self.m_surfaceShaderStructs[s_shaderGraph.instanceGuid:ToString('D')][l_element]
+                s_newMeshMaterialVariation.shader = self.m_surfaceShaderStructs[s_shaderGraph.name][l_element]
 
                 s_databaseEntryMaterials[ll_key] = s_newMeshMaterialVariation
             end
