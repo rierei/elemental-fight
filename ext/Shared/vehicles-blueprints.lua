@@ -7,12 +7,14 @@ local InstanceUtils = require('__shared/utils/instances')
 
 local MaterialPairs = require('__shared/utils/consts').materialPairs
 
-function VehiclesBlueprints:__init()
-    self:RegisterVars()
+function VehiclesBlueprints:__init(p_appearances)
+    self:RegisterVars(p_appearances)
     self:RegisterEvents()
 end
 
-function VehiclesBlueprints:RegisterVars()
+function VehiclesBlueprints:RegisterVars(p_appearances)
+    self.m_appearances = p_appearances
+
     self.m_materialPropertyEffects = {
         [77] = 'small', -- BulletDamage
         [78] = 'medium', -- ShellDamage
@@ -34,7 +36,7 @@ function VehiclesBlueprints:RegisterVars()
         ['vehicles/centurion_c-ram/centurion_c-ram_carrier'] = true,
         ['vehicles/pantsir/pantsir-s1'] = true,
         ['vehicles/tow2/tow2'] = true,
-        ['vehicles/kornet/kornet'] = true,
+        ['vehicles/kornet/kornet'] = true
     }
 
     self.m_waitingGuids = {
@@ -44,27 +46,14 @@ function VehiclesBlueprints:RegisterVars()
         FX_Impact_Generic_01_M = {'9C0B1F3F-0FE4-11DE-8BFA-867F957FF326', '9C0B1F40-0FE4-11DE-8BFA-867F957FF326'},
         FX_Impact_Generic_01_L = {'6E9014B2-2E7A-11DE-A05D-865C3DEDD497', '6E9014B3-2E7A-11DE-A05D-865C3DEDD497'},
 
-        VehiclePreset_Mud = {'A0300659-01B5-4DF5-8895-98AD28C984C2', 'FA58EF71-AD00-427B-8AA1-3B8FAD051EEF'},
-
         Em_Impact_Generic_S_Sparks_01 = {'1F6B1EB2-86E3-473C-8E25-A24989538600', '1A0C5373-3DC4-4967-89A3-A6D53AD8A58F'}, -- dummyPolynomialColor
-
-        ColorSwatchesWhite = {'A4E6AD23-C88B-11DE-8670-931164D2932F', '2009988C-D664-75BB-F68D-92844483C9A7'},
-
-        _US_Lowerbody02_DrPepper = {'084FF485-CAD3-4B26-B4C0-73A6FB195799', ' 430E9A35-20CD-4898-9EBC-E48CB7402B59'}
     }
 
     self.m_optionalGuids = {
-        FX_Impact_Generic_01_Minigun = {'E8F51840-FA68-4901-A25F-4A65FC69E7A2', '1B8DD11E-D714-4C46-9159-E5BF70C7D3B7'},
-        VehiclePreset_Jet = {'C2DCC7D1-BCC6-4047-8A2B-8170E57B07B8', '6B0CDFF7-3EB6-4177-9BA0-FD686F10DF8C'},
+        FX_Impact_Generic_01_Minigun = {'E8F51840-FA68-4901-A25F-4A65FC69E7A2', '1B8DD11E-D714-4C46-9159-E5BF70C7D3B7'}
     }
 
     self.m_waitingInstances = {
-        vehicleJetShader = nil,
-        vehicleMudShader = nil,
-
-        meshAssets = {},
-        meshVariationDatabaseEntrys = {},
-
         dummyPolynomialColor = nil, -- PolynomialColorInterpData
         effectBlueprints = {},
 
@@ -80,7 +69,6 @@ function VehiclesBlueprints:RegisterVars()
     self.m_registryContainerGame = nil -- RegistryContainer
     self.m_registryContainerDynamic = nil -- RegistryContainer
 
-    self.m_meshVariationDatabase = nil
     self.m_materialContainerAsset = nil -- MaterialContainerAsset
 
     self.m_polynomialColorInterps = {} -- PolynomialColorInterpData
@@ -89,12 +77,6 @@ function VehiclesBlueprints:RegisterVars()
 
     self.m_weaponComponentsIndexes = {}
     self.m_vehicleEntityBlueprintGuids = {}
-
-    self.m_surfaceShaderStructs = {}
-
-    self.m_meshAssets = {}
-    self.m_meshMaterialVariations = {}
-    self.m_meshVariationDatabaseEntrys = {}
 
     self.m_effectBlueprints = {}
 
@@ -142,8 +124,6 @@ end
 function VehiclesBlueprints:RegisterWait()
     InstanceWait(self.m_optionalGuids, function(p_instances)
         self.m_waitingInstances.effectBlueprints['minigun'] = p_instances['FX_Impact_Generic_01_Minigun']
-
-        self.m_waitingInstances.vehicleJetShader = p_instances['VehiclePreset_Jet']
     end)
 
     InstanceWait(self.m_waitingGuids, function(p_instances)
@@ -157,34 +137,19 @@ function VehiclesBlueprints:ReadInstances(p_instances)
 
     self.m_materialContainerAsset = p_instances['MaterialContainer']
 
-    self.m_waitingInstances.vehicleMudShader = p_instances['VehiclePreset_Mud']
-
     self.m_waitingInstances.dummyPolynomialColor = p_instances['Em_Impact_Generic_S_Sparks_01']
 
     self.m_waitingInstances.effectBlueprints['small'] = p_instances['FX_Impact_Generic_01_S']
     self.m_waitingInstances.effectBlueprints['medium'] = p_instances['FX_Impact_Generic_01_M']
     self.m_waitingInstances.effectBlueprints['large'] = p_instances['FX_Impact_Generic_01_L']
 
-    self.m_waitingInstances.colorSwatch = p_instances['ColorSwatchesWhite']
-
     for _, l_entity in pairs(self.m_waitingInstances.vehicleEntities) do
         if not self.m_filteredPartitions[l_entity.partition.name] then
-            table.insert(self.m_waitingInstances.meshAssets, l_entity.mesh)
-
-            self:ReadMeshVariationDatabaseEntrys(l_entity.mesh)
             self:ReadWeaponComponents(l_entity)
         end
     end
 
     self:CreateInstances()
-
-    if self.m_verbose >= 1 then
-        print('Using VehicleBlueprint: ' .. #self.m_waitingInstances.vehicleBlueprints)
-        print('Using VehicleEntityData: ' .. #self.m_waitingInstances.vehicleEntities)
-        print('Using VehicleProjectileBlueprint: ' .. #self.m_waitingInstances.vehicleProjectileBlueprints)
-        print('Using VehicleMeshProjectileEntityData: ' .. #self.m_waitingInstances.vehicleProjectileEntities)
-        print('Using MeshVariationDatabase: ' .. tostring(self.m_waitingInstances.meshVariationDatabase ~= nil))
-    end
 
     self.m_waitingInstances = {
         vehicleJetShader = nil,
@@ -216,12 +181,6 @@ function VehiclesBlueprints:ReadInstances(p_instances)
     self.m_emitterEntities = {} -- EmitterEntityData
 
     self.m_weaponComponentsIndexes = {}
-
-    self.m_surfaceShaderStructs = {}
-
-    self.m_meshAssets = {}
-    self.m_meshMaterialVariations = {}
-    self.m_meshVariationDatabaseEntrys = {}
 
     self.m_effectBlueprints = {}
 
@@ -297,21 +256,6 @@ function VehiclesBlueprints:CreateInstances()
     self.m_registryContainerGame = RegistryContainer()
     self.m_registryContainerDynamic = RegistryContainer()
 
-    for _, l_asset in pairs(self.m_waitingInstances.meshAssets) do
-        self:CreateMeshAssets(l_asset)
-    end
-
-    self:CreateSurfaceShaderStructs(self.m_waitingInstances.vehicleMudShader)
-
-    if self.m_waitingInstances.vehicleJetShader ~= nil then
-        self:CreateSurfaceShaderStructs(self.m_waitingInstances.vehicleJetShader)
-    end
-
-    for _, l_entry in pairs(self.m_waitingInstances.meshVariationDatabaseEntrys) do
-        self:CreateMeshMaterialVariations(l_entry)
-        self:CreateMeshVariationDatabaseEntrys(l_entry, self.m_waitingInstances.colorSwatch)
-    end
-
     self:CreatePolynomialColorInterps(self.m_waitingInstances.dummyPolynomialColor)
 
     self:CreateEffectBlueprints(self.m_waitingInstances.effectBlueprints)
@@ -354,10 +298,6 @@ function VehiclesBlueprints:CreateInstances()
 
     if self.m_verbose >= 1 then
         print('Created WeaponComponentsIndexes: ' .. InstanceUtils:Count(self.m_weaponComponentsIndexes))
-        print('Created SurfaceShaderStructs: ' .. InstanceUtils:Count(self.m_surfaceShaderStructs))
-        print('Created MeshAssets: ' .. InstanceUtils:Count(self.m_meshAssets))
-        print('Created MeshMaterialVariations: ' .. InstanceUtils:Count(self.m_meshMaterialVariations))
-        print('Created MeshVariationDatabaseEntrys: ' .. InstanceUtils:Count(self.m_meshVariationDatabaseEntrys))
         print('Created PolynomialColorInterps: ' .. InstanceUtils:Count(self.m_polynomialColorInterps))
         print('Created EmitterDocumentAssets: ' .. InstanceUtils:Count(self.m_emitterDocumentAssets))
         print('Created EmitterEntities: ' .. InstanceUtils:Count(self.m_emitterEntities))
@@ -373,124 +313,6 @@ function VehiclesBlueprints:CreateInstances()
         print('Created GameRegistryContainerEntities: ' .. InstanceUtils:Count(self.m_registryContainerGame.entityRegistry))
         print('Created DynamicRegistryContainerBlueprints: ' .. InstanceUtils:Count(self.m_registryContainerDynamic.blueprintRegistry))
     end
-end
-
--- creating MeshAsset
-function VehiclesBlueprints:CreateMeshAssets(p_asset)
-    if self.m_verbose >= 2 then
-        print('Create MeshAssets')
-    end
-
-    local s_elements = {}
-    -- s_elements['neutral'] = p_asset
-
-    for _, l_element in pairs(ElementalConfig.names) do
-        local s_newMeshAsset = InstanceUtils:CloneInstance(p_asset, l_element)
-
-        s_newMeshAsset.nameHash = MathUtils:FNVHash(s_newMeshAsset.name .. l_element)
-
-        s_elements[l_element] = s_newMeshAsset
-    end
-
-    self.m_meshAssets[p_asset.instanceGuid:ToString('D')] = s_elements
-end
-
-
--- creating SurfaceShaderInstanceDataStruct
-function VehiclesBlueprints:CreateSurfaceShaderStructs(p_asset)
-    local s_elements = {}
-
-    for _, l_element in pairs(ElementalConfig.names) do
-        local s_surfaceShaderInstanceDataStruct = SurfaceShaderInstanceDataStruct()
-
-        local s_color = ElementalConfig.colors[l_element]
-
-        local s_camoDarkeningParameter = VectorShaderParameter()
-        s_camoDarkeningParameter.value = Vec4(s_color.x, s_color.y, s_color.z, 0)
-        s_camoDarkeningParameter.parameterName = 'CamoBrightness'
-        s_camoDarkeningParameter.parameterType = ShaderParameterType.ShaderParameterType_Color
-
-        s_surfaceShaderInstanceDataStruct.shader = p_asset
-        s_surfaceShaderInstanceDataStruct.vectorParameters:add(s_camoDarkeningParameter)
-
-        s_elements[l_element] = s_surfaceShaderInstanceDataStruct
-    end
-
-    self.m_surfaceShaderStructs[p_asset.instanceGuid:ToString('D')] = s_elements
-end
-
--- creating MeshMaterialVariation
-function VehiclesBlueprints:CreateMeshMaterialVariations(p_entry)
-    if self.m_verbose >= 2 then
-        print('Create MeshMaterialVariations')
-    end
-
-    local s_elements = {}
-    -- s_elements['neutral'] = p_entry.materials[1]
-
-    for _, l_element in pairs(ElementalConfig.names) do
-        local s_databaseEntryMaterials = {}
-
-        for ll_key, ll_value in pairs(p_entry.materials) do
-            local s_isJet = false
-            local s_isMud = false
-
-            local s_shaderGraph = ll_value.material.shader.shader
-            if s_shaderGraph ~= nil then
-                s_isJet = ll_value.material.shader.shader.name == 'Vehicles/Shaders/VehiclePreset_Jet'
-                s_isMud = ll_value.material.shader.shader.name == 'Vehicles/Shaders/VehiclePreset_Mud'
-            end
-
-            if s_isJet or s_isMud then
-                local s_newMeshMaterialVariation = MeshMaterialVariation(InstanceUtils:GenerateGuid(p_entry.instanceGuid:ToString('D') .. 'MeshMaterialVariation' .. l_element .. ll_key))
-                p_entry.partition:AddInstance(s_newMeshMaterialVariation)
-
-                s_newMeshMaterialVariation.shader = self.m_surfaceShaderStructs[s_shaderGraph.instanceGuid:ToString('D')][l_element]
-
-                s_databaseEntryMaterials[ll_key] = s_newMeshMaterialVariation
-            end
-        end
-
-        s_elements[l_element] = s_databaseEntryMaterials
-    end
-
-    self.m_meshMaterialVariations[p_entry.instanceGuid:ToString('D')] = s_elements
-end
-
--- creating MeshVariationDatabaseEntry
-function VehiclesBlueprints:CreateMeshVariationDatabaseEntrys(p_entry, p_texture)
-    if self.m_verbose >= 2 then
-        print('Create MeshVariationEntrys')
-    end
-
-    local s_elements = {}
-    -- s_elements['neutral'] = p_entry
-
-    local s_meshMaterialVariations = self.m_meshMaterialVariations[p_entry.instanceGuid:ToString('D')]
-
-    for _, l_element in pairs(ElementalConfig.names) do
-        local s_newMeshVariationDatabaseEntry = InstanceUtils:CloneInstance(p_entry, l_element)
-
-        s_newMeshVariationDatabaseEntry.mesh = self.m_meshAssets[s_newMeshVariationDatabaseEntry.mesh.instanceGuid:ToString('D')][l_element]
-
-        for ll_key, ll_value in pairs(s_meshMaterialVariations[l_element]) do
-            s_newMeshVariationDatabaseEntry.materials[ll_key].materialVariation = ll_value
-        end
-
-        for key, value in pairs(s_newMeshVariationDatabaseEntry.materials) do
-            for k, v in pairs(value.textureParameters) do
-                if v.parameterName == 'Camo' then
-                    s_newMeshVariationDatabaseEntry.materials[key].textureParameters[k].value = p_texture
-                end
-            end
-        end
-
-        self.m_meshVariationDatabase.entries:add(s_newMeshVariationDatabaseEntry)
-
-        s_elements[l_element] = s_newMeshVariationDatabaseEntry
-    end
-
-    self.m_meshVariationDatabaseEntrys[p_entry.instanceGuid:ToString('D')] = s_elements
 end
 
 -- creating PolynomialColorInterpData for EmitterDocument
@@ -875,6 +697,7 @@ function VehiclesBlueprints:CreateVehicleEntities(p_entity)
     end
 
     local weaponComponentsIndexes = self.m_weaponComponentsIndexes[p_entity.instanceGuid:ToString('D')]
+    local s_meshAssets = self.m_appearances.m_meshAssets[p_entity.mesh.instanceGuid:ToString('D')]
 
     local s_elements = {}
     -- s_elements['neutral'] = p_entity
@@ -887,7 +710,7 @@ function VehiclesBlueprints:CreateVehicleEntities(p_entity)
             updateComponents(s_newVehicleEntity, l_value, l_element)
         end
 
-        s_newVehicleEntity.mesh = self.m_meshAssets[s_newVehicleEntity.mesh.instanceGuid:ToString('D')][l_element]
+        s_newVehicleEntity.mesh = s_meshAssets[l_element]
 
         self.m_registryContainerGame.entityRegistry:add(s_newVehicleEntity)
 
