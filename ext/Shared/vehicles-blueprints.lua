@@ -121,28 +121,33 @@ function VehiclesBlueprints:RegisterEvents()
         self.m_vehicleBlueprints = {}
     end)
 
-    Events:Subscribe('Level:LoadResources', function(p_level, p_mode, p_dedicated)
+    -- reading instances when MeshVariationDatabase loads
+    Events:Subscribe('Level:LoadingInfo', function(p_screenInfo)
+        if p_screenInfo == 'Initializing entities for autoloaded sublevels' then
+            self.m_waitingInstances.meshVariationDatabase = LoadedInstances.m_loadedInstances.MeshVariationDatabase
+
+            self.m_waitingInstances.vehicleProjectileEntities = LoadedInstances:GetInstances('VehicleMeshProjectileEntityData')
+            self.m_waitingInstances.vehicleProjectileBlueprints = LoadedInstances:GetInstances('VehicleProjectileBlueprint')
+
+            self.m_waitingInstances.vehicleEntities = LoadedInstances:GetInstances('VehicleEntityData')
+            self.m_waitingInstances.vehicleBlueprints = LoadedInstances:GetInstances('VehicleBlueprint')
+        end
+    end)
+
+    Events:Subscribe('Level:Loaded', function()
         self:RegisterWait()
     end)
 end
 
 function VehiclesBlueprints:RegisterWait()
-    InstanceWait(self.m_waitingGuids, function(p_instances)
-        self.m_waitingInstances.meshVariationDatabase = LoadedInstances.m_loadedInstances.MeshVariationDatabase
-
-        self.m_waitingInstances.vehicleProjectileEntities = LoadedInstances.m_loadedInstances.VehicleMeshProjectileEntityData
-        self.m_waitingInstances.vehicleProjectileBlueprints = LoadedInstances.m_loadedInstances.VehicleProjectileBlueprint
-
-        self.m_waitingInstances.vehicleEntities = LoadedInstances.m_loadedInstances.VehicleEntityData
-        self.m_waitingInstances.vehicleBlueprints = LoadedInstances.m_loadedInstances.VehicleBlueprint
-
-        self:ReadInstances(p_instances)
-    end)
-
     InstanceWait(self.m_optionalGuids, function(p_instances)
         self.m_waitingInstances.effectBlueprints['minigun'] = p_instances['FX_Impact_Generic_01_Minigun']
 
         self.m_waitingInstances.vehicleJetShader = p_instances['VehiclePreset_Jet']
+    end)
+
+    InstanceWait(self.m_waitingGuids, function(p_instances)
+        self:ReadInstances(p_instances)
     end)
 end
 

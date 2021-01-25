@@ -110,19 +110,6 @@ function LoadedInstances:RegisterEvents()
             print('Level:Loaded')
         end
 
-        if self.m_verbose >= 1 then
-            print('Loaded SoldierWeaponUnlockAssets: ' .. #self.m_loadedInstances.SoldierWeaponUnlockAsset)
-            print('Loaded SoldierWeaponBlueprints: ' .. #self.m_loadedInstances.SoldierWeaponBlueprint)
-            print('Loaded VehicleBlueprints: ' .. #self.m_loadedInstances.VehicleBlueprint)
-            print('Loaded VehicleEntityDatas: ' .. #self.m_loadedInstances.VehicleEntityData)
-            print('Loaded WeaponMeshProjectileEntityDatas: ' .. #self.m_loadedInstances.WeaponMeshProjectileEntityData)
-            print('Loaded WeaponProjectileBlueprints: ' .. #self.m_loadedInstances.WeaponProjectileBlueprint)
-            print('Loaded VehicleMeshProjectileEntityDatas: ' .. #self.m_loadedInstances.VehicleMeshProjectileEntityData)
-            print('Loaded VehicleProjectileBlueprints: ' .. #self.m_loadedInstances.VehicleProjectileBlueprint)
-            print('Loaded MaterialGridData: ' .. tostring(self.m_loadedInstances.MaterialGridData ~= nil))
-            print('Loaded MeshVariationDatabase: ' .. tostring(self.m_loadedInstances.MeshVariationDatabase ~= nil))
-        end
-
         self.m_loadedInstances.SoldierWeaponUnlockAsset = {}
         self.m_loadedInstances.SoldierWeaponBlueprint = {}
 
@@ -188,7 +175,9 @@ function LoadedInstances:CheckInstance(p_instance)
         p_instance = s_type(p_instance)
 
         if string.starts(p_instance.partition.name, 'weapons/') then
-            self:SaveInstance(self.m_loadedInstances.MeshProjectileEntityData, p_instance)
+            self:SaveInstance(self.m_loadedInstances.WeaponMeshProjectileEntityData, p_instance)
+        elseif string.starts(p_instance.partition.name, 'vehicles/') then
+            self:SaveInstance(self.m_loadedInstances.VehicleMeshProjectileEntityData, p_instance)
         end
     elseif p_instance.typeInfo.name == 'ProjectileBlueprint' then
         if self.m_verbose >= 2 then
@@ -198,7 +187,9 @@ function LoadedInstances:CheckInstance(p_instance)
         p_instance = ProjectileBlueprint(p_instance)
 
         if string.starts(p_instance.partition.name, 'weapons/') then
-            self:SaveInstance(self.m_loadedInstances.ProjectileBlueprint, p_instance)
+            self:SaveInstance(self.m_loadedInstances.WeaponProjectileBlueprint, p_instance)
+        elseif string.starts(p_instance.partition.name, 'vehicles/') then
+            self:SaveInstance(self.m_loadedInstances.VehicleProjectileBlueprint, p_instance)
         end
     elseif p_instance:Is('VehicleEntityData') then
         if self.m_verbose >= 2 then
@@ -208,7 +199,7 @@ function LoadedInstances:CheckInstance(p_instance)
         if string.starts(p_instance.partition.name, 'vehicles/') then
             p_instance = VehicleEntityData(p_instance)
 
-            table.insert(self.m_loadedInstances.VehicleEntityData, p_instance)
+            self:SaveInstance(self.m_loadedInstances.VehicleEntityData, p_instance)
         end
     elseif p_instance:Is('VehicleBlueprint') then
         if self.m_verbose >= 2 then
@@ -218,7 +209,7 @@ function LoadedInstances:CheckInstance(p_instance)
         if string.starts(p_instance.partition.name, 'vehicles/') then
             p_instance = VehicleBlueprint(p_instance)
 
-            table.insert(self.m_loadedInstances.VehicleBlueprint, p_instance)
+            self:SaveInstance(self.m_loadedInstances.VehicleBlueprint, p_instance)
         end
     end
 end
