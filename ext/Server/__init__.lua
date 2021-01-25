@@ -27,7 +27,7 @@ function ElementalFight:RegisterEvents()
         self:_SoldierDamage(p_hook, p_soldier, p_info, p_giver)
     end)
 
-    Events:Subscribe('ElementalFight:Customize', function(p_guid, p_element, p_secondary)
+    Events:Subscribe('ElementalFight:CustomizePlayer', function(p_guid, p_element, p_secondary)
         local s_player = PlayerManager:GetPlayerByGuid(p_guid)
 
         if s_player == nil then
@@ -35,6 +35,10 @@ function ElementalFight:RegisterEvents()
         end
 
         self:CustomizePlayer(s_player, p_element, p_secondary)
+    end)
+
+    Events:Subscribe('ElementalFight:CustomizeVehicle', function(p_vehicle, p_element)
+        self:CustomizeVehicle(p_vehicle, p_element)
     end)
 end
 
@@ -90,47 +94,6 @@ function ElementalFight:_SoldierDamage(p_hook, p_soldier, p_info, p_giver)
 
     p_info.damage = p_info.damage * s_damageMultiplier
     p_hook:Pass(p_soldier, p_info)
-end
-
--- replacing vehicle entity
-function ElementalFight:_VehicleEnter(p_vehicle, p_player)
-    local s_soldierElement = UnlockAsset(p_player.visualUnlocks[1]).debugUnlockId
-    if s_soldierElement == nil or ElementalConfig.damages[s_soldierElement] == nil then
-        s_soldierElement = 'neutral'
-    end
-
-    if s_soldierElement == 'neutral' then
-        return
-    end
-
-    local s_vehicleBlueprint = self.m_vehicleBlueprints:GetVehicleBlueprint(p_vehicle.data, s_soldierElement)
-    if s_vehicleBlueprint == nil then
-        return
-    end
-
-    local s_transform = SpatialEntity(p_vehicle).transform
-
-    p_vehicle:Destroy()
-
-    local s_params = EntityCreationParams()
-    s_params.transform = s_transform
-    s_params.networked = true
-
-    local s_bus = EntityManager:CreateEntitiesFromBlueprint(s_vehicleBlueprint, s_params)
-
-    local s_vehicle = nil
-    for _, l_entity in pairs(s_bus.entities) do
-        if l_entity:Is('ServerVehicleEntity') then
-            s_vehicle = l_entity
-        end
-
-        l_entity:Init(Realm.Realm_ClientAndServer, true)
-    end
-
-    -- todo: fix abandoned vehicle not unspawing
-    -- s_vehicle:PropertyChanged('Team', p_player.teamId)
-
-    p_player:EnterVehicle(s_vehicle, 0)
 end
 
 -- customising player appearance and weapons
@@ -195,6 +158,59 @@ function ElementalFight:CustomizePlayer(p_player, p_element, p_secondary)
     end
 
     p_player.soldier:ApplyCustomization(s_customizeSoldier)
+end
+
+-- replacing vehicle with custom
+function ElementalFight:CustomizeVehicle(p_vehicle, p_element)
+    if p_element == 'neutral' then
+        return
+    end
+
+    local s_vehicleBlueprint = self.m_vehicleBlueprints:GetVehicleBlueprint(p_vehicle.data, p_element)
+    if s_vehicleBlueprint == nil then
+        return
+    end
+
+    local s_transform = SpatialEntity(p_vehicle).transform
+
+    local s_controllableEntity = ControllableEntity(p_vehicle)
+
+    local s_teamId = s_controllableEntity.teamId
+
+    local s_players = {}
+    for i = 0, s_controllableEntity.entryCount - 1, 1 do
+        local s_player = s_controllableEntity:GetPlayerInEntry(i)
+
+        if s_player ~= nil then
+            s_players[i] = s_player
+            s_player:ExitVehicle(true, false)
+        end
+    end
+
+    p_vehicle:Destroy()
+
+    local s_params = EntityCreationParams()
+    s_params.transform = s_transform
+    s_params.networked = true
+
+    local s_bus = EntityManager:CreateEntitiesFromBlueprint(s_vehicleBlueprint, s_params)
+
+    local s_vehicle = nil
+    for _, l_entity in pairs(s_bus.entities) do
+        if l_entity:Is('ServerVehicleEntity') then
+            s_vehicle = l_entity
+        end
+
+        l_entity:Init(Realm.Realm_ClientAndServer, true)
+    end
+
+    local s_controllableEntity = ControllableEntity(s_vehicle)
+
+    s_vehicle:PropertyChanged('Team', s_teamId)
+
+    for l_key, l_value in pairs(s_players) do
+        l_value:EnterVehicle(s_vehicle, l_key)
+    end
 end
 
 g_elementalFight = ElementalFight()
