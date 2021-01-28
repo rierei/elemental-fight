@@ -6,6 +6,10 @@ local InstanceWait = require('__shared/utils/wait')
 local InstanceUtils = require('__shared/utils/instances')
 
 function VehiclesAppearances:__init()
+    if not ElementalConfig.vehicles then
+        return
+    end
+
     self:RegisterVars()
     self:RegisterEvents()
 end

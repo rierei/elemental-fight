@@ -8,6 +8,10 @@ local InstanceUtils = require('__shared/utils/instances')
 local MaterialPairs = require('__shared/utils/consts').materialPairs
 
 function VehiclesBlueprints:__init(p_appearances)
+    if not ElementalConfig.vehicles then
+        return
+    end
+
     self:RegisterVars(p_appearances)
     self:RegisterEvents()
 end

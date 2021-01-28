@@ -37,9 +37,11 @@ function ElementalFight:RegisterEvents()
         self:CustomizePlayer(s_player, p_element, p_secondary)
     end)
 
-    Events:Subscribe('ElementalFight:CustomizeVehicle', function(p_vehicle, p_element)
-        self:CustomizeVehicle(p_vehicle, p_element)
-    end)
+    if ElementalConfig.vehicles then
+        Events:Subscribe('ElementalFight:CustomizeVehicle', function(p_vehicle, p_element)
+            self:CustomizeVehicle(p_vehicle, p_element)
+        end)
+    end
 end
 
 -- applying elemental damage multipliers

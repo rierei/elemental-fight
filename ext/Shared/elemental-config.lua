@@ -1,3 +1,6 @@
+-- custom vehicles
+local vehicles = false
+
 -- elements names
 local names = {
     'water',
@@ -56,6 +59,7 @@ local damages = {
 }
 
 return {
+    vehicles = vehicles,
     names = names,
     colors = colors,
     effects = effects,
