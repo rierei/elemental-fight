@@ -267,7 +267,8 @@ end
 
 -- reading MeshVariationDatabaseEntry for MeshVariationDatabaseMaterial
 function SoldiersAppearances:ReadMeshVariationDatabaseEntrys(p_class)
-    for _, l_value in pairs(self.m_meshVariationDatabase.entries) do
+    for i = 1, LoadedInstances.m_variationDatabaseEntryCount, 1 do
+        local l_value = self.m_meshVariationDatabase.entries[i]
         local s_meshVariationDatabaseEntry = l_value
         for _, ll_value in pairs(self.m_waitingInstances.objectVariationAssets[p_class]) do
             if s_meshVariationDatabaseEntry.variationAssetNameHash == ll_value.nameHash then

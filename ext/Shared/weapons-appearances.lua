@@ -72,7 +72,8 @@ function WeaponsAppearances:ReadInstances(p_instances)
     end
 
     -- reading mesh variations
-    for _, l_value in pairs(self.m_meshVariationDatabase.entries) do
+    for i = 1, LoadedInstances.m_variationDatabaseEntryCount, 1 do
+        local l_value = self.m_meshVariationDatabase.entries[i]
         local s_meshVariationDatabaseEntry = l_value
         local s_skinnedMeshAsset1pWeaponGuid = self.m_skinnedMeshAsset1pWeaponGuids[s_meshVariationDatabaseEntry.mesh.instanceGuid:ToString('D')]
         local s_skinnedMeshAsset3pWeaponGuid = self.m_skinnedMeshAsset3pWeaponGuids[s_meshVariationDatabaseEntry.mesh.instanceGuid:ToString('D')]

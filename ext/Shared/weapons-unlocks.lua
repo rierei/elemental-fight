@@ -144,8 +144,8 @@ function WeaponsUnlocks:RegisterEvents()
             self.m_waitingInstances.weaponBlueprints = LoadedInstances:GetInstances('SoldierWeaponBlueprint')
             self.m_waitingInstances.weaponEntities = LoadedInstances:GetInstances('SoldierWeaponData')
 
-            self.m_waitingInstances.projectileEntities = LoadedInstances:GetInstances('MeshProjectileEntityData')
-            self.m_waitingInstances.projectileBlueprints = LoadedInstances:GetInstances('ProjectileBlueprint')
+            self.m_waitingInstances.projectileEntities = LoadedInstances:GetInstances('WeaponMeshProjectileEntityData')
+            self.m_waitingInstances.projectileBlueprints = LoadedInstances:GetInstances('WeaponProjectileBlueprint')
 
             self.m_waitingInstances.projectileModifiers = LoadedInstances:GetInstances('WeaponProjectileModifier')
             self.m_waitingInstances.firingModifiers = LoadedInstances:GetInstances('WeaponFiringDataModifier')
