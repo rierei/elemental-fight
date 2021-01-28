@@ -28,10 +28,13 @@ function VehiclesAppearances:RegisterVars()
     }
 
     self.m_waitingInstances = {
+        meshVariationDatabase = nil,
+        vehicleEntities = {},
+
+        colorSwatch = nil,
+
         meshAssets = {},
         meshVariationDatabaseEntrys = {},
-
-        vehicleEntities = {}
     }
 
     self.m_meshVariationDatabase = nil
@@ -62,7 +65,10 @@ function VehiclesAppearances:ReadInstances(p_instances)
     self.m_meshVariationDatabase = self.m_waitingInstances.meshVariationDatabase
     self.m_meshVariationDatabase:MakeWritable()
 
-    self.m_waitingInstances.colorSwatch = p_instances['ColorSwatchesWhite']
+    local s_colorSwatch = TextureAsset()
+    s_colorSwatch.name = 'Characters/shared/ColorSwatches/white'
+
+    self.m_waitingInstances.colorSwatch = s_colorSwatch
 
     for _, l_entity in pairs(self.m_waitingInstances.vehicleEntities) do
         if not self.m_filteredPartitions[l_entity.partition.name] then
@@ -75,10 +81,13 @@ function VehiclesAppearances:ReadInstances(p_instances)
     self:CreateInstances()
 
     self.m_waitingInstances = {
+        meshVariationDatabase = nil,
+        vehicleEntities = {},
+
+        colorSwatch = nil,
+
         meshAssets = {},
         meshVariationDatabaseEntrys = {},
-
-        vehicleEntities = {}
     }
 
     self.m_meshVariationDatabase = nil
