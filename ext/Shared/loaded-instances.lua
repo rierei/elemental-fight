@@ -16,6 +16,7 @@ function LoadedInstances:RegisterVars()
 
     self.m_isLevelLoaded = false
     self.m_isMeshVariationDatabaseLoaded = false
+    self.m_variationDatabaseEntryCount = nil
 
     self.m_instanceTypes = {
         SoldierWeaponUnlockAsset = true,
@@ -83,6 +84,7 @@ function LoadedInstances:RegisterEvents()
 
         self.m_isLevelLoaded = false
         self.m_isMeshVariationDatabaseLoaded = false
+        self.m_variationDatabaseEntryCount = nil
     end)
 
     -- removing instances on level load
@@ -125,8 +127,8 @@ function LoadedInstances:RegisterEvents()
         self.m_loadedInstances.WeaponProjectileModifier = {}
         self.m_loadedInstances.WeaponFiringDataModifier = {}
 
-        self.m_loadedInstances.MaterialGridData = {}
-        self.m_loadedInstances.MeshVariationDatabase = {}
+        self.m_loadedInstances.MaterialGridData = nil
+        self.m_loadedInstances.MeshVariationDatabase = nil
 
         self.m_isLevelLoaded = true
     end)
@@ -146,6 +148,7 @@ function LoadedInstances:CheckInstance(p_instance)
         if #p_instance.entries > 800 then
             self.m_loadedInstances.MeshVariationDatabase = p_instance
             self.m_isMeshVariationDatabaseLoaded = true
+            self.m_variationDatabaseEntryCount = #p_instance.entries
 
             local s_waitingGuids = ConstsUtils.baseAppearanceGuids
             if self.m_currentLevel:match('XP4') then

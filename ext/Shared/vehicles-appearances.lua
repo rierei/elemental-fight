@@ -20,7 +20,7 @@ function VehiclesAppearances:RegisterVars()
         ['vehicles/centurion_c-ram/centurion_c-ram_carrier'] = true,
         ['vehicles/pantsir/pantsir-s1'] = true,
         ['vehicles/tow2/tow2'] = true,
-        ['vehicles/kornet/kornet'] = true,
+        ['vehicles/kornet/kornet'] = true
     }
 
     self.m_waitingInstances = {
@@ -35,7 +35,7 @@ function VehiclesAppearances:RegisterVars()
     self.m_surfaceShaderStructs = {}
 
     self.m_meshAssets = {}
-    self.m_meshMaterialVariations = {}
+    self.m_meshMaterials = {}
     self.m_meshVariationDatabaseEntrys = {}
 
     self.m_verbose = 1
@@ -82,13 +82,13 @@ function VehiclesAppearances:ReadInstances(p_instances)
     self.m_surfaceShaderStructs = {}
 
     -- self.m_meshAssets = {}
-    self.m_meshMaterialVariations = {}
+    self.m_meshMaterials = {}
     self.m_meshVariationDatabaseEntrys = {}
 end
 
 function VehiclesAppearances:ReadMeshVariationDatabaseEntrys(p_asset)
     for _, l_value in pairs(self.m_meshVariationDatabase.entries) do
-        if l_value.mesh.instanceGuid == p_asset.instanceGuid then
+        if l_value.mesh.instanceGuid:ToString('D') == p_asset.instanceGuid:ToString('D') then
             self.m_waitingInstances.meshVariationDatabaseEntrys[p_asset.instanceGuid:ToString('D')] = l_value
         end
     end
@@ -99,22 +99,22 @@ function VehiclesAppearances:CreateInstances()
         print('Creating Instances')
     end
 
-    for _, l_asset in pairs(self.m_waitingInstances.meshAssets) do
-        self:CreateMeshAssets(l_asset)
-    end
-
     self:CreateSurfaceShaderStructs('Vehicles/Shaders/VehiclePreset_Jet')
     self:CreateSurfaceShaderStructs('Vehicles/Shaders/VehiclePreset_Mud')
 
+    for _, l_asset in pairs(self.m_waitingInstances.meshAssets) do
+        self:CreateMeshMaterials(l_asset)
+        self:CreateMeshAssets(l_asset)
+    end
+
     for _, l_entry in pairs(self.m_waitingInstances.meshVariationDatabaseEntrys) do
-        self:CreateMeshMaterialVariations(l_entry)
         self:CreateMeshVariationDatabaseEntrys(l_entry, self.m_waitingInstances.colorSwatch)
     end
 
     if self.m_verbose >= 1 then
         print('Created SurfaceShaderStructs: ' .. InstanceUtils:Count(self.m_surfaceShaderStructs))
         print('Created MeshAssets: ' .. InstanceUtils:Count(self.m_meshAssets))
-        print('Created MeshMaterialVariations: ' .. InstanceUtils:Count(self.m_meshMaterialVariations))
+        print('Created MeshMaterials: ' .. InstanceUtils:Count(self.m_meshMaterials))
         print('Created MeshVariationDatabaseEntrys: ' .. InstanceUtils:Count(self.m_meshVariationDatabaseEntrys))
     end
 end
@@ -129,16 +129,16 @@ function VehiclesAppearances:CreateMeshAssets(p_asset)
     -- s_elements['neutral'] = p_asset
 
     for _, l_element in pairs(ElementalConfig.names) do
-        local s_newMeshAsset = InstanceUtils:CloneInstance(p_asset, l_element)
+        local s_newMeshAsset = CompositeMeshAsset()
 
-        s_newMeshAsset.nameHash = MathUtils:FNVHash(s_newMeshAsset.name .. l_element)
+        s_newMeshAsset.name = p_asset.name
+        s_newMeshAsset.nameHash = MathUtils:FNVHash(p_asset.name .. l_element)
 
         s_elements[l_element] = s_newMeshAsset
     end
 
     self.m_meshAssets[p_asset.instanceGuid:ToString('D')] = s_elements
 end
-
 
 -- creating SurfaceShaderInstanceDataStruct
 function VehiclesAppearances:CreateSurfaceShaderStructs(p_name)
@@ -166,42 +166,39 @@ function VehiclesAppearances:CreateSurfaceShaderStructs(p_name)
     self.m_surfaceShaderStructs[p_name] = s_elements
 end
 
--- creating MeshMaterialVariation
-function VehiclesAppearances:CreateMeshMaterialVariations(p_entry)
+-- creating MeshMaterial
+function VehiclesAppearances:CreateMeshMaterials(p_asset)
     if self.m_verbose >= 2 then
-        print('Create MeshMaterialVariations')
+        print('Create MeshMaterials')
     end
 
     local s_elements = {}
-    -- s_elements['neutral'] = p_entry.materials[1]
 
     for _, l_element in pairs(ElementalConfig.names) do
-        local s_databaseEntryMaterials = {}
+        local s_meshMaterials = {}
 
-        for ll_key, ll_value in pairs(p_entry.materials) do
+        for l_key, l_value in pairs(p_asset.materials) do
             local s_isJet = false
             local s_isMud = false
 
-            local s_shaderGraph = ll_value.material.shader.shader
+            local s_shaderGraph = l_value.shader.shader
             if s_shaderGraph ~= nil then
-                s_isJet = ll_value.material.shader.shader.name == 'Vehicles/Shaders/VehiclePreset_Jet'
-                s_isMud = ll_value.material.shader.shader.name == 'Vehicles/Shaders/VehiclePreset_Mud'
+                s_isJet = s_shaderGraph.name == 'Vehicles/Shaders/VehiclePreset_Jet'
+                s_isMud = s_shaderGraph.name == 'Vehicles/Shaders/VehiclePreset_Mud'
             end
 
             if s_isJet or s_isMud then
-                local s_newMeshMaterialVariation = MeshMaterialVariation(InstanceUtils:GenerateGuid(p_entry.instanceGuid:ToString('D') .. 'MeshMaterialVariation' .. l_element .. ll_key))
-                p_entry.partition:AddInstance(s_newMeshMaterialVariation)
+                local s_newMeshMaterial = MeshMaterial(l_value:Clone())
+                s_newMeshMaterial.shader = self.m_surfaceShaderStructs[s_shaderGraph.name][l_element]
 
-                s_newMeshMaterialVariation.shader = self.m_surfaceShaderStructs[s_shaderGraph.name][l_element]
-
-                s_databaseEntryMaterials[ll_key] = s_newMeshMaterialVariation
+                s_meshMaterials[l_key] = s_newMeshMaterial
             end
         end
 
-        s_elements[l_element] = s_databaseEntryMaterials
+        s_elements[l_element] = s_meshMaterials
     end
 
-    self.m_meshMaterialVariations[p_entry.instanceGuid:ToString('D')] = s_elements
+    self.m_meshMaterials[p_asset.instanceGuid:ToString('D')] = s_elements
 end
 
 -- creating MeshVariationDatabaseEntry
@@ -213,16 +210,22 @@ function VehiclesAppearances:CreateMeshVariationDatabaseEntrys(p_entry, p_textur
     local s_elements = {}
     -- s_elements['neutral'] = p_entry
 
-    local s_meshMaterialVariations = self.m_meshMaterialVariations[p_entry.instanceGuid:ToString('D')]
+    local s_meshMaterials = self.m_meshMaterials[p_entry.mesh.instanceGuid:ToString('D')]
 
     for _, l_element in pairs(ElementalConfig.names) do
-        local s_newMeshVariationDatabaseEntry = InstanceUtils:CloneInstance(p_entry, l_element)
+        local s_newMeshVariationDatabaseEntry = MeshVariationDatabaseEntry()
 
-        s_newMeshVariationDatabaseEntry.mesh = self.m_meshAssets[s_newMeshVariationDatabaseEntry.mesh.instanceGuid:ToString('D')][l_element]
+        for l_key, l_value in pairs(p_entry.materials) do
+            local s_material = l_value
+            if s_meshMaterials[l_element][l_key] then
+                s_material = MeshVariationDatabaseMaterial(l_value:Clone())
+                s_material.material = s_meshMaterials[l_element][l_key]
+            end
 
-        for ll_key, ll_value in pairs(s_meshMaterialVariations[l_element]) do
-            s_newMeshVariationDatabaseEntry.materials[ll_key].materialVariation = ll_value
+            s_newMeshVariationDatabaseEntry.materials:add(s_material)
         end
+
+        s_newMeshVariationDatabaseEntry.mesh = self.m_meshAssets[p_entry.mesh.instanceGuid:ToString('D')][l_element]
 
         for key, value in pairs(s_newMeshVariationDatabaseEntry.materials) do
             for k, v in pairs(value.textureParameters) do
