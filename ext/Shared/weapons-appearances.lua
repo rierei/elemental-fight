@@ -369,4 +369,4 @@ function WeaponsAppearances:GetUnlockAssets(p_weapons, p_element, p_secondary)
     return s_unlocks
 end
 
-return WeaponsAppearances
+return WeaponsAppearances()

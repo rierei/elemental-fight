@@ -2,7 +2,6 @@ local VehiclesAppearances = class('VehiclesAppearances')
 
 local LoadedInstances = require('__shared/loaded-instances')
 local ElementalConfig = require('__shared/elemental-config')
-local InstanceWait = require('__shared/utils/wait')
 local InstanceUtils = require('__shared/utils/instances')
 
 function VehiclesAppearances:__init()
@@ -256,4 +255,4 @@ function VehiclesAppearances:CreateMeshVariationDatabaseEntrys(p_entry, p_textur
     self.m_meshVariationDatabaseEntrys[p_entry.instanceGuid:ToString('D')] = s_elements
 end
 
-return VehiclesAppearances
+return VehiclesAppearances()

@@ -1157,4 +1157,4 @@ function WeaponsUnlocks:_GetInstance(p_instance, p_type)
     return self['m_' .. p_type][p_instance.instanceGuid:ToString('D')]
 end
 
-return WeaponsUnlocks
+return WeaponsUnlocks()

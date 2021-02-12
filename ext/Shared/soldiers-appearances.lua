@@ -629,4 +629,4 @@ function SoldiersAppearances:GetUnlockAsset(p_player, p_element)
     return s_appearanceUnlockAsset
 end
 
-return SoldiersAppearances
+return SoldiersAppearances()

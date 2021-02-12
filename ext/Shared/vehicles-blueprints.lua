@@ -6,19 +6,18 @@ local InstanceWait = require('__shared/utils/wait')
 local InstanceUtils = require('__shared/utils/instances')
 
 local MaterialPairs = require('__shared/utils/consts').materialPairs
+local VehicleAppearances = require('__shared/vehicles-appearances')
 
-function VehiclesBlueprints:__init(p_appearances)
+function VehiclesBlueprints:__init()
     if not ElementalConfig.vehicles then
         return
     end
 
-    self:RegisterVars(p_appearances)
+    self:RegisterVars()
     self:RegisterEvents()
 end
 
-function VehiclesBlueprints:RegisterVars(p_appearances)
-    self.m_appearances = p_appearances
-
+function VehiclesBlueprints:RegisterVars()
     self.m_materialPropertyEffects = {
         [77] = 'small', -- BulletDamage
         [78] = 'medium', -- ShellDamage
@@ -701,7 +700,7 @@ function VehiclesBlueprints:CreateVehicleEntities(p_entity)
     end
 
     local weaponComponentsIndexes = self.m_weaponComponentsIndexes[p_entity.instanceGuid:ToString('D')]
-    local s_meshAssets = self.m_appearances.m_meshAssets[p_entity.mesh.instanceGuid:ToString('D')]
+    local s_meshAssets = VehicleAppearances.m_meshAssets[p_entity.mesh.instanceGuid:ToString('D')]
 
     local s_elements = {}
     -- s_elements['neutral'] = p_entity
@@ -834,4 +833,4 @@ function VehiclesBlueprints:_GetInstance(p_instance, p_type)
     return self['m_' .. p_type][p_instance.instanceGuid:ToString('D')]
 end
 
-return VehiclesBlueprints
+return VehiclesBlueprints()
