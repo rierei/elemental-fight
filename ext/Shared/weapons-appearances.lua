@@ -16,7 +16,7 @@ function WeaponsAppearances:RegisterVars()
     self.m_waitingInstances = {
         meshVariationDatabase = nil, -- MeshVariationDatabase
         weaponEntities = {}, -- SoldierWeaponData
-        weaponShader = nil -- ShaderGraph
+        weaponShaders = {} -- ShaderGraph
     }
 
     self.m_registryContainer = nil -- RegistryContainer
@@ -25,6 +25,7 @@ function WeaponsAppearances:RegisterVars()
     self.m_skinnedMeshAsset3pWeaponGuids = {} -- WeaponStateData.mesh3p
     self.m_meshVariationDatabaseEntrys1p = {} -- MeshVariationDatabaseEntry
     self.m_meshVariationDatabaseEntrys3p = {} -- MeshVariationDatabaseEntry
+    self.m_databaseEntryMaterialIndexes = {} -- MeshVariationDatabaseEntry.materials
     self.m_weaponBlueprints = {} -- SoldierWeaponBlueprint
 
     self.m_surfaceShaderStructs = {} -- SurfaceShaderInstanceDataStruct
@@ -59,7 +60,8 @@ function WeaponsAppearances:ReadInstances(p_instances)
     self.m_meshVariationDatabase = self.m_waitingInstances.meshVariationDatabase
     self.m_meshVariationDatabase:MakeWritable()
 
-    self.m_waitingInstances.weaponShader = p_instances['WeaponPresetShadowFP']
+    self.m_waitingInstances.weaponShaders['WeaponPresetShadowFP'] = p_instances['WeaponPresetShadowFP']
+    self.m_waitingInstances.weaponShaders['WeaponPresetShadowNoCamoFP'] = p_instances['WeaponPresetShadowNoCamoFP']
 
     -- reading weapon entities
     for _, l_value in pairs(self.m_waitingInstances.weaponEntities) do
@@ -89,6 +91,37 @@ function WeaponsAppearances:ReadInstances(p_instances)
         end
     end
 
+    -- reading material indexes
+    for _, l_value in pairs(self.m_meshVariationDatabaseEntrys1p) do
+        local s_materialVariationIndexes = {}
+
+        for ll_key, ll_value in pairs(l_value.materials) do
+            local s_shaderGraph = ll_value.material.shader.shader
+
+            local s_isNoCamo1p = false
+            local s_isNoCamo3p = false
+            local s_isPreset1p = false
+            local s_isPreset3p = false
+            local s_isShadow1p = false
+
+            if s_shaderGraph ~= nil then
+                s_isNoCamo1p = s_shaderGraph.name:match('WeaponPresetShadowNoCamoFP')
+                s_isNoCamo3p = s_shaderGraph.name:match('WeaponPresetNoCamo3P')
+                s_isPreset1p = s_shaderGraph.name:match('WeaponPresetFP')
+                s_isPreset3p = s_shaderGraph.name:match('WeaponPreset3P')
+                s_isShadow1p = s_shaderGraph.name:match('WeaponPresetShadowFP')
+            end
+
+            if s_isNoCamo3p or s_isPreset1p or s_isPreset3p or s_isShadow1p then
+                s_materialVariationIndexes[ll_key] = '1AFD6691-9CB6-4195-A4D1-6C925C0C3C2B' -- WeaponPresetShadowFP
+            elseif s_isNoCamo1p then
+                s_materialVariationIndexes[ll_key] = 'E776B701-3905-4211-9DAD-67A2F4B06176' -- WeaponPresetShadowNoCamoFP
+            end
+        end
+
+        self.m_databaseEntryMaterialIndexes[l_value.instanceGuid:ToString('D')] = s_materialVariationIndexes
+    end
+
     if InstanceUtils:Count(self.m_meshVariationDatabaseEntrys1p) == 0 and SharedUtils:IsClientModule() then
         ResourceManager:DestroyDynamicCompartment(ResourceCompartment.ResourceCompartment_Game)
     else
@@ -99,7 +132,7 @@ function WeaponsAppearances:ReadInstances(p_instances)
     self.m_waitingInstances = {
         meshVariationDatabase = nil, -- MeshVariationDatabase
         weaponEntities = {}, -- SoldierWeaponData
-        weaponShader = nil -- ShaderGraph
+        weaponShaders = {} -- ShaderGraph
     }
 
     -- removing hanging references
@@ -110,6 +143,7 @@ function WeaponsAppearances:ReadInstances(p_instances)
     self.m_skinnedMeshAsset3pWeaponGuids = {} -- WeaponStateData.mesh3p
     self.m_meshVariationDatabaseEntrys1p = {} -- MeshVariationDatabaseEntry
     self.m_meshVariationDatabaseEntrys3p = {} -- MeshVariationDatabaseEntry
+    self.m_databaseEntryMaterialIndexes = {} -- MeshVariationDatabaseEntry.materials
     self.m_weaponBlueprints = {} -- SoldierWeaponBlueprint
 
     self.m_surfaceShaderStructs = {} -- SurfaceShaderInstanceDataStruct
@@ -126,14 +160,16 @@ function WeaponsAppearances:CreateInstances()
 
     self.m_registryContainer = RegistryContainer()
 
-    self:CreateSurfaceShaderStructs(self.m_waitingInstances.weaponShader)
+    for _, l_value in pairs(self.m_waitingInstances.weaponShaders) do
+        self:CreateSurfaceShaderStructs(l_value)
+        self:CreateMeshMaterialVariations(l_value)
+    end
 
     for _, l_value in pairs(self.m_waitingInstances.weaponEntities) do
         local s_weaponEntity = l_value
         local s_meshVariationDatabaseEntry = self.m_meshVariationDatabaseEntrys1p[s_weaponEntity.instanceGuid:ToString('D')]
 
         if s_meshVariationDatabaseEntry ~= nil then
-            self:CreateMeshMaterialVariations(s_meshVariationDatabaseEntry)
             self:CreateMeshVariationDatabaseEntrys(s_meshVariationDatabaseEntry)
             self:CreateObjectVariationAssets(s_meshVariationDatabaseEntry)
             self:CreateBlueprintAndVariationPairs(s_meshVariationDatabaseEntry)
@@ -182,53 +218,29 @@ function WeaponsAppearances:CreateSurfaceShaderStructs(p_asset)
         s_elements[l_element] = s_surfaceShaderInstanceDataStruct
     end
 
-    self.m_surfaceShaderStructs = s_elements
+    self.m_surfaceShaderStructs[p_asset.instanceGuid:ToString('D')] = s_elements
 end
 
 -- creating MeshMaterialVariation for MeshVariationDatabaseMaterial
-function WeaponsAppearances:CreateMeshMaterialVariations(p_entry)
+function WeaponsAppearances:CreateMeshMaterialVariations(p_asset)
     if self.m_verbose >= 2 then
         print('Create MeshMaterialVariations')
     end
 
     local s_elements = {}
-    s_elements['neutral'] = p_entry.materials[1]
+
+    local s_surfaceShaderStructs = self.m_surfaceShaderStructs[p_asset.instanceGuid:ToString('D')]
 
     for _, l_element in pairs(ElementalConfig.names) do
-        local s_databaseEntryMaterials = {}
+        local s_newMeshMaterialVariation = MeshMaterialVariation(InstanceUtils:GenerateGuid(p_asset.instanceGuid:ToString('D') .. 'MeshMaterialVariation' .. l_element))
+        -- p_asset.partition:AddInstance(s_newMeshMaterialVariation)
 
-        -- dont customize radio beacon and c4
-        if not p_entry.mesh.name:match('radio_beacon') and not p_entry.mesh.name:match('c4') then
-            for ll_key, ll_value in pairs(p_entry.materials) do
-                local s_isNoCamo1p = false
-                local s_isNoCamo3p = false
-                local s_isPreset1p = false
-                local s_isPreset3p = false
-                local s_isShadow1p = false
+        s_newMeshMaterialVariation.shader = s_surfaceShaderStructs[l_element]
 
-                if ll_value.material.shader.shader ~= nil then
-                    s_isNoCamo1p = ll_value.material.shader.shader.name:match('WeaponPresetShadowNoCamoFP')
-                    s_isNoCamo3p = ll_value.material.shader.shader.name:match('WeaponPresetNoCamo3P')
-                    s_isPreset1p = ll_value.material.shader.shader.name:match('WeaponPresetFP')
-                    s_isPreset3p = ll_value.material.shader.shader.name:match('WeaponPreset3P')
-                    s_isShadow1p = ll_value.material.shader.shader.name:match('WeaponPresetShadowFP')
-                end
-
-                if s_isNoCamo1p or s_isNoCamo3p or s_isPreset1p or s_isPreset3p or s_isShadow1p then
-                    local s_newMeshMaterialVariation = MeshMaterialVariation(InstanceUtils:GenerateGuid(p_entry.instanceGuid:ToString('D') .. 'MeshMaterialVariation' .. l_element .. ll_key))
-                    p_entry.partition:AddInstance(s_newMeshMaterialVariation)
-
-                    s_newMeshMaterialVariation.shader = self.m_surfaceShaderStructs[l_element]
-
-                    s_databaseEntryMaterials[ll_key] = s_newMeshMaterialVariation
-                end
-            end
-        end
-
-        s_elements[l_element] = s_databaseEntryMaterials
+        s_elements[l_element] = s_newMeshMaterialVariation
     end
 
-    self.m_meshMaterialVariations[p_entry.instanceGuid:ToString('D')] = s_elements
+    self.m_meshMaterialVariations[p_asset.instanceGuid:ToString('D')] = s_elements
 end
 
 -- creating MeshVariationDatabaseEntry for ObjectVariationAsset
@@ -242,15 +254,17 @@ function WeaponsAppearances:CreateMeshVariationDatabaseEntrys(p_entry)
 
     local s_skinnedMeshAsset1pWeaponGuid = self.m_skinnedMeshAsset1pWeaponGuids[p_entry.mesh.instanceGuid:ToString('D')]
     local s_meshVariationDatabaseEntry3p = self.m_meshVariationDatabaseEntrys3p[s_skinnedMeshAsset1pWeaponGuid]
-    local s_meshMaterialVariations = self.m_meshMaterialVariations[p_entry.instanceGuid:ToString('D')]
+    local s_materialVariationIndexes = self.m_databaseEntryMaterialIndexes[p_entry.instanceGuid:ToString('D')]
 
     for _, l_element in pairs(ElementalConfig.names) do
         local s_newMeshVariationDatabaseEntry1p = InstanceUtils:CloneInstance(p_entry, l_element)
         local s_newMeshVariationDatabaseEntry3p = InstanceUtils:CloneInstance(s_meshVariationDatabaseEntry3p, l_element)
 
-        for ll_key, ll_value in pairs(s_meshMaterialVariations[l_element]) do
-            s_newMeshVariationDatabaseEntry1p.materials[ll_key].materialVariation = ll_value
-            s_newMeshVariationDatabaseEntry3p.materials[ll_key].materialVariation = ll_value
+        for ll_key, ll_value in pairs(s_materialVariationIndexes) do
+            local s_meshMaterialVariation = self.m_meshMaterialVariations[ll_value][l_element]
+
+            s_newMeshVariationDatabaseEntry1p.materials[ll_key].materialVariation = s_meshMaterialVariation
+            s_newMeshVariationDatabaseEntry3p.materials[ll_key].materialVariation = s_meshMaterialVariation
         end
 
         s_newMeshVariationDatabaseEntry1p.variationAssetNameHash = MathUtils:FNVHash(p_entry.instanceGuid:ToString('D') .. l_element)
