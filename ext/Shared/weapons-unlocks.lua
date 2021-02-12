@@ -36,13 +36,15 @@ function WeaponsUnlocks:RegisterVars()
 
         FX_Grenade_Frag_01_Sound = {'A6C980C2-1578-4169-81CB-C62AC369590E', '41A352A8-783E-41E6-9B3E-989D473DB953'}, -- explodeSoundEffectEntity
         FX_40mm_Smoke = {'6A2C27D9-D455-458D-A542-C212C6F8F69C', '00C3D2F9-1346-47B8-956D-10CC23AD8B4D'}, -- smokeEffectBlueprint
-        FX_Impact_Metal_01_M = {'67CBADED-34D0-11DE-A494-8B723B09CADF', '67CBADEE-34D0-11DE-A494-8B723B09CADF'} -- explodeEffectBlueprint
+        FX_Impact_Metal_01_M = {'67CBADED-34D0-11DE-A494-8B723B09CADF', '67CBADEE-34D0-11DE-A494-8B723B09CADF'}, -- explodeEffectBlueprint
+        FX_Tracer_Generic_Parent = {'5CCBAF8E-C60F-11DF-9EEE-F7FAC0AACAA5', '75DB0568-A279-DDB3-8817-832010034635'} -- trailEffectBlueprint
     }
 
     self.m_waitingInstances = {
         impactEffectBlueprints = {}, -- EffectBlueprint
         explodeEffectBlueprint = nil, -- EffectBlueprint
         smokeEffectBlueprint = nil, -- EffectBlueprint
+        tracerEffectBlueprint = nil, -- EffectBlueprint
 
         genericImpactEffectBlueprint = nil, -- EffectBlueprint
 
@@ -79,6 +81,7 @@ function WeaponsUnlocks:RegisterVars()
     self.m_impactEffectBlueprints = {} -- EffectBlueprint
     self.m_explodeEffectBlueprints = {} -- EffectBlueprint
     self.m_smokeEffectBlueprints = {} -- EffectBlueprint
+    self.m_tracerEffectBlueprints = {} -- EffectBlueprint
 
     self.m_impactExplosionEntities = {} -- VeniceExplosionEntityData
     self.m_explodeExplosionEntities = {} -- VeniceExplosionEntityData
@@ -250,6 +253,7 @@ function WeaponsUnlocks:ReadInstances(p_instances)
 
     self.m_waitingInstances.explodeEffectBlueprint = p_instances['FX_Impact_Metal_01_M']
     self.m_waitingInstances.smokeEffectBlueprint = p_instances['FX_40mm_Smoke']
+    self.m_waitingInstances.tracerEffectBlueprint = p_instances['FX_Tracer_Generic_Parent']
 
     self.m_waitingInstances.dummyExplosionEntity = p_instances['M224_Projectile_Smoke']
     self.m_waitingInstances.dummyPolynomialColor = p_instances['Em_Impact_Generic_S_Sparks_01']
@@ -307,6 +311,7 @@ function WeaponsUnlocks:ReadInstances(p_instances)
         impactEffectBlueprints = {}, -- EffectBlueprint
         explodeEffectBlueprint = nil, -- EffectBlueprint
         smokeEffectBlueprint = nil, -- EffectBlueprint
+        tracerEffectBlueprint = nil, -- EffectBlueprint
 
         genericImpactEffectBlueprint = nil, -- EffectBlueprint
 
@@ -340,6 +345,7 @@ function WeaponsUnlocks:ReadInstances(p_instances)
     self.m_impactEffectBlueprints = {} -- EffectBlueprint
     self.m_explodeEffectBlueprints = {} -- EffectBlueprint
     self.m_smokeEffectBlueprints = {} -- EffectBlueprint
+    self.m_tracerEffectBlueprints = {} -- EffectBlueprint
 
     self.m_impactExplosionEntities = {} -- VeniceExplosionEntityData
     self.m_explodeExplosionEntities = {} -- VeniceExplosionEntityData
@@ -367,6 +373,7 @@ function WeaponsUnlocks:CreateInstances()
     self:CreateImpactEffectBlueprints(self.m_waitingInstances.impactEffectBlueprints)
     self:CreateExplodeEffectBlueprints(self.m_waitingInstances.explodeEffectBlueprint)
     self:CreateSmokeEffectBlueprints(self.m_waitingInstances.smokeEffectBlueprint)
+    self:CreateTracerEffectBlueprints(self.m_waitingInstances.tracerEffectBlueprint)
 
     self:CreateImpactExplosionEntities(self.m_waitingInstances.dummyExplosionEntity)
     self:CreateSmokeExplosionEntities(self.m_waitingInstances.dummyExplosionEntity)
@@ -515,32 +522,41 @@ function WeaponsUnlocks:_CreateEmitterDocumentAssets(p_asset)
         return s_newProcessorData
     end
 
+    local s_createProcessors = true
+    if p_asset.templateData.name:lower():match('tracer') then
+        s_createProcessors = false
+    end
+
+    -- non emissive smoke
+    local s_emissive = true
+    if
+        p_asset.templateData.name:lower():match('smoke') or
+        p_asset.templateData.name:lower():match('tracer')
+    then
+        s_emissive = false
+    end
+
+    -- explode light radius
+    local s_pointLightRadius = 10
+    if p_asset.templateData.name:match('Metal_Smoke_01_M') then
+        s_pointLightRadius = 30
+    end
+
     for _, l_element in pairs(ElementalConfig.names) do
         local s_newEmitterDocumentAsset = InstanceUtils:CloneInstance(p_asset, l_element)
         local s_newTemplateData = InstanceUtils:CloneInstance(p_asset.templateData, l_element)
 
-        -- non emissive smoke
-        local s_emissive = true
-        if
-            s_newTemplateData.name:lower():match('smoke')
-        then
-            s_emissive = false
-        end
-
         local s_color = ElementalConfig.colors[l_element]
 
-        -- explode light radius
-        local s_pointLightRadius = 10
-        if s_newTemplateData.name:match('Metal_Smoke_01_M') then
-            s_pointLightRadius = 30
+        -- creating processor with recursion
+        local s_newTemplateRootProcessor = s_newTemplateData.rootProcessor
+        if s_createProcessors then
+            s_newTemplateRootProcessor = createProcessorData(s_newTemplateData.rootProcessor, l_element, s_emissive)
         end
 
-        -- creating processor with recursion
-        local s_newTemplateRootProcessor = createProcessorData(s_newTemplateData.rootProcessor, l_element, s_emissive)
-        local s_newDocumentRootProcessor = s_newTemplateRootProcessor
-
         -- low graphics processor
-        if not s_newEmitterDocumentAsset.rootProcessor:Eq(s_newTemplateData.rootProcessor) then
+        local s_newDocumentRootProcessor = s_newEmitterDocumentAsset.rootProcessor
+        if not s_newEmitterDocumentAsset.rootProcessor:Eq(s_newTemplateData.rootProcessor) and s_createProcessors then
             s_newDocumentRootProcessor = createProcessorData(s_newEmitterDocumentAsset.rootProcessor, l_element, s_emissive)
         end
 
@@ -550,7 +566,7 @@ function WeaponsUnlocks:_CreateEmitterDocumentAssets(p_asset)
         s_newTemplateData.emissive = s_emissive
         s_newTemplateData.actAsPointLight = true
         s_newTemplateData.pointLightRadius = s_pointLightRadius
-        s_newTemplateData.pointLightColor = ElementalConfig.colors[l_element]
+        s_newTemplateData.pointLightColor = s_color
         s_newTemplateData.maxSpawnDistance = 0
         s_newTemplateData.repeatParticleSpawning = false
 
@@ -661,6 +677,19 @@ function WeaponsUnlocks:CreateSmokeEffectBlueprints(p_blueprint)
     end
 end
 
+-- creating EffectEntity for MeshProjectileEntityData
+function WeaponsUnlocks:CreateTracerEffectBlueprints(p_blueprint)
+    if self.m_verbose >= 2 then
+        print('Create TracerEffectBlueprints')
+    end
+
+    for _, l_element in pairs(ElementalConfig.names) do
+        local s_newEffectBlueprint = self:_CreateEffectBlueprint(p_blueprint, l_element)
+
+        self.m_tracerEffectBlueprints[l_element] = s_newEffectBlueprint
+    end
+end
+
 -- creating VeniceExplosionEntityData for MeshProjectileEntityData
 function WeaponsUnlocks:CreateImpactExplosionEntities(p_entity)
     if self.m_verbose >= 2 then
@@ -758,18 +787,18 @@ function WeaponsUnlocks:CreateProjectileEntities(p_entity)
         self.m_projectilePhysicsProperties[s_physicsPropertyIndex] = true
     end
 
+    local s_projectileExplosionEntity = nil
+    if p_entity.explosion ~= nil then
+        s_projectileExplosionEntity = self.m_explodeExplosionEntities[p_entity.explosion.instanceGuid:ToString('D')]
+    end
+
+    local s_missileExplosionEntity = nil
+    if p_entity.dudExplosion ~= nil then
+        s_missileExplosionEntity = self.m_explodeExplosionEntities[p_entity.dudExplosion.instanceGuid:ToString('D')]
+    end
+
     for _, l_element in pairs(ElementalConfig.names) do
         local s_newProjectileEntity = InstanceUtils:CloneInstance(p_entity, l_element)
-
-        local s_projectileExplosionEntity = nil
-        if s_newProjectileEntity.explosion ~= nil then
-            s_projectileExplosionEntity = self.m_explodeExplosionEntities[s_newProjectileEntity.explosion.instanceGuid:ToString('D')]
-        end
-
-        local s_missileExplosionEntity = nil
-        if s_newProjectileEntity.dudExplosion ~= nil then
-            s_missileExplosionEntity = self.m_explodeExplosionEntities[s_newProjectileEntity.dudExplosion.instanceGuid:ToString('D')]
-        end
 
         -- non-explosive projectile
         if s_projectileExplosionEntity == nil and s_missileExplosionEntity == nil then
@@ -793,6 +822,7 @@ function WeaponsUnlocks:CreateProjectileEntities(p_entity)
 
         -- patching projectile entity
         s_newProjectileEntity.materialPair = s_materialPair
+        s_newProjectileEntity.trailEffect = self.m_tracerEffectBlueprints[l_element]
 
         self.m_registryContainer.entityRegistry:add(s_newProjectileEntity)
 
